@@ -1,0 +1,2 @@
+# A pack file is kept byte for byte: no line ending is ever changed in it.
+*.pack binary
