@@ -16,11 +16,10 @@ The finished pack files of [open-field](https://github.com/LaP0573/open-field), 
 | [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 10 | base.pack | 426,790 bytes | `dd8666939dd3e939fa0065d9988ac07284676af09202010f349f36b3d8846429` |
 | [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 8 | base.pack | 375,422 bytes | `6df6301e9e2e222bdb4dc331d71b6982e0b2529067ea686a9c3eada1f5e68b6c` |
 | [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 7 | base.pack | 104,062 bytes | `217125222686ebb9d0aeaf2f0e8e5eb5fa3baf3bbbbe710febc6d4a1cd196a00` |
-| [wink.pack](wink.pack) | The example of level 1: a red dot that blinks on the tempo screen. | examples | 1 | base.pack, level 1 | 2,130 bytes | `b8b685f2b13cf058c000382a643db2a2c270f1604bdee59df24f082e003784a0` |
-| [yoyo.pack](yoyo.pack) | The example of level 2: shift and the metronome key open a page where the blue knob moves a yoyo. | examples | 1 | base.pack, level 2 | 4,381 bytes | `053ca1c45125c494e1679b284119099c86a106fd7256a701d79082e5dabd9f27` |
-| [list.pack](list.pack) | The example of level 3: shift and the help key open a page that lists the files of its own folder. | examples | 1 | base.pack, level 3 | 7,281 bytes | `973413192503526b0f3e7d8b8201de84a512a1b716f8341598ce1c2478b071f8` |
 
 `base.pack`, the shared pack every other one needs, is not here: it lies beside the install page in the open-field repository (`builder/base.pack`), and the install page puts it on every unit it installs.
+
+The example packs for people who write packs (`wink`, `yoyo` and `list`) are not here either: they live in the open-field repository, under `examples/`, and its build makes their files.
 
 ## Putting a pack on the unit
 
