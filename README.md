@@ -1,6 +1,6 @@
 # open-field packs
 
-The finished pack files of [open-field](https://github.com/LaP0573/open-field), ready to go onto an OP-1 Field that runs OS 1.7.0 with open-field installed. Each file here is built from the sources in the open-field repository; this repository holds only the finished files.
+The finished pack files of [open-field](https://github.com/LaP0573/open-field), ready to go onto an OP-1 Field that runs OS 1.7.3 with open-field installed. The files for OS 1.7.0 stay in this repository's history, at commit `03adcba` (the install page for OS 1.7.0 names them there). Each file here is built from the sources in the open-field repository; this repository holds only the finished files.
 
 **Unofficial.** This project is not made, endorsed or supported by Teenage Engineering, and it is not affiliated with them.
 
@@ -12,10 +12,10 @@ The finished pack files of [open-field](https://github.com/LaP0573/open-field), 
 
 | Pack | What it does | Category | Version | Needs | Size | SHA-256 |
 | --- | --- | --- | --- | --- | --- | --- |
-| [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 7 | base.pack | 99,476 bytes | `c80be48f3623e551fb6a65d518c59966212a35b955dbbf923c271b8ec8df346e` |
-| [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 10 | base.pack | 426,790 bytes | `dd8666939dd3e939fa0065d9988ac07284676af09202010f349f36b3d8846429` |
-| [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 8 | base.pack | 375,422 bytes | `6df6301e9e2e222bdb4dc331d71b6982e0b2529067ea686a9c3eada1f5e68b6c` |
-| [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 7 | base.pack | 104,062 bytes | `217125222686ebb9d0aeaf2f0e8e5eb5fa3baf3bbbbe710febc6d4a1cd196a00` |
+| [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 7 | base.pack | 99,484 bytes | `dffc324f1cb0a45fd42592418678904686f5cb240f4b135f4804d43f6cd8bf2f` |
+| [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 10 | base.pack | 426,794 bytes | `58d07f9f5c69ba25e50b59b4920961da5a861e931dbf9a2e621775e49b5f68f8` |
+| [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 8 | base.pack | 375,422 bytes | `22f7eafa2f002100ddb5d733a47b2de58b664e5cb2565090c11b72e6871e3363` |
+| [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 7 | base.pack | 104,062 bytes | `505570137195cff863a7b794ec35c70b59ad239528ba93c46095cfa16cf689be` |
 
 `base.pack`, the shared pack every other one needs, is not here: it lies beside the install page in the open-field repository (`builder/base.pack`), and the install page puts it on every unit it installs.
 
@@ -30,7 +30,7 @@ The example packs for people who write packs (`wink`, `yoyo` and `list`) are not
 
 Every file is built byte for byte from the open-field repository's own sources: `python -I tools/build_all.py` there makes each one, and its `packs/built.json` keeps each file's size and SHA-256. The listing of packs, `catalog/packs.json` in open-field, names each file here by commit and SHA-256, and the install page holds every download to it.
 
-A file here changes only with a new version of its pack, built and tried on a unit first.
+A file here changes only with a new version of its pack, or when open-field moves to another firmware (the same version, built for the new firmware), built and tried on a unit first.
 
 ## Licence
 
