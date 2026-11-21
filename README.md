@@ -12,18 +12,19 @@ The finished pack files of [open-field](https://github.com/LaP0573/open-field), 
 
 | Pack | What it does | Category | Version | Needs | Size | SHA-256 |
 | --- | --- | --- | --- | --- | --- | --- |
-| [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 7 | base.pack | 99,484 bytes | `dffc324f1cb0a45fd42592418678904686f5cb240f4b135f4804d43f6cd8bf2f` |
-| [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 10 | base.pack | 426,794 bytes | `58d07f9f5c69ba25e50b59b4920961da5a861e931dbf9a2e621775e49b5f68f8` |
-| [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 8 | base.pack | 375,422 bytes | `22f7eafa2f002100ddb5d733a47b2de58b664e5cb2565090c11b72e6871e3363` |
-| [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 7 | base.pack | 104,062 bytes | `505570137195cff863a7b794ec35c70b59ad239528ba93c46095cfa16cf689be` |
+| [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 10 | base.pack, level 7 | 106,548 bytes | `4779bda0d21fc61245aebd1e434011d0c341a91e3ba16f37c759e1264c2da666` |
+| [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 16 | base.pack, level 8 | 505,416 bytes | `bc88433ed295383944bc62d84452db226ea7d35f19565652d3338b3dcd1126ee` |
+| [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 11 | base.pack, level 4 | 430,318 bytes | `62d6464407751dd9556d4e59462e31d7c87acd8b77c6f91682a65f45035baee4` |
+| [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 10 | base.pack, level 7 | 107,850 bytes | `2268639259142f81e703c24d6446e3be74406a6d5ce708b21b964cd8232f723e` |
 
 `base.pack`, the shared pack every other one needs, is not here: it lies beside the install page in the open-field repository (`builder/base.pack`), and the install page puts it on every unit it installs.
 
-The example packs for people who write packs (`wink`, `yoyo` and `list`) are not here either: they live in the open-field repository, under `examples/`, and its build makes their files.
+The example packs for people who write packs (`wink`, `yoyo`, `list`, `sketch`, `echo`, `dub`, `crush`, `ping`, `pluck`, `fold` and `trampolines`) are not here either: they live in the open-field repository, under `examples/`, and its build makes their files.
 
 ## Putting a pack on the unit
 
 - **With the install page**: tick the pack in its step 5. The page downloads the file from this repository at the commit the open-field listing names, checks its SHA-256, and the helper copies it onto the unit with the rest.
+- **Later, from the install page's packs section**: with open-field on the unit and the unit on USB, the page lists the packs the unit has and sends the ones you tick over USB MIDI, each file held to the same SHA-256. The unit asks you on its own screen before anything changes: T1 applies, T2 leaves everything as it was.
 - **By hand**: download the file, put the unit into its disk mode, copy the file into the folder `packs`, leave the disk mode, and switch the unit off and on. The open-field guide, `docs/guide.md`, says more.
 
 ## Where the files come from
