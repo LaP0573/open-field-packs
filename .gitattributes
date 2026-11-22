@@ -1,2 +1,3 @@
-# A pack file is kept byte for byte: no line ending is ever changed in it.
+# No line-ending conversion for anything: the sources, the pictures' instructions and the pack files are held by their bytes.
+* -text
 *.pack binary

@@ -1,0 +1,107 @@
+{
+ "schema": 2,
+ "id": "op1f-1.7.3-sidechain",
+ "device": "OP-1 Field",
+ "firmware_version": "1.7.3+0",
+ "cpu": "bf703",
+ "about": [
+  "The places where the pack `sidechain` changes OS 1.7.3+0 of the OP-1 Field, and nothing else. No byte of the firmware is in this file.",
+  "It has the form of open-field's profiles/op1f-1.7.3.json, which says what each field means. open-field's tools/place_sum.py works out a place's sum from your own firmware file.",
+  "The pack's table, build_r4b_sidechain_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
+  "module_base and reserved_bytes are the room for open-field's code, as its main profile names it: the pack is linked for the room behind the loader."
+ ],
+ "stock_sha256": "d134eb1ac7ad88e8370d988329cd5d7419f016005b1d269034f9cf7166fad0ec",
+ "stock_bytes": 2079016,
+ "module_base": "0x8d2e4234",
+ "reserved_bytes": 2097152,
+ "patches": [
+  {
+   "address": "0x11a0825e",
+   "length": 8,
+   "sum": "0xb98515a5",
+   "group": "sidechain",
+   "name": "In the tape's audio driver: the call that reads a block of tape."
+  },
+  {
+   "address": "0x8fc35738",
+   "length": 8,
+   "sum": "0xecf7dbe0",
+   "group": "sidechain",
+   "name": "In the signal flow screen's update: the call that fetches the meters' values."
+  },
+  {
+   "address": "0x840101fc",
+   "length": 4,
+   "sum": "0x01a23c82",
+   "group": "sidechain",
+   "name": "A word in the signal flow controller's table: its key-down handler."
+  },
+  {
+   "address": "0x84010200",
+   "length": 4,
+   "sum": "0x7eeb5374",
+   "group": "sidechain",
+   "name": "A word in the signal flow controller's table: its handler for a key pressed with shift."
+  },
+  {
+   "address": "0x84010204",
+   "length": 4,
+   "sum": "0x6424bb53",
+   "group": "sidechain",
+   "name": "A word in the signal flow controller's table: its key-up handler."
+  },
+  {
+   "address": "0x84010208",
+   "length": 4,
+   "sum": "0xc9f1010d",
+   "group": "sidechain",
+   "name": "A word in the signal flow controller's table: its knob handler."
+  }
+ ],
+ "image": [],
+ "tables": [
+  {
+   "file": "sidechain/build_r4b_sidechain_table.s",
+   "part": "sidechain",
+   "symbol": "op1f_boot_table",
+   "entries": [
+    {
+     "address": "0x11a0825e",
+     "form": "call",
+     "target": "op1f_duck_read_block",
+     "does": "Only when the pack `8 tracks` is away: a call to ours, which runs the sidechain around the firmware's call."
+    },
+    {
+     "address": "0x8fc35738",
+     "form": "call",
+     "target": "op1f_duck_vu",
+     "does": "Only when the pack `8 tracks` is away: a call to ours, which makes the firmware's call and then draws the sidechain's page."
+    },
+    {
+     "address": "0x840101fc",
+     "form": "word",
+     "target": "op1f_duck_key_down",
+     "does": "Ours deals with the keys of the sidechain's page; the firmware's own handling runs for every other key."
+    },
+    {
+     "address": "0x84010200",
+     "form": "word",
+     "target": "op1f_duck_key_shift",
+     "does": "Ours: shift and the mixer key change between the sidechain's page and the firmware's signal flow screen."
+    },
+    {
+     "address": "0x84010204",
+     "form": "word",
+     "target": "op1f_duck_key_up",
+     "does": "Ours deals with the keys of the sidechain's page; the firmware's own handling runs for every other key."
+    },
+    {
+     "address": "0x84010208",
+     "form": "word",
+     "target": "op1f_duck_encoder",
+     "does": "Ours: the knobs set the sidechain's source, amount, hold and release, and four more values with shift."
+    }
+   ]
+  }
+ ]
+}

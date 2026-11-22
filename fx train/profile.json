@@ -1,0 +1,341 @@
+{
+ "schema": 2,
+ "id": "op1f-1.7.3-fx-train",
+ "device": "OP-1 Field",
+ "firmware_version": "1.7.3+0",
+ "cpu": "bf703",
+ "about": [
+  "The places where the pack `fx train` changes OS 1.7.3+0 of the OP-1 Field, and nothing else. No byte of the firmware is in this file.",
+  "It has the form of open-field's profiles/op1f-1.7.3.json, which says what each field means. open-field's tools/place_sum.py works out a place's sum from your own firmware file.",
+  "The pack's table, build_r4b_fx_train_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
+  "module_base and reserved_bytes are the room for open-field's code, as its main profile names it: the pack is linked for the room behind the loader."
+ ],
+ "stock_sha256": "d134eb1ac7ad88e8370d988329cd5d7419f016005b1d269034f9cf7166fad0ec",
+ "stock_bytes": 2079016,
+ "module_base": "0x8d2e4234",
+ "reserved_bytes": 2097152,
+ "patches": [
+  {
+   "address": "0x11a052b4",
+   "length": 8,
+   "sum": "0xef3ea86f",
+   "group": "fx train",
+   "name": "In the synth's audio stage: the load of the effect's object, right before the firmware runs the sound's effect."
+  },
+  {
+   "address": "0x11a052e6",
+   "length": 8,
+   "sum": "0xba8c6605",
+   "group": "fx train",
+   "name": "In the synth's audio stage: the first load behind the place where the sound's effect is run."
+  },
+  {
+   "address": "0x11a03e34",
+   "length": 8,
+   "sum": "0xf625992e",
+   "group": "fx train",
+   "name": "In the drum's audio stage: the load of the effect's object, right before the firmware runs the sound's effect."
+  },
+  {
+   "address": "0x11a03e68",
+   "length": 8,
+   "sum": "0x4aa79ea4",
+   "group": "fx train",
+   "name": "In the drum's audio stage: the first load behind the place where the sound's effect is run."
+  },
+  {
+   "address": "0x84013834",
+   "length": 4,
+   "sum": "0xf74c1ee5",
+   "group": "fx train",
+   "name": "A word in the synth controller's table: its key-down handler."
+  },
+  {
+   "address": "0x84013838",
+   "length": 4,
+   "sum": "0x5c888013",
+   "group": "fx train",
+   "name": "A word in the synth controller's table: its handler for a key pressed with shift."
+  },
+  {
+   "address": "0x8401383c",
+   "length": 4,
+   "sum": "0x6a39f2c6",
+   "group": "fx train",
+   "name": "A word in the synth controller's table: its key-up handler."
+  },
+  {
+   "address": "0x84013840",
+   "length": 4,
+   "sum": "0x455bee11",
+   "group": "fx train",
+   "name": "A word in the synth controller's table: its knob handler."
+  },
+  {
+   "address": "0x8400ea3c",
+   "length": 4,
+   "sum": "0xf74c1ee5",
+   "group": "fx train",
+   "name": "A word in the drum controller's table: its key-down handler."
+  },
+  {
+   "address": "0x8400ea40",
+   "length": 4,
+   "sum": "0xd4310f5a",
+   "group": "fx train",
+   "name": "A word in the drum controller's table: its handler for a key pressed with shift."
+  },
+  {
+   "address": "0x8400ea44",
+   "length": 4,
+   "sum": "0x6a39f2c6",
+   "group": "fx train",
+   "name": "A word in the drum controller's table: its key-up handler."
+  },
+  {
+   "address": "0x8400ea48",
+   "length": 4,
+   "sum": "0x098bb2c8",
+   "group": "fx train",
+   "name": "A word in the drum controller's table: its knob handler."
+  },
+  {
+   "address": "0x8401e90c",
+   "length": 4,
+   "sum": "0x0bbbd416",
+   "group": "fx train",
+   "name": "A word in a table of the code that loads sounds: the function that applies a sound loaded step by step."
+  },
+  {
+   "address": "0x8401f894",
+   "length": 4,
+   "sum": "0x0ee6b628",
+   "group": "fx train",
+   "name": "A word in the table of the synth's sound slots: the function that puts a slot's settings onto the sound engine."
+  },
+  {
+   "address": "0x8401f870",
+   "length": 4,
+   "sum": "0x554cc307",
+   "group": "fx train",
+   "name": "A word in the table of the drum's sound slots: the function that puts a slot's settings onto the sound engine."
+  },
+  {
+   "address": "0x8d517dfe",
+   "length": 8,
+   "sum": "0x38c68d65",
+   "group": "fx train",
+   "name": "In the audio code of the effect spring: the load of the address of its working memory."
+  },
+  {
+   "address": "0x8d51849a",
+   "length": 8,
+   "sum": "0xa90691ad",
+   "group": "fx train",
+   "name": "In the audio code of the effect spring, on a second path: the load of the address of its working memory."
+  },
+  {
+   "address": "0x11a066ee",
+   "length": 8,
+   "sum": "0x87d85a8e",
+   "group": "fx train",
+   "name": "In the audio code of the effect mother: the load of the address of its working memory."
+  },
+  {
+   "address": "0x11a05500",
+   "length": 8,
+   "sum": "0x118699a0",
+   "group": "fx train",
+   "name": "In the synth's audio stage, where the sound's LFO is applied to its effect: the load of the address of the LFO's settings."
+  },
+  {
+   "address": "0x11a0404e",
+   "length": 8,
+   "sum": "0x195e0af3",
+   "group": "fx train",
+   "name": "In the drum's audio stage, where the sound's LFO is applied to its effect: the load of the address of the LFO's settings."
+  },
+  {
+   "address": "0x8fc5bbf6",
+   "length": 8,
+   "sum": "0x08961d03",
+   "group": "fx train",
+   "name": "In the drawing of the value LFO's page: the call that asks for the name over a knob."
+  },
+  {
+   "address": "0x8fc59468",
+   "length": 8,
+   "sum": "0x08961d03",
+   "group": "fx train",
+   "name": "In the drawing of the element LFO's page: the call that asks for the name over a knob."
+  },
+  {
+   "address": "0x8fc5a6e8",
+   "length": 8,
+   "sum": "0x08961d03",
+   "group": "fx train",
+   "name": "In the drawing of the random LFO's page: the call that asks for the name over a knob."
+  },
+  {
+   "address": "0x8fc5cd6c",
+   "length": 8,
+   "sum": "0x08961d03",
+   "group": "fx train",
+   "name": "In the drawing of the velocity LFO's page: the call that asks for the name over a knob."
+  }
+ ],
+ "image": [],
+ "tables": [
+  {
+   "file": "fx train/build_r4b_fx_train_table.s",
+   "part": "fx train",
+   "symbol": "op1f_boot_table",
+   "entries": [
+    {
+     "address": "0x11a052b4",
+     "form": "call",
+     "target": "op1f_fx_synth_t0",
+     "does": "A call to our stub, which has the firmware leave its own effect out here: the train runs the effects."
+    },
+    {
+     "address": "0x11a052e6",
+     "form": "call",
+     "target": "op1f_fx_synth_t1",
+     "does": "A call to our stub, which runs the effects of the synth's train and then does the load."
+    },
+    {
+     "address": "0x11a03e34",
+     "form": "call",
+     "target": "op1f_fx_drum_t0",
+     "does": "A call to our stub, which has the firmware leave its own effect out here: the train runs the effects."
+    },
+    {
+     "address": "0x11a03e68",
+     "form": "call",
+     "target": "op1f_fx_drum_t1",
+     "does": "A call to our stub, which runs the effects of the drum's train and then does the load."
+    },
+    {
+     "address": "0x84013834",
+     "form": "word",
+     "target": "op1f_fx_key_down",
+     "does": "Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler."
+    },
+    {
+     "address": "0x84013838",
+     "form": "word",
+     "target": "op1f_fx_key_shift",
+     "does": "Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler."
+    },
+    {
+     "address": "0x8401383c",
+     "form": "word",
+     "target": "op1f_fx_key_up",
+     "does": "Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler."
+    },
+    {
+     "address": "0x84013840",
+     "form": "word",
+     "target": "op1f_fx_encoder",
+     "does": "Ours deals with the knobs of the effect train and of the LFO page and hands every other turn to the firmware's handler."
+    },
+    {
+     "address": "0x8400ea3c",
+     "form": "word",
+     "target": "op1f_fx_key_down",
+     "does": "Ours deals with the keys of the effect train and hands every other key to the firmware's handler."
+    },
+    {
+     "address": "0x8400ea40",
+     "form": "word",
+     "target": "op1f_fx_key_shift",
+     "does": "Ours deals with the keys of the effect train and hands every other key to the firmware's handler."
+    },
+    {
+     "address": "0x8400ea44",
+     "form": "word",
+     "target": "op1f_fx_key_up",
+     "does": "Ours deals with the keys of the effect train and hands every other key to the firmware's handler."
+    },
+    {
+     "address": "0x8400ea48",
+     "form": "word",
+     "target": "op1f_fx_encoder",
+     "does": "Ours deals with the knobs of the effect train and hands every other turn to the firmware's handler."
+    },
+    {
+     "address": "0x8401e90c",
+     "form": "word",
+     "target": "op1f_fx_patch_apply",
+     "does": "Ours makes the firmware's call and then brings the effect train up to date."
+    },
+    {
+     "address": "0x8401f894",
+     "form": "word",
+     "target": "op1f_fx_apply_synth",
+     "does": "Ours makes the firmware's call and then brings the slot's effect train up to date."
+    },
+    {
+     "address": "0x8401f870",
+     "form": "word",
+     "target": "op1f_fx_apply_drum",
+     "does": "Ours makes the firmware's call and then brings the slot's effect train up to date."
+    },
+    {
+     "address": "0x8d517dfe",
+     "form": "call",
+     "target": "op1f_spring_base_p4",
+     "does": "A call to our stub, which takes the address from a word of ours, so that each spring on the train has working memory of its own."
+    },
+    {
+     "address": "0x8d51849a",
+     "form": "call",
+     "target": "op1f_spring_base_r6",
+     "does": "A call to our stub, which takes the address from a word of ours, as on the first path."
+    },
+    {
+     "address": "0x11a066ee",
+     "form": "call",
+     "target": "op1f_mother_base_p4",
+     "does": "A call to our stub, which takes the address from a word of ours, so that each mother on the train has working memory of its own."
+    },
+    {
+     "address": "0x11a05500",
+     "form": "call",
+     "target": "op1f_lfofx_pre_synth",
+     "does": "A call to our stub, which does the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train."
+    },
+    {
+     "address": "0x11a0404e",
+     "form": "call",
+     "target": "op1f_lfofx_pre_drum",
+     "does": "A call to our stub, which does the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train."
+    },
+    {
+     "address": "0x8fc5bbf6",
+     "form": "call",
+     "target": "op1f_lfo_param_name",
+     "does": "A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else."
+    },
+    {
+     "address": "0x8fc59468",
+     "form": "call",
+     "target": "op1f_lfo_param_name",
+     "does": "A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else."
+    },
+    {
+     "address": "0x8fc5a6e8",
+     "form": "call",
+     "target": "op1f_lfo_param_name",
+     "does": "A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else."
+    },
+    {
+     "address": "0x8fc5cd6c",
+     "form": "call",
+     "target": "op1f_lfo_param_name",
+     "does": "A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else."
+    }
+   ]
+  }
+ ]
+}

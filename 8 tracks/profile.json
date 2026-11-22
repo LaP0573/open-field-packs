@@ -1,0 +1,998 @@
+{
+ "schema": 2,
+ "id": "op1f-1.7.3-8-tracks",
+ "device": "OP-1 Field",
+ "firmware_version": "1.7.3+0",
+ "cpu": "bf703",
+ "about": [
+  "The places where the pack `8 tracks` changes OS 1.7.3+0 of the OP-1 Field, and nothing else. No byte of the firmware is in this file.",
+  "It has the form of open-field's profiles/op1f-1.7.3.json, which says what each field means. open-field's tools/place_sum.py works out a place's sum from your own firmware file.",
+  "The pack's table, build_r4b_8_tracks_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
+  "module_base and reserved_bytes are the room for open-field's code, as its main profile names it: the pack is linked for the room behind the loader."
+ ],
+ "stock_sha256": "d134eb1ac7ad88e8370d988329cd5d7419f016005b1d269034f9cf7166fad0ec",
+ "stock_bytes": 2079016,
+ "module_base": "0x8d2e4234",
+ "reserved_bytes": 2097152,
+ "patches": [
+  {
+   "address": "0x8fc22eb0",
+   "length": 8,
+   "sum": "0x4a79151e",
+   "group": "8 tracks",
+   "name": "The entry of the function that loads a tape's block map."
+  },
+  {
+   "address": "0x8fc2140c",
+   "length": 8,
+   "sum": "0xb23c7c82",
+   "group": "8 tracks",
+   "name": "The entry of the function that sets up the tape's cache of chunks."
+  },
+  {
+   "address": "0x8fc217a0",
+   "length": 8,
+   "sum": "0xe4119375",
+   "group": "8 tracks",
+   "name": "The entry of the tape cache's service loop, which loads and writes chunks in the background."
+  },
+  {
+   "address": "0x8fc224fc",
+   "length": 8,
+   "sum": "0x02fa5c2e",
+   "group": "8 tracks",
+   "name": "The entry of the function that empties the undo history."
+  },
+  {
+   "address": "0x8fc22d70",
+   "length": 8,
+   "sum": "0x484e403c",
+   "group": "8 tracks",
+   "name": "The entry of the function that saves a tape's block map."
+  },
+  {
+   "address": "0x8fc23128",
+   "length": 8,
+   "sum": "0xd633e586",
+   "group": "8 tracks",
+   "name": "The entry of the function that takes an undo snapshot."
+  },
+  {
+   "address": "0x11a0825e",
+   "length": 8,
+   "sum": "0xb98515a5",
+   "group": "8 tracks",
+   "name": "In the tape's audio driver: the call that reads a block of tape."
+  },
+  {
+   "address": "0x11a0829a",
+   "length": 8,
+   "sum": "0x0286c9a3",
+   "group": "8 tracks",
+   "name": "In the tape's audio driver: the call of the tape mixer."
+  },
+  {
+   "address": "0x8c0c3be2",
+   "length": 8,
+   "sum": "0xcbf68a07",
+   "group": "8 tracks",
+   "name": "The entry of the tape controller's key-down handler."
+  },
+  {
+   "address": "0x8c0c4422",
+   "length": 8,
+   "sum": "0x957f02a7",
+   "group": "8 tracks",
+   "name": "The entry of the tape controller's handler for a key pressed with shift."
+  },
+  {
+   "address": "0x8d514348",
+   "length": 8,
+   "sum": "0xcd06f979",
+   "group": "8 tracks",
+   "name": "The entry of the getter the screens ask for the selected track."
+  },
+  {
+   "address": "0x8d4ed7a6",
+   "length": 8,
+   "sum": "0x50b28802",
+   "group": "8 tracks",
+   "name": "The entry of the check a clip's record has to pass."
+  },
+  {
+   "address": "0x11a058b8",
+   "length": 8,
+   "sum": "0x5139c3ee",
+   "group": "8 tracks",
+   "name": "In the audio core: the call that gets the selected track's output buffer for input monitoring."
+  },
+  {
+   "address": "0x11a02b60",
+   "length": 8,
+   "sum": "0xe90ef6b6",
+   "group": "8 tracks",
+   "name": "In the audio core, where input monitoring picks the selected track's mixer strip: the load of the selected track's number."
+  },
+  {
+   "address": "0x11a02d3a",
+   "length": 8,
+   "sum": "0xf015c7f7",
+   "group": "8 tracks",
+   "name": "In the audio core, where the selected track's level meter is fed: the load of the selected track's number."
+  },
+  {
+   "address": "0x8c0c1bee",
+   "length": 8,
+   "sum": "0x006c88f2",
+   "group": "8 tracks",
+   "name": "In the function that writes a tape's settings file: the load of the selected track's number."
+  },
+  {
+   "address": "0x8fc21bac",
+   "length": 8,
+   "sum": "0xc551714d",
+   "group": "8 tracks",
+   "name": "The entry of the function that reads audio from a tape track."
+  },
+  {
+   "address": "0x8fc21d1c",
+   "length": 8,
+   "sum": "0xc551714d",
+   "group": "8 tracks",
+   "name": "The entry of the function that writes audio to a tape track."
+  },
+  {
+   "address": "0x8f00a4cc",
+   "length": 8,
+   "sum": "0x911f04ae",
+   "group": "8 tracks",
+   "name": "The entry of the helper that crossfades the start edge of a clip."
+  },
+  {
+   "address": "0x8f00a584",
+   "length": 8,
+   "sum": "0xe9eb747d",
+   "group": "8 tracks",
+   "name": "The entry of the helper that crossfades the end edge of a clip."
+  },
+  {
+   "address": "0x8c0c2e54",
+   "length": 8,
+   "sum": "0xa53e25d0",
+   "group": "8 tracks",
+   "name": "The entry of the tape controller's knob handler."
+  },
+  {
+   "address": "0x8fc8428c",
+   "length": 8,
+   "sum": "0x6e3ad79c",
+   "group": "8 tracks",
+   "name": "In the tape screen's update: where the number of the track shown before is hidden."
+  },
+  {
+   "address": "0x8fc842a0",
+   "length": 8,
+   "sum": "0x9f4e65a3",
+   "group": "8 tracks",
+   "name": "In the tape screen's update: where the number of the selected track is looked up to be shown."
+  },
+  {
+   "address": "0x8d516884",
+   "length": 8,
+   "sum": "0x6e415f42",
+   "group": "8 tracks",
+   "name": "The entry of the getter that says whether a track is unmuted."
+  },
+  {
+   "address": "0x8fc2337c",
+   "length": 8,
+   "sum": "0x171a00d9",
+   "group": "8 tracks",
+   "name": "The entry of the function that marks a stretch of the loop crossfade as loaded."
+  },
+  {
+   "address": "0x8fc23458",
+   "length": 8,
+   "sum": "0xb20ff2ae",
+   "group": "8 tracks",
+   "name": "The entry of the function that marks tracks' loop crossfade as out of date."
+  },
+  {
+   "address": "0x8f01f7d0",
+   "length": 8,
+   "sum": "0x13ae96bb",
+   "group": "8 tracks",
+   "name": "The entry of the function that writes the fade-out at a clip's edge."
+  },
+  {
+   "address": "0x8f01f8e0",
+   "length": 8,
+   "sum": "0xd85441f5",
+   "group": "8 tracks",
+   "name": "The entry of the function that writes the fade-in at a clip's edge."
+  },
+  {
+   "address": "0x8f00c00c",
+   "length": 8,
+   "sum": "0x40b50593",
+   "group": "8 tracks",
+   "name": "The entry of the function that queues a lift."
+  },
+  {
+   "address": "0x8f0209f0",
+   "length": 8,
+   "sum": "0xc9b421ed",
+   "group": "8 tracks",
+   "name": "The entry of the function that lifts audio off a track."
+  },
+  {
+   "address": "0x8f021038",
+   "length": 8,
+   "sum": "0xc4d88876",
+   "group": "8 tracks",
+   "name": "The entry of the function that drops a clip as a copy."
+  },
+  {
+   "address": "0x8f020d90",
+   "length": 8,
+   "sum": "0xf3b056db",
+   "group": "8 tracks",
+   "name": "The entry of the function that drops a clip mixed into what is on the tape."
+  },
+  {
+   "address": "0x8f01f73c",
+   "length": 8,
+   "sum": "0x0490bc68",
+   "group": "8 tracks",
+   "name": "The entry of the function that clears a stretch of a track."
+  },
+  {
+   "address": "0x8f004204",
+   "length": 8,
+   "sum": "0x6e415f42",
+   "group": "8 tracks",
+   "name": "The entry of the function that turns the clipboard into a sample."
+  },
+  {
+   "address": "0x8c0bbef8",
+   "length": 8,
+   "sum": "0x4be482d0",
+   "group": "8 tracks",
+   "name": "The entry of the mixer controller's key-down handler."
+  },
+  {
+   "address": "0x8c0bbe00",
+   "length": 8,
+   "sum": "0x6e415f42",
+   "group": "8 tracks",
+   "name": "The entry of the mixer controller's key-up handler."
+  },
+  {
+   "address": "0x8c0bb9b0",
+   "length": 8,
+   "sum": "0x1d1c8919",
+   "group": "8 tracks",
+   "name": "The entry of the mixer controller's handler for a key pressed with shift."
+  },
+  {
+   "address": "0x8c0bb294",
+   "length": 8,
+   "sum": "0x6a70f92b",
+   "group": "8 tracks",
+   "name": "The entry of the mixer controller's knob handler."
+  },
+  {
+   "address": "0x8fc3023a",
+   "length": 8,
+   "sum": "0x5fba1368",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the call that fetches the tracks' levels and pans."
+  },
+  {
+   "address": "0x8fc30340",
+   "length": 8,
+   "sum": "0x71befb8a",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the load of the address of the four level numbers."
+  },
+  {
+   "address": "0x8fc3039e",
+   "length": 8,
+   "sum": "0x3485b3f4",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the call that asks whether the first track is unmuted, for its colour."
+  },
+  {
+   "address": "0x8fc303fa",
+   "length": 8,
+   "sum": "0x3485b3f4",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the call that asks whether the second track is unmuted, for its colour."
+  },
+  {
+   "address": "0x8fc30440",
+   "length": 8,
+   "sum": "0x3485b3f4",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the call that asks whether the third track is unmuted, for its colour."
+  },
+  {
+   "address": "0x8fc3047c",
+   "length": 8,
+   "sum": "0x3485b3f4",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the call that asks whether the fourth track is unmuted, for its colour."
+  },
+  {
+   "address": "0x8fc304c8",
+   "length": 8,
+   "sum": "0xecf7dbe0",
+   "group": "8 tracks",
+   "name": "In the mixer screen's update: the call that fetches the four meters' values."
+  },
+  {
+   "address": "0x8fc22c84",
+   "length": 8,
+   "sum": "0x3eea4ae4",
+   "group": "8 tracks",
+   "name": "The entry of the function that finds the stretch of tape in which two undo snapshots differ."
+  },
+  {
+   "address": "0x8c0c2676",
+   "length": 8,
+   "sum": "0x9a15d063",
+   "group": "8 tracks",
+   "name": "In the tape controller's lift of every track: the test that ends the loop over the tracks."
+  },
+  {
+   "address": "0x8f00b24c",
+   "length": 8,
+   "sum": "0x02e6e40e",
+   "group": "8 tracks",
+   "name": "The entry of the handler of the command that lifts every track."
+  },
+  {
+   "address": "0x8f00ac78",
+   "length": 8,
+   "sum": "0xec428f6e",
+   "group": "8 tracks",
+   "name": "The entry of the handler of the command that drops every track."
+  },
+  {
+   "address": "0x8f00f96c",
+   "length": 8,
+   "sum": "0x9bcf6068",
+   "group": "8 tracks",
+   "name": "In the handler of MIDI messages for the mixer: the test of the channel."
+  },
+  {
+   "address": "0x8fcaf730",
+   "length": 8,
+   "sum": "0xa5e5801f",
+   "group": "8 tracks",
+   "name": "In the function that fills a tape's folder in the disk mode: the test that ends the loop over the track files."
+  },
+  {
+   "address": "0x8fcbbb86",
+   "length": 8,
+   "sum": "0x9da09958",
+   "group": "8 tracks",
+   "name": "In the disk mode's search of a track file by its name: right behind the comparison with the fourth name."
+  },
+  {
+   "address": "0x8fcbb8b4",
+   "length": 8,
+   "sum": "0x0da7e86a",
+   "group": "8 tracks",
+   "name": "Where the disk mode makes a track file: the test of the track's number."
+  },
+  {
+   "address": "0x8d4fb664",
+   "length": 8,
+   "sum": "0x4b710449",
+   "group": "8 tracks",
+   "name": "In the helper that names a tape's storage: the test of the track's number."
+  },
+  {
+   "address": "0x8fc22750",
+   "length": 8,
+   "sum": "0x9f01fe7e",
+   "group": "8 tracks",
+   "name": "The entry of the function that takes a chunk out of a track's block map."
+  },
+  {
+   "address": "0x8fc2e5bc",
+   "length": 8,
+   "sum": "0x3c064b4b",
+   "group": "8 tracks",
+   "name": "In the help screen's update: the call that asks for the selected track."
+  },
+  {
+   "address": "0x8fc3574e",
+   "length": 8,
+   "sum": "0x3485b3f4",
+   "group": "8 tracks",
+   "name": "In the signal flow screen's update: the call that asks whether the selected track is unmuted."
+  },
+  {
+   "address": "0x8fc35738",
+   "length": 8,
+   "sum": "0xecf7dbe0",
+   "group": "8 tracks",
+   "name": "In the signal flow screen's update: the call that fetches the meters' values."
+  },
+  {
+   "address": "0x8fc82c54",
+   "length": 8,
+   "sum": "0xf728dfbf",
+   "group": "8 tracks",
+   "name": "In the tape screen's overlay that shows while shift is held: the call that draws a clip's outer line."
+  },
+  {
+   "address": "0x8fc82c7e",
+   "length": 8,
+   "sum": "0xf728dfbf",
+   "group": "8 tracks",
+   "name": "In the tape screen's overlay that shows while shift is held: the call that draws a clip's inner line."
+  },
+  {
+   "address": "0x8fc83d00",
+   "length": 8,
+   "sum": "0xeaee9f44",
+   "group": "8 tracks",
+   "name": "In the tape screen's drawing of a clip's bar: the call that fills the bar's rectangle."
+  },
+  {
+   "address": "0x8f009e94",
+   "length": 8,
+   "sum": "0x1ac44c2a",
+   "group": "8 tracks",
+   "name": "The entry of the function that writes the clipboard's file."
+  },
+  {
+   "address": "0x8c0b4a04",
+   "length": 8,
+   "sum": "0xec7395a1",
+   "group": "8 tracks",
+   "name": "In the start-up: the call that loads the clipboard."
+  },
+  {
+   "address": "0x8d4ee340",
+   "length": 8,
+   "sum": "0x9f7d109d",
+   "group": "8 tracks",
+   "name": "Where the tape's list of clips is emptied: the load of the list's name."
+  },
+  {
+   "address": "0x8d4ee506",
+   "length": 8,
+   "sum": "0x9f7d109d",
+   "group": "8 tracks",
+   "name": "Where a clip is added to the tape's list of clips: the load of the list's name."
+  },
+  {
+   "address": "0x8d4ee91c",
+   "length": 8,
+   "sum": "0x9f7d109d",
+   "group": "8 tracks",
+   "name": "Where a clip is changed in the tape's list of clips: the load of the list's name."
+  },
+  {
+   "address": "0x8d4eeeec",
+   "length": 8,
+   "sum": "0x9f7d109d",
+   "group": "8 tracks",
+   "name": "Where a clip is taken out of the tape's list of clips: the load of the list's name."
+  },
+  {
+   "address": "0x8c0b4600",
+   "length": 8,
+   "sum": "0x24b4cc54",
+   "group": "8 tracks",
+   "name": "In the start-up's tape step: the call that loads the tape's clips."
+  },
+  {
+   "address": "0x8c0d6cd0",
+   "length": 8,
+   "sum": "0x24b4cc54",
+   "group": "8 tracks",
+   "name": "In the loading of a tape: the call that loads the tape's clips."
+  },
+  {
+   "address": "0x8c0d6ea0",
+   "length": 8,
+   "sum": "0x790b3215",
+   "group": "8 tracks",
+   "name": "In the tape list: the call that asks how long the highlighted tape is."
+  },
+  {
+   "address": "0x8c0d84ae",
+   "length": 8,
+   "sum": "0x269d869b",
+   "group": "8 tracks",
+   "name": "In the tape list's copy of a tape: the call that copies the tape."
+  }
+ ],
+ "image": [],
+ "tables": [
+  {
+   "file": "8 tracks/build_r4b_8_tracks_table.s",
+   "part": "8 tracks",
+   "symbol": "op1f_boot_table",
+   "entries": [
+    {
+     "address": "0x8fc22eb0",
+     "form": "jump",
+     "target": "op1f_load_block_map",
+     "does": "Replaced by ours, which reads the firmware's file for tracks 1 to 4 and a file of our own for tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc2140c",
+     "form": "jump",
+     "target": "op1f_tape_chunks_init",
+     "does": "Replaced by ours, which lays the cache out for eight tracks."
+    },
+    {
+     "address": "0x8fc217a0",
+     "form": "jump",
+     "target": "op1f_chunks_service",
+     "does": "Replaced by ours, which serves eight tracks."
+    },
+    {
+     "address": "0x8fc224fc",
+     "form": "jump",
+     "target": "op1f_snapshots_reset",
+     "does": "Replaced by ours, which also empties the records of tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc22d70",
+     "form": "jump",
+     "target": "op1f_save_block_map",
+     "does": "Replaced by ours, which writes the firmware's file as the firmware writes it and a file of our own for tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc23128",
+     "form": "jump",
+     "target": "op1f_take_snapshot_ex",
+     "does": "Replaced by ours, which calls the firmware's own snapshot code and carries the records of tracks 5 to 8 along."
+    },
+    {
+     "address": "0x11a0825e",
+     "form": "call",
+     "target": "op1f_read_block_ext",
+     "does": "A call to ours, which makes the firmware's call and then fills the buffers of tracks 5 to 8."
+    },
+    {
+     "address": "0x11a0829a",
+     "form": "call",
+     "target": "op1f_mixer_ext",
+     "does": "A call to ours, which mixes tracks 5 to 8 into the tape's two sums and then makes the firmware's call."
+    },
+    {
+     "address": "0x8c0c3be2",
+     "form": "jump",
+     "target": "op1f_tape_key_down",
+     "room": "op1f_tape_key_down_room",
+     "copies": 8,
+     "does": "A jump to ours. The keys that select tracks 5 to 8 (the tape key held with a track key) are dealt with; every other key goes on in the firmware's handler through a trampoline."
+    },
+    {
+     "address": "0x8c0c4422",
+     "form": "jump",
+     "target": "op1f_tape_shift_key_down",
+     "room": "op1f_tape_shift_key_down_room",
+     "copies": 8,
+     "does": "A jump to ours, which deals with shift and a track key for tracks 5 to 8; everything else goes on in the firmware's handler through a trampoline."
+    },
+    {
+     "address": "0x8d514348",
+     "form": "jump",
+     "target": "op1f_gui_selected_track",
+     "does": "Replaced by ours, which answers with the selected track of all eight."
+    },
+    {
+     "address": "0x8d4ed7a6",
+     "form": "jump",
+     "target": "op1f_clip_valid",
+     "does": "Replaced by ours: the same checks with eight tracks allowed."
+    },
+    {
+     "address": "0x11a058b8",
+     "form": "call",
+     "target": "op1f_track_output",
+     "does": "A call to ours: the firmware's buffer for tracks 1 to 4, a buffer of our own for tracks 5 to 8."
+    },
+    {
+     "address": "0x11a02b60",
+     "form": "call",
+     "target": "op1f_monitor_track_p0",
+     "does": "A call to our stub, which does the load and points the code at our own strip for tracks 5 to 8."
+    },
+    {
+     "address": "0x11a02d3a",
+     "form": "call",
+     "target": "op1f_meter_track_p1",
+     "does": "A call to our stub, which does the load and points the code at our own meter words for tracks 5 to 8."
+    },
+    {
+     "address": "0x8c0c1bee",
+     "form": "call",
+     "target": "op1f_saved_track_r1",
+     "does": "A call to our stub, which does the load and never hands on a track above the fourth, so that the file names no track the original firmware lacks."
+    },
+    {
+     "address": "0x8fc21bac",
+     "form": "jump",
+     "target": "op1f_tape_io_read",
+     "room": "op1f_tape_io_read_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; tracks 5 to 8 are read by our code."
+    },
+    {
+     "address": "0x8fc21d1c",
+     "form": "jump",
+     "target": "op1f_tape_io_write",
+     "room": "op1f_tape_io_write_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; tracks 5 to 8 are written by our code."
+    },
+    {
+     "address": "0x8f00a4cc",
+     "form": "jump",
+     "target": "op1f_xfade_start_edge",
+     "room": "op1f_xfade_start_edge_room",
+     "copies": 8,
+     "does": "A jump to ours, which lets all eight tracks through to the firmware's helper (through a trampoline) and turns any other number away."
+    },
+    {
+     "address": "0x8f00a584",
+     "form": "jump",
+     "target": "op1f_xfade_stop_edge",
+     "room": "op1f_xfade_stop_edge_room",
+     "copies": 8,
+     "does": "A jump to ours, which lets all eight tracks through to the firmware's helper (through a trampoline) and turns any other number away."
+    },
+    {
+     "address": "0x8c0c2e54",
+     "form": "jump",
+     "target": "op1f_tape_encoder",
+     "room": "op1f_tape_encoder_room",
+     "copies": 8,
+     "does": "A jump to ours, which looks at the turn first and goes on in the firmware's handler through a trampoline."
+    },
+    {
+     "address": "0x8fc8428c",
+     "form": "call",
+     "target": "op1f_tape_glyph_off",
+     "does": "A call to our stub, which hides the number through the firmware's table for tracks 1 to 4 and through a table of ours for tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc842a0",
+     "form": "call",
+     "target": "op1f_tape_glyph_on",
+     "does": "A call to our stub, which remembers the track and answers with the firmware's table for tracks 1 to 4 and a table of ours for tracks 5 to 8."
+    },
+    {
+     "address": "0x8d516884",
+     "form": "jump",
+     "target": "op1f_track_unmuted",
+     "does": "Replaced by ours: the firmware's own flag for tracks 1 to 4, ours for tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc2337c",
+     "form": "jump",
+     "target": "op1f_xfade_mark_loaded_range",
+     "does": "Replaced by ours: the same tests for eight tracks."
+    },
+    {
+     "address": "0x8fc23458",
+     "form": "jump",
+     "target": "op1f_xfade_mark_dirty",
+     "does": "Replaced by ours: the same marks for eight tracks."
+    },
+    {
+     "address": "0x8f01f7d0",
+     "form": "jump",
+     "target": "op1f_fade_out",
+     "room": "op1f_fade_out_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; for tracks 5 to 8 our code writes the fade."
+    },
+    {
+     "address": "0x8f01f8e0",
+     "form": "jump",
+     "target": "op1f_fade_in",
+     "room": "op1f_fade_in_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; for tracks 5 to 8 our code writes the fade."
+    },
+    {
+     "address": "0x8f00c00c",
+     "form": "jump",
+     "target": "op1f_post_lift",
+     "room": "op1f_post_lift_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; for tracks 5 to 8 ours makes ready what that function expects and joins it behind its test of the track."
+    },
+    {
+     "address": "0x8f0209f0",
+     "form": "jump",
+     "target": "op1f_lift",
+     "room": "op1f_lift_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; tracks 5 to 8 are lifted by our code."
+    },
+    {
+     "address": "0x8f021038",
+     "form": "jump",
+     "target": "op1f_drop_copy",
+     "room": "op1f_drop_copy_room",
+     "copies": 8,
+     "does": "A jump to ours. A drop between tracks 1 to 4 goes on in the firmware's function through a trampoline; one that touches a track of 5 to 8 is made by our code."
+    },
+    {
+     "address": "0x8f020d90",
+     "form": "jump",
+     "target": "op1f_drop_mix",
+     "room": "op1f_drop_mix_room",
+     "copies": 8,
+     "does": "A jump to ours. A drop between tracks 1 to 4 goes on in the firmware's function through a trampoline; one that touches a track of 5 to 8 is made by our code."
+    },
+    {
+     "address": "0x8f01f73c",
+     "form": "jump",
+     "target": "op1f_clear_range",
+     "room": "op1f_clear_range_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; tracks 5 to 8 are cleared by our code."
+    },
+    {
+     "address": "0x8f004204",
+     "form": "jump",
+     "target": "op1f_clip_to_sample",
+     "room": "op1f_clip_to_sample_room",
+     "copies": 12,
+     "sum": "0xea3ec432",
+     "does": "A jump to ours. A clipboard of tracks 1 to 4 goes on in the firmware's function through a trampoline; one that holds a track of 5 to 8 is turned into the sample by our code."
+    },
+    {
+     "address": "0x8c0bbef8",
+     "form": "jump",
+     "target": "op1f_mixer_key_down",
+     "room": "op1f_mixer_key_down_room",
+     "copies": 8,
+     "does": "A jump to ours, which notes that the mixer key is held (it shows the page of tracks 5 to 8) and goes on in the firmware's handler through a trampoline."
+    },
+    {
+     "address": "0x8c0bbe00",
+     "form": "jump",
+     "target": "op1f_mixer_key_up",
+     "room": "op1f_mixer_key_up_room",
+     "copies": 12,
+     "sum": "0xea3ec432",
+     "does": "A jump to ours, which notes that the mixer key is let go and goes on in the firmware's handler through a trampoline."
+    },
+    {
+     "address": "0x8c0bb9b0",
+     "form": "jump",
+     "target": "op1f_mixer_shift_key_down",
+     "room": "op1f_mixer_shift_key_down_room",
+     "copies": 8,
+     "does": "A jump to ours. While the page of tracks 5 to 8 shows, shift and a track key mutes one of them; otherwise the firmware's handler goes on through a trampoline."
+    },
+    {
+     "address": "0x8c0bb294",
+     "form": "jump",
+     "target": "op1f_mixer_encoder",
+     "room": "op1f_mixer_encoder_room",
+     "copies": 8,
+     "does": "A jump to ours. While the page of tracks 5 to 8 shows, the knobs set their levels and, with shift, their pans; otherwise the firmware's handler goes on through a trampoline."
+    },
+    {
+     "address": "0x8fc3023a",
+     "form": "call",
+     "target": "op1f_mixer_values",
+     "does": "A call to ours: the values of tracks 5 to 8 while their page shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc30340",
+     "form": "call",
+     "target": "op1f_mixer_levels_p4",
+     "does": "A call to our stub: the address of our own numbers while the page of tracks 5 to 8 shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc3039e",
+     "form": "call",
+     "target": "op1f_mixer_track_unmuted",
+     "does": "A call to ours: the answer for track 5 while the page of tracks 5 to 8 shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc303fa",
+     "form": "call",
+     "target": "op1f_mixer_track_unmuted",
+     "does": "A call to ours: the answer for track 6 while the page of tracks 5 to 8 shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc30440",
+     "form": "call",
+     "target": "op1f_mixer_track_unmuted",
+     "does": "A call to ours: the answer for track 7 while the page of tracks 5 to 8 shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc3047c",
+     "form": "call",
+     "target": "op1f_mixer_track_unmuted",
+     "does": "A call to ours: the answer for track 8 while the page of tracks 5 to 8 shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc304c8",
+     "form": "call",
+     "target": "op1f_mixer_vu",
+     "does": "A call to ours: the meters of tracks 5 to 8 while their page shows, the firmware's otherwise."
+    },
+    {
+     "address": "0x8fc22c84",
+     "form": "jump",
+     "target": "op1f_diff_range",
+     "does": "Replaced by ours, which looks at all eight tracks, so that undo and redo reload what changed on tracks 5 to 8 too."
+    },
+    {
+     "address": "0x8c0c2676",
+     "form": "jump",
+     "target": "op1f_lift_all_bound",
+     "does": "A jump to our stub, which makes the test for eight tracks and goes on in the loop."
+    },
+    {
+     "address": "0x8f00b24c",
+     "form": "jump",
+     "target": "op1f_lift_all",
+     "room": "op1f_lift_all_room",
+     "copies": 8,
+     "does": "A jump to ours. A lift of tracks 1 to 4 alone goes on in the firmware's handler through a trampoline; one that takes a track of 5 to 8 is made by our code."
+    },
+    {
+     "address": "0x8f00ac78",
+     "form": "jump",
+     "target": "op1f_drop_all",
+     "room": "op1f_drop_all_room",
+     "copies": 8,
+     "does": "A jump to ours. A drop of tracks 1 to 4 alone goes on in the firmware's handler through a trampoline; one that holds a track of 5 to 8 is made by our code."
+    },
+    {
+     "address": "0x8f00f96c",
+     "form": "jump",
+     "target": "op1f_midi_bound",
+     "does": "A jump to our stub. The first four channels go on in the firmware's handler; the next four set the level, pan or mute of tracks 5 to 8."
+    },
+    {
+     "address": "0x8fcaf730",
+     "form": "jump",
+     "target": "op1f_mtp_populate_bound",
+     "does": "A jump to our stub, which makes the test for eight tracks, so that a tape's folder lists eight track files."
+    },
+    {
+     "address": "0x8fcbbb86",
+     "form": "jump",
+     "target": "op1f_mtp_name_bound",
+     "does": "A jump to our stub, which also takes the names of the track files 5 to 8."
+    },
+    {
+     "address": "0x8fcbb8b4",
+     "form": "jump",
+     "target": "op1f_mtp_file_track_bound",
+     "does": "A jump to our stub, which makes the test for eight tracks."
+    },
+    {
+     "address": "0x8d4fb664",
+     "form": "jump",
+     "target": "op1f_mtp_partition_bound",
+     "does": "A jump to our stub, which makes the test for eight tracks."
+    },
+    {
+     "address": "0x8fc22750",
+     "form": "jump",
+     "target": "op1f_unmap_chunk",
+     "room": "op1f_unmap_chunk_room",
+     "copies": 8,
+     "does": "A jump to ours. Tracks 1 to 4 go on in the firmware's function through a trampoline; for tracks 5 to 8 our code takes the chunk out of our own map."
+    },
+    {
+     "address": "0x8fc2e5bc",
+     "form": "call",
+     "target": "op1f_help_track",
+     "does": "A call to ours, which answers as the firmware's getter does and lights the legend's box of a track of 5 to 8."
+    },
+    {
+     "address": "0x8fc3574e",
+     "form": "call",
+     "target": "op1f_signalflow_unmuted",
+     "does": "A call to ours, which answers for all eight tracks and points the screen's level hint at the right value for tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc35738",
+     "form": "call",
+     "target": "op1f_signalflow_vu",
+     "does": "A call to ours, which makes the firmware's call and then moves the meters of tracks 5 to 8."
+    },
+    {
+     "address": "0x8fc82c54",
+     "form": "call",
+     "target": "op1f_clip_bar_outer",
+     "does": "A call to our stub, which makes the line thinner and half a pixel lower and then makes the firmware's call: eight lanes fit where four stood."
+    },
+    {
+     "address": "0x8fc82c7e",
+     "form": "call",
+     "target": "op1f_clip_bar_inner",
+     "does": "A call to our stub, which makes the line thinner and half a pixel lower and then makes the firmware's call."
+    },
+    {
+     "address": "0x8fc83d00",
+     "form": "call",
+     "target": "op1f_clip_rect",
+     "does": "A call to our stub, which makes the bar five rows high where it was seven and then makes the firmware's call."
+    },
+    {
+     "address": "0x8f009e94",
+     "form": "jump",
+     "target": "op1f_clipboard_write",
+     "does": "Replaced by ours, which writes the file as the firmware writes it for tracks 1 to 4, and a file of our own for what the clipboard holds of tracks 5 to 8."
+    },
+    {
+     "address": "0x8c0b4a04",
+     "form": "call",
+     "target": "op1f_clipboard_load",
+     "does": "A call to ours, which makes the firmware's call and then reads our own file."
+    },
+    {
+     "address": "0x8d4ee340",
+     "form": "call",
+     "target": "op1f_clips_key_clear",
+     "does": "A call to our stub, which has our own list of the clips of tracks 5 to 8 emptied too and then does the load."
+    },
+    {
+     "address": "0x8d4ee506",
+     "form": "call",
+     "target": "op1f_clips_key_push",
+     "does": "A call to our stub, which names the firmware's list for a clip of tracks 1 to 4 and a list of our own for a clip of tracks 5 to 8."
+    },
+    {
+     "address": "0x8d4ee91c",
+     "form": "call",
+     "target": "op1f_clips_key_update",
+     "does": "A call to our stub, which names the firmware's list for a clip of tracks 1 to 4 and a list of our own for a clip of tracks 5 to 8."
+    },
+    {
+     "address": "0x8d4eeeec",
+     "form": "call",
+     "target": "op1f_clips_key_erase",
+     "does": "A call to our stub, which names the firmware's list for a clip of tracks 1 to 4 and a list of our own for a clip of tracks 5 to 8."
+    },
+    {
+     "address": "0x8c0b4600",
+     "form": "call",
+     "target": "op1f_clips_load",
+     "does": "A call to ours, which makes the firmware's call and then loads our own list of the clips of tracks 5 to 8."
+    },
+    {
+     "address": "0x8c0d6cd0",
+     "form": "call",
+     "target": "op1f_clips_load",
+     "does": "A call to ours, which makes the firmware's call and then loads our own list of the clips of tracks 5 to 8."
+    },
+    {
+     "address": "0x8c0d6ea0",
+     "form": "call",
+     "target": "op1f_tape_seconds",
+     "does": "A call to ours, which counts the clips of all eight tracks."
+    },
+    {
+     "address": "0x8c0d84ae",
+     "form": "call",
+     "target": "op1f_tape_clone",
+     "does": "A call to ours, which makes the firmware's call and then copies tracks 5 to 8."
+    }
+   ]
+  }
+ ]
+}

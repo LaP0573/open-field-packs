@@ -1,0 +1,134 @@
+{
+  "about": "Tape tracks 5 to 8: recording, playback, mixing, editing, undo, the disk mode's track files, the screens for eight tracks; and tapes whose files the original firmware still reads. Needs the base (base.pack) and nothing else; works together with the sidechain when that pack is there.",
+  "name": "8 tracks",
+  "version": 10,
+  "interface": 2,
+  "build": "build_r4c_8_tracks",
+  "sources": [
+    "8 tracks/build_b_cache.cpp",
+    "8 tracks/build_b_storage.cpp",
+    "8 tracks/build_l4_fir.s",
+    "8 tracks/build_b_play.cpp",
+    "8 tracks/build_b_record.s",
+    "8 tracks/build_b_record.cpp",
+    "8 tracks/build_b_mix.s",
+    "8 tracks/build_b_mix.cpp",
+    "8 tracks/build_b_xfade.s",
+    "8 tracks/build_b_xfade.cpp",
+    "8 tracks/build_b_edit.s",
+    "8 tracks/build_b_edit.cpp",
+    "8 tracks/build_r4b_mixer.s",
+    "8 tracks/build_r4b_mixer.cpp",
+    "8 tracks/build_r4c_tape_keeps.cpp",
+    "8 tracks/build_d_clip.s",
+    "8 tracks/build_d_clip.cpp",
+    "8 tracks/build_d_mtp.s",
+    "8 tracks/build_d_mtp.cpp",
+    "8 tracks/build_e_screens.s",
+    "8 tracks/build_e_screens.cpp",
+    "8 tracks/build_f_lanes.s",
+    "8 tracks/build_l3_maps.cpp",
+    "8 tracks/build_k_clip.cpp",
+    "8 tracks/build_k_clips.s",
+    "8 tracks/build_k_clips.cpp",
+    "8 tracks/build_k_copy.cpp",
+    "8 tracks/build_k_sums.cpp",
+    "8 tracks/build_r4b_8_tracks_table.s",
+    "8 tracks/build_r4b_8_tracks_frame.cpp",
+    "8 tracks/build_r4c_8_tracks_card.s",
+    "8 tracks/build_r4c_8_tracks_pictures.s",
+    "8 tracks/build_r2_8_tracks_needs.s"
+  ],
+  "works_with": [
+    {
+      "name": "sidechain",
+      "interface": 2,
+      "needed": false
+    }
+  ],
+  "serves": [
+    "sidechain"
+  ],
+  "exports": [],
+  "pictures": [
+    {
+      "name": "tape.svg",
+      "file": "8 tracks/pictures/tape.svg.make"
+    },
+    {
+      "name": "mixer.svg",
+      "file": "8 tracks/pictures/mixer.svg.make"
+    },
+    {
+      "name": "help.svg",
+      "file": "8 tracks/pictures/help.svg.make"
+    },
+    {
+      "name": "signalflow.svg",
+      "file": "8 tracks/pictures/signalflow.svg.make"
+    },
+    {
+      "name": "tape_4track.svg",
+      "file": "8 tracks/pictures/tape_4track.svg.make"
+    },
+    {
+      "name": "tape_vintage.svg",
+      "file": "8 tracks/pictures/tape_vintage.svg.make"
+    },
+    {
+      "name": "tape_cassette.svg",
+      "file": "8 tracks/pictures/tape_cassette.svg.make"
+    },
+    {
+      "name": "tape_minidisk.svg",
+      "file": "8 tracks/pictures/tape_minidisk.svg.make"
+    }
+  ],
+  "card": {
+    "level": 7,
+    "frame": "eight_tracks_frame",
+    "pick": "op1f_art_pick_8_tracks",
+    "pictures": true,
+    "input": null,
+    "folders": [],
+    "asks": [
+      {
+        "kind": "places",
+        "name": "tape-pictures",
+        "names": [
+          "tape.svg",
+          "mixer.svg",
+          "help.svg",
+          "signalflow.svg",
+          "tape_4track.svg",
+          "tape_vintage.svg",
+          "tape_cassette.svg",
+          "tape_minidisk.svg"
+        ]
+      },
+      {
+        "kind": "keeps",
+        "name": "tape",
+        "changed": "op1f_tape_keeps_changed",
+        "keys": [
+          {
+            "name": "op1f_mixer_ext",
+            "files": [
+              "tape"
+            ]
+          },
+          {
+            "name": "op1f_track",
+            "files": [
+              "tape"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "marks": [],
+  "named": true,
+  "sum": true,
+  "path": null
+}
