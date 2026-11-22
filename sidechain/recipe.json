@@ -1,0 +1,82 @@
+{
+  "about": "One tape track turned down by another, or by the beat, with a page of its own. Needs the base (base.pack) and nothing else. With the pack 8 tracks there it works on eight tracks; without it, on the original four.",
+  "name": "sidechain",
+  "version": 10,
+  "interface": 2,
+  "build": "build_r4c_sidechain",
+  "sources": [
+    "sidechain/build_r4b_duck.cpp",
+    "sidechain/build_r4c_duck_keeps.cpp",
+    "sidechain/build_r4b_duck_alone.s",
+    "sidechain/build_r4b_duck_alone.cpp",
+    "sidechain/build_r4b_sidechain_table.s",
+    "sidechain/build_r4b_sidechain_frame.cpp",
+    "sidechain/build_r4c_sidechain_card.s",
+    "sidechain/build_r4c_sidechain_pictures.s",
+    "sidechain/build_r2_sidechain_needs.s"
+  ],
+  "works_with": [
+    {
+      "name": "8 tracks",
+      "interface": 2,
+      "needed": false
+    }
+  ],
+  "serves": [
+    "8 tracks"
+  ],
+  "exports": [],
+  "pictures": [
+    {
+      "name": "signalflow.svg",
+      "file": "sidechain/pictures/signalflow.svg.make"
+    },
+    {
+      "name": "signalflow4.svg",
+      "file": "sidechain/pictures/signalflow4.svg.make"
+    }
+  ],
+  "card": {
+    "level": 7,
+    "frame": "sidechain_frame",
+    "pick": "op1f_art_pick_sidechain",
+    "pictures": true,
+    "input": null,
+    "folders": [],
+    "asks": [
+      {
+        "kind": "places",
+        "name": "signal-flow",
+        "names": [
+          "signalflow.svg"
+        ]
+      },
+      {
+        "kind": "keeps",
+        "name": "ducks",
+        "changed": "op1f_duck_keeps_changed",
+        "keys": [
+          {
+            "name": "op1f_duck",
+            "files": [
+              "tape"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "marks": [
+    {
+      "site": "0x11a0825e",
+      "away": "8 tracks"
+    },
+    {
+      "site": "0x8fc35738",
+      "away": "8 tracks"
+    }
+  ],
+  "named": true,
+  "sum": true,
+  "path": null
+}

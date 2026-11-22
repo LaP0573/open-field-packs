@@ -1,0 +1,90 @@
+{
+  "about": "Four LFOs on a synth sound, their page and their presets as files. Needs the base (base.pack) and nothing else. With the effect train there, an LFO can turn any wagon; without it, the sound's one effect.",
+  "name": "lfo",
+  "version": 11,
+  "interface": 3,
+  "build": "build_r4c_lfo",
+  "sources": [
+    "lfo/build_i_lfo4.s",
+    "lfo/build_i_lfo4.cpp",
+    "lfo/build_r2_lfopresets.cpp",
+    "lfo/build_j5h_lfo_alone.s",
+    "lfo/build_r4c_lfo_alone.cpp",
+    "lfo/build_r4b_lfo_table.s",
+    "lfo/build_r4c_train_lfo.cpp",
+    "lfo/build_r2_presets_lfo.cpp",
+    "shared/build_r2_move.cpp",
+    "lfo/build_r2_lfo_frame.cpp",
+    "lfo/build_r4c_lfo_card.s",
+    "lfo/build_r4c_lfo_pictures.s",
+    "lfo/build_r2_lfo_needs.s"
+  ],
+  "works_with": [
+    {
+      "name": "fx train",
+      "interface": 3,
+      "needed": false
+    }
+  ],
+  "serves": [
+    "fx train"
+  ],
+  "exports": [],
+  "pictures": [
+    {
+      "name": "fxtrain.svg",
+      "file": "lfo/pictures/fxtrain.svg.make"
+    },
+    {
+      "name": "fxpresets.svg",
+      "file": "shared/pictures/fxpresets.svg.make"
+    },
+    {
+      "name": "fxsave.svg",
+      "file": "shared/pictures/fxsave.svg.make"
+    }
+  ],
+  "card": {
+    "level": 4,
+    "frame": "lfo_frame",
+    "pick": null,
+    "pictures": true,
+    "folders": [
+      {
+        "name": "lfo",
+        "place": "lfo"
+      },
+      {
+        "name": "lfo",
+        "place": "lfomoved",
+        "shown": false
+      }
+    ],
+    "asks": []
+  },
+  "marks": [
+    {
+      "site": "0x84013834",
+      "away": "fx train"
+    },
+    {
+      "site": "0x84013838",
+      "away": "fx train"
+    },
+    {
+      "site": "0x8401383c",
+      "away": "fx train"
+    },
+    {
+      "site": "0x84013840",
+      "away": "fx train"
+    },
+    {
+      "site": "0x11a052b4",
+      "away": "fx train"
+    }
+  ],
+  "named": true,
+  "sum": true,
+  "path": null
+}

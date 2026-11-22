@@ -1,0 +1,9 @@
+# What a build makes (build.py).
+/out/
+/out-*/
+__pycache__/
+*.pyc
+
+# Firmware never goes into this repository, in any form.
+*.ldr
+*.tfw

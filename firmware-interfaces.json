@@ -1,0 +1,245 @@
+{
+ "note": "Our own words for the functions of the firmware that the sources bind, for docs/firmware-interfaces.md (tools/interfaces.py makes the page). For an address: a short name, its group, what the caller hands over and gets back, and the threads our code calls it on. Only what a caller needs is said here; how a function works inside is not (CONTRIBUTING.md, \"Writing about the firmware\"). Every address belongs to OS 1.7.3.",
+ "about": [
+  "This page lists the functions of the firmware that the packs of this repository call, for OS 1.7.3. For each it says where the function stands, what the caller hands over, what comes back and which thread our code calls it on. It says nothing of how a function works inside: that is not needed to call it, and it is not written down in this repository ([CONTRIBUTING.md](https://github.com/LaP0573/open-field/blob/main/CONTRIBUTING.md), \"Writing about the firmware\").",
+  "",
+  "**Every address belongs to one firmware file**, OS 1.7.3. On another version each one has to be found again ([methods](https://github.com/LaP0573/open-field/blob/main/docs/methods.md), \"Moving the work to another firmware version\").",
+  "",
+  "**How a source binds a function.** Two lines: the function's type, and a name for its address. The type is ours; nothing of the firmware is copied.",
+  "",
+  "```cpp",
+  "typedef int (*FileSizeFn)(const char* path);",
+  "#define STOCK_FILE_SIZE ((FileSizeFn)0x8c051f9cu)",
+  "```",
+  "",
+  "**How arguments travel.** The first three go in the registers R0, R1 and R2, the rest on the stack. A result comes back in R0. A function that gives back a structure gets the address for it in P0. The compiler does all of that when the type is right, so a wrong type is a crash: before you bind a function that is not on this page, read how the firmware itself calls it ([methods](https://github.com/LaP0573/open-field/blob/main/docs/methods.md), \"Reading a caller before you bind a function\").",
+  "",
+  "**The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says \"ours\", it names the threads our code calls the function on today; that it is safe on another thread has not been shown."
+ ],
+ "groups": {
+  "log": {
+   "title": "The log",
+   "about": "The unit writes a log into the folder `logs` of its disk. [Methods](https://github.com/LaP0573/open-field/blob/main/docs/methods.md) says how to copy a log off the unit and how to read one."
+  },
+  "files": {
+   "title": "Files on the unit's disk",
+   "about": "A path is a C text, counted from the top of the unit's disk, with no slash in front: `user/pk/kit.pack`. There are two families of calls. Use one family for a file from its open to its close."
+  },
+  "json": {
+   "title": "JSON values and JSON files",
+   "about": "The firmware keeps its settings as JSON, and so does our code. A JSON value is a small object of 12 bytes in memory the caller provides (our code keeps 16). It owns what it holds: make it with `json_ctor`, give it back with `json_dtor`. What `json_at`, `json_get` and `json_lookup` give back is a reference into another value, not a value of the caller's to destroy. A value has a kind: 0 nothing (null), 1 an integer, 2 an unsigned number, 3 a number with a fraction, 4 a text, 5 true or false, 6 an array, 7 an object. A number read from a file has the kind 2 or 3, never 1: do not test for 1, ask `json_int`."
+  },
+  "memory": {
+   "title": "Texts and memory",
+   "about": "Our code has no library of its own: no `malloc`, no `memcpy`, no division by a variable. What it needs of memory it keeps in its own data, or asks of the firmware with the calls below."
+  },
+  "screens": {
+   "title": "Screens, pictures and texts",
+   "about": "A screen of the firmware is an object with a picture: an SVG text, parsed into a document whose parts can be found by their id, shown, hidden, moved and given a text. Our own screens are made the same way."
+  },
+  "keys": {
+   "title": "Keys and the screen that is shown",
+   "about": ""
+  }
+ },
+ "functions": {
+  "0x8c053a20": {
+   "name": "log",
+   "group": "log",
+   "what": "Writes one line into the unit's log. `level`: 3 for a line of information, 2 for a warning, 1 for an error. `file`: a text in the form of a source path; the log shows what stands between its last slash and its dot as the line's tag, so `op1f/mypack.cpp` gives the tag `mypack`. A text without a slash and a dot gives a line with no tag. `line`: a number shown in brackets behind the tag. `format` and the values behind it: as `printf` takes them. A line is cut at about 260 characters, the time and the tag counted.",
+   "thread": "Any thread but the audio thread: keep a count there and print it from a frame function. Ours: the main thread at the start, the display thread, the key thread, the tape's background thread."
+  },
+  "0x8c051f9c": {
+   "name": "file_size",
+   "group": "files",
+   "what": "The size of the file at a path, in bytes; -1 when there is no such file. It writes nothing into the log, so it is the way to ask whether a file is there.",
+   "thread": "Not the audio thread. Ours: the main thread at the start, the display thread, the disk mode's thread."
+  },
+  "0x8fc22180": {
+   "name": "fopen",
+   "group": "files",
+   "what": "The second family, which the tape's code uses. Opens a file with a mode as C has it (`rb`, `w+b`). Gives back a descriptor, which may be 0; a negative number when the open failed, after a line of its own in the log. To ask whether a file is there, use `file_size`, which writes no line.",
+   "thread": "Not the audio thread."
+  },
+  "0x8fc2214c": {
+   "name": "fread",
+   "group": "files",
+   "what": "Reads `count` items of `size` bytes from a file opened with `fopen`. Gives back the number of items read.",
+   "thread": "As `fopen`."
+  },
+  "0x8fc220b8": {
+   "name": "fwrite",
+   "group": "files",
+   "what": "Writes `count` items of `size` bytes to a file opened with `fopen`. Gives back the number of items written, and writes a line into the log itself when it fails.",
+   "thread": "As `fopen`."
+  },
+  "0x8fc220a0": {
+   "name": "fclose",
+   "group": "files",
+   "what": "Closes a file opened with `fopen`.",
+   "thread": "As `fopen`."
+  },
+  "0x8fc222f4": {
+   "name": "rename",
+   "group": "files",
+   "what": "Gives a file another path, over a file that is there already. Our code writes a file under a spare name and renames it over the real one, so that a power cut leaves the old file or the new one, never half of one.",
+   "thread": "As `fopen`."
+  },
+  "0x8fcbc350": {
+   "name": "file_mtime",
+   "group": "files",
+   "what": "A number for when the file was last written; 0 when there is no such file. Our code only compares two such numbers: of two files, the one written later never has the smaller number. What the number counts in has not been established.",
+   "thread": "Not the audio thread."
+  },
+  "0x8c085ba8": {
+   "name": "json_ctor",
+   "group": "json",
+   "what": "Makes a value of a kind in the caller's 12 bytes. Kind 0 makes a null, which becomes an array at its first `json_push`.",
+   "thread": "Not the audio thread. Ours: the main thread at the start, the display thread, the key thread."
+  },
+  "0x8c0844e0": {
+   "name": "json_dtor",
+   "group": "json",
+   "what": "Gives back what a value holds. Call it for every value made with `json_ctor`, and for none that is a reference.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c0534d0": {
+   "name": "json_read_file",
+   "group": "json",
+   "what": "Reads a JSON file and parses it into a value the caller has made. Not 0 when the file was read and parsed.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c053168": {
+   "name": "json_write_file",
+   "group": "json",
+   "what": "Writes a value as a JSON file. The path is a text object of the firmware (`string_ctor` below), not a C text. The file is written under a spare name in the folder `tmp` and then renamed over the target. 0 comes back when that failed: look at the answer, and make the target's folder first.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c084840": {
+   "name": "json_int",
+   "group": "json",
+   "what": "A number as an `int`. It takes all three kinds of number. For any other kind it gives back 0 and writes a line into the log.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c084b94": {
+   "name": "json_bool",
+   "group": "json",
+   "what": "A value of the kind true-or-false as 1 or 0.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c084c22": {
+   "name": "json_size",
+   "group": "json",
+   "what": "How many elements an array has. Ask it of an array only.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c084ee0": {
+   "name": "json_at",
+   "group": "json",
+   "what": "An array's element by its number, from 0: a reference into the array.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c085068": {
+   "name": "json_has",
+   "group": "json",
+   "what": "Not 0 when an object has a member of that name.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c084f74": {
+   "name": "json_get",
+   "group": "json",
+   "what": "An object's member by its name: a reference into the object. Our code asks `json_has` first and never asks for a member that is not there.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c085e84": {
+   "name": "json_lookup",
+   "group": "json",
+   "what": "An object's member by its name, as `json_get` gives it; a member that is not there is made, as a null. The way to add a member: look it up, then assign to it.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c0845b8": {
+   "name": "json_assign",
+   "group": "json",
+   "what": "Gives a value the content of another. The target may be a reference, such as a member got with `json_lookup`.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c085d54": {
+   "name": "json_push",
+   "group": "json",
+   "what": "Puts a copy of a value at an array's end. A null becomes an array at its first push.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c083b1c": {
+   "name": "json_from_int",
+   "group": "json",
+   "what": "Makes a value an integer (the kind 1).",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c083aec": {
+   "name": "json_from_bool",
+   "group": "json",
+   "what": "Makes a value true or false (the kind 5).",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c084430": {
+   "name": "json_from_cstr",
+   "group": "json",
+   "what": "Makes a value a text (the kind 4), copied from a C text.",
+   "thread": "As `json_ctor`."
+  },
+  "0x8c03e434": {
+   "name": "string_ctor",
+   "group": "memory",
+   "what": "Makes a text object of the firmware from a C text, in memory the caller provides (our code keeps 48 zeroed bytes for it). A text of up to fifteen characters lives inside the object, and nothing has to be freed afterwards. Our code keeps its paths that short for this reason: `user/op1f.json` fits, `user/lfo/01.json` does not.",
+   "thread": "Not the audio thread. Ours: the main thread at the start, the display thread, the key thread, the disk mode's thread."
+  },
+  "0x8fcc5a68": {
+   "name": "heap_malloc",
+   "group": "memory",
+   "what": "A block of one of two large heaps that the firmware itself hardly uses, by the heap's number, 0 or 1. Our code takes large blocks there once and keeps them: the tape's cache for tracks 5 to 8 from heap 1, the effect train's private regions from heap 0. Gives back 0 when the heap has no room.",
+   "thread": "Not the audio thread. Ours: the tape's set-up at the start, and the display thread."
+  },
+  "0x8fc25cc0": {
+   "name": "find_node",
+   "group": "screens",
+   "what": "Finds a part of a screen's picture by its id. With `optional` not 0 it gives back 0 for a part that is not there, and our code always asks that way. The screen must have its document: look at the object's second word before you ask.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8c03dbbe": {
+   "name": "apply_matrix",
+   "group": "screens",
+   "what": "Gives a part of a picture a transform: nine words, each a number with ten bits behind the point, `[a, b, 0, c, d, 0, e, f, 1024]`, for x' = a\u00b7x + c\u00b7y + e and y' = b\u00b7x + d\u00b7y + f. Keep the third, sixth and ninth word at 0, 0 and 1024.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8fc25abc": {
+   "name": "label_from_node",
+   "group": "screens",
+   "what": "Turns a part of a picture into a label, an object whose text can be set while the unit runs. The part is a placeholder: it gives the label its place and its colour. The label takes the part's place in the document and comes back; keep it, since the id finds it no more. Our code passes 0 for `kind`: the text then starts at the placeholder's left edge.",
+   "thread": "Ours: the display thread, once for each label."
+  },
+  "0x8fc3aa3c": {
+   "name": "label_text",
+   "group": "screens",
+   "what": "Sets a label's text from a C text. A text wider than `max_width` pixels is shortened and gets a mark at its end. An empty text hides the label. Send small letters and digits: the firmware's font has the letters at the small letters' codes and its own signs at the capitals'. Each call asks the heap for memory, so set a text only when it changes; setting the text a label already has changes nothing.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8fc3820c": {
+   "name": "label_bounds",
+   "group": "screens",
+   "what": "The box of a label's text as it was last laid out: left, right, top and bottom, each a number with ten bits behind the point. It is the box of the shapes without their stroke, so an upright stroke is 0 wide. The box comes back as a structure, by value: bind the function as one that returns the structure, and the compiler hands over the address for it in P0.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8c0b2554": {
+   "name": "request_screen",
+   "group": "keys",
+   "what": "Asks the firmware to show the screen the present mode wants now. The firmware does this itself after every key; our code calls it after a change that no key press follows, such as a timer running out. It takes no argument. From the display thread, call it with interrupts masked for the length of the call: the firmware stops when two threads are inside it at once.",
+   "thread": "Ours: the key thread, and the display thread with interrupts masked."
+  },
+  "0x8fc24ca4": {
+   "name": "shift",
+   "group": "keys",
+   "what": "Not 0 while the shift key is held.",
+   "thread": "Ours: the key thread, the display thread."
+  }
+ }
+}
