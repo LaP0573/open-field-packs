@@ -1,0 +1,17 @@
+{
+ "schema": 2,
+ "id": "op1f-1.7.3-garden",
+ "device": "OP-1 Field",
+ "firmware_version": "1.7.3+0",
+ "module_base": "0x8d2e4234",
+ "reserved_bytes": 2097152,
+ "cpu": "bf703",
+ "stock_sha256": "d134eb1ac7ad88e8370d988329cd5d7419f016005b1d269034f9cf7166fad0ec",
+ "stock_bytes": 2079016,
+ "about": [
+  "Garden changes no place of the firmware: its sequencer is an ask of the base. This profile only says which firmware file and which room the pack is built for."
+ ],
+ "patches": [],
+ "image": [],
+ "tables": []
+}

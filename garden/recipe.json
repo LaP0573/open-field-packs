@@ -1,0 +1,54 @@
+{
+ "about": "A chord player in the unit's own list of sequencers (synth only): the first key held plays a chord on its root as a strum, an arp or a phrase on the sequencer's clock, on four pages (play, rhythm, palette, gardens). Settings in a folder of its own. Needs the base (base.pack) and nothing else; changes no place of the firmware.",
+ "name": "garden",
+ "version": 2,
+ "interface": 1,
+ "build": "garden",
+ "sources": [
+  "garden/articulate.cpp",
+  "garden/garden.cpp",
+  "garden/garden_card.s",
+  "garden/garden_pictures.s"
+ ],
+ "works_with": [],
+ "serves": [],
+ "exports": [],
+ "pictures": [
+  {
+   "name": "garden.svg",
+   "file": "garden/pictures/garden.svg.make"
+  }
+ ],
+ "card": {
+  "level": 6,
+  "frame": "garden_frame",
+  "pick": null,
+  "pictures": true,
+  "input": "garden_input",
+  "folders": [
+   {
+    "name": "garden",
+    "place": "garden",
+    "shown": false
+   }
+  ],
+  "asks": [
+   {
+    "kind": "sequencer",
+    "name": "garden",
+    "synth_only": true,
+    "all_midi": false,
+    "shown": "garden_shown",
+    "tick": "garden_tick",
+    "key": "garden_key",
+    "run": "garden_run",
+    "octave": null,
+    "playing": null
+   }
+  ]
+ },
+ "marks": [],
+ "named": true,
+ "sum": true,
+ "path": null
+}

@@ -6,8 +6,10 @@
     "module/build_q_quiet.h",
     "module/build_r1_card.h",
     "module/build_r4b_card.h",
-    "module/build_r5_card.h"
+    "module/build_r5_card.h",
+    "module/build_m3_card.h",
+    "module/build_r6e_card.h"
   ],
-  "packs": ["8 tracks", "fx train", "lfo", "sidechain"],
+  "packs": ["8 tracks", "fx train", "lfo", "sidechain", "garden", "loopback"],
   "shared": "shared"
 }

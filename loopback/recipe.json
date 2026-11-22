@@ -1,0 +1,41 @@
+{
+ "about": "USB and line input in three states: loopback as stock, wet+dry with the return kept out of USB main, and wet with USB main carrying the dry synth alone, an insert. With the amp engine its sound is the return. A click of the blue knob on the input screen steps them; a click of the gray knob keeps the speaker on with a cable in. Needs the base (base.pack) and nothing else.",
+ "name": "loopback",
+ "version": 2,
+ "interface": 1,
+ "build": "loopback",
+ "sources": [
+  "loopback/loopback.s",
+  "loopback/loopback.cpp",
+  "loopback/loopback_table.s",
+  "loopback/loopback_card.s",
+  "loopback/loopback_pictures.s"
+ ],
+ "works_with": [],
+ "serves": [],
+ "exports": [],
+ "pictures": [
+  {
+   "name": "micline.svg",
+   "file": "loopback/pictures/micline.svg.make"
+  }
+ ],
+ "card": {
+  "level": 3,
+  "frame": "loopback_frame",
+  "pick": null,
+  "pictures": true,
+  "input": "loopback_input",
+  "folders": [
+   {
+    "name": "loopback",
+    "place": "loopback",
+    "shown": false
+   }
+  ]
+ },
+ "marks": [],
+ "named": true,
+ "sum": true,
+ "path": null
+}

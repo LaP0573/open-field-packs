@@ -1,6 +1,6 @@
 # open-field packs
 
-`8 tracks`, `fx train`, `lfo` and `sidechain`: four packs for [open-field](https://github.com/LaP0573/open-field) on an OP-1 Field with OS 1.7.3. Each is here twice: as the finished file you put on your unit, and as everything that file is built from. The files for OS 1.7.0 stay in this repository's history, at commit `03adcba` (the install page for OS 1.7.0 names them there).
+`8 tracks`, `fx train`, `lfo`, `sidechain`, `garden` and `loopback`: six packs for [open-field](https://github.com/LaP0573/open-field) on an OP-1 Field with OS 1.7.3. Each is here twice: as the finished file you put on your unit, and as everything that file is built from. The files for OS 1.7.0 stay in this repository's history, at commit `03adcba` (the install page for OS 1.7.0 names them there).
 
 If you write packs, read them. They use the base the way your pack would, through a card, and they are a good deal bigger than open-field's examples.
 
@@ -18,6 +18,8 @@ If you write packs, read them. They use the base the way your pack would, throug
 | [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 17 | base.pack, level 8 | [`fx train/`](fx%20train) | 508,460 bytes | `d02ff1b4aba79ea3b5cbfd674c178138fa272d71f2dddf7aeffd5dd9656b147d` |
 | [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 11 | base.pack, level 4 | [`lfo/`](lfo) | 430,318 bytes | `62d6464407751dd9556d4e59462e31d7c87acd8b77c6f91682a65f45035baee4` |
 | [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 10 | base.pack, level 7 | [`sidechain/`](sidechain) | 107,850 bytes | `2268639259142f81e703c24d6446e3be74406a6d5ce708b21b964cd8232f723e` |
+| [garden.pack](garden.pack) | A chord player in the sequencer list: chords, strums, arps and phrases on the clock, on four pages. | sequencing | 2 | base.pack, level 6 | [`garden/`](garden) | 374,181 bytes | `514f21fc4c623a9b1bfd953fb87b203f080947a7b9e57d5b3c59e04a5726fa69` |
+| [loopback.pack](loopback.pack) | USB and line input without the loop back to the computer: wet+dry, or wet as an insert, set on the input screen. | tools | 2 | base.pack, level 3 | [`loopback/`](loopback) | 34,309 bytes | `5a1b93f7ade4d363b50634300d276c2c342287243132c857ee24dc33122382ea` |
 
 **`fx train` 17 has not run on a unit yet.** It was built and proven on a computer. `fx train` 16, which has run on one, is [the file at commit `2bcfe6a`](https://github.com/LaP0573/open-field-packs/raw/2bcfe6a7c946357002db0bbee3d2714466b458c3/fx%20train.pack): copy that over it to go back.
 
@@ -38,6 +40,7 @@ The example packs for people who write packs (`wink`, `yoyo`, `list`, `sketch`, 
 | Path | What |
 | --- | --- |
 | `8 tracks/`, `fx train/`, `lfo/`, `sidechain/` | A pack each: its sources, `recipe.json` (what it is built from and what its card asks of the base), `profile.json` (the places of the firmware it changes, in words and checksums, no byte of the firmware), and in `pictures/` the instructions its screens are made by |
+| `garden/`, `loopback/` | The same, and `icon.svg`, the pack's picture for the install page (below) |
 | `shared/` | What `fx train` and `lfo` both use |
 | `open-field.json` | The commit of open-field these are built with, and the four headers taken from it |
 | `build.py` | The build |
@@ -49,6 +52,8 @@ What to read for what, if you came to learn the base:
 - `8 tracks/`: level 7. Values kept with each tape, and pictures that take the place of the unit's. It also shows a pack that has to stand deep in the firmware.
 - `fx train/`: level 8. It runs other packs' effects on its wagons, keeps presets as files in folders of its own, and keeps a train with each sound.
 - `lfo/`: level 4. The smallest set of asks of the four: a call every frame, pictures and folders, and it works with `fx train` when that is there.
+- `garden/`: level 6. A sequencer of its own in the unit's list, its page standing in for the sequencer's screen, and no place of the firmware changed.
+- `loopback/`: level 3. Four places in the audio block and the unit's input screen drawn over.
 - `sidechain/`: level 7. The shortest of the four to read: a page, values kept with each tape, and a partner pack it can do without.
 
 In a comment, a path that begins with `module/` is a file of open-field, or an older form of one of these files that was never published.
@@ -62,6 +67,12 @@ python -I build.py --open-field ../open-field
 ```
 
 It takes the tools and headers from the commit `open-field.json` names, whatever that checkout stands at, builds into `out/`, and says `the same` for each file that comes out byte for byte as kept. The listing of packs, `catalog/packs.json` in open-field, names each file here by commit and SHA-256, and the install page holds every download to it.
+
+## Icons
+
+A pack's folder may hold `icon.svg`: the pack's own picture for the install page, which shows a category's picture today. It is drawn the way the page draws its own: one `<svg viewBox="0 0 120 96">`, its shapes `path`, `circle`, `ellipse`, `rect` and `g`, in the page's ink, and coloured only by the page's classes (`fb`, `fo`, `fr` blue, ochre and red fills, `fi` ink, `fp` paper, `sb`, `sr`, `so` blue, red and ochre strokes, `sl` a light line). No colour of its own, no text, no link, no script, at most 4,096 bytes. Every build holds each one to that, so it reads right in the page's light and dark alike.
+
+A page that draws it needs nothing new from anyone: it lies in the pack's repository beside the pack, at the commit the listing names, and the page loads it from there as it loads the pack, with the category's picture where there is none. The same file works for a pack in any repository the listing names.
 
 ## Changing one
 

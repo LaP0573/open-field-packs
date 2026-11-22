@@ -23,6 +23,9 @@ What it does:
      offer each other names. The run holds each card and each directory of pictures to its recipe;
   4. holds each result to built.json, and to the finished file at the top of this repository.
 
+A pack's folder may hold icon.svg, its picture on the install page. Every build holds it to the form the page's own
+pictures have (see icons below); a pack without one is shown with its category's picture.
+
 Answers 0 when every file is the kept one, 1 when one is not, 2 when it could not build. It writes only under the
 folder --out names, which must be new or empty, and with the two options below.
 
@@ -102,6 +105,46 @@ def put_packs(named, work):
             if os.path.exists(target):
                 raise Problem("%s/%s has the name of a header of open-field" % (named["shared"], name))
             shutil.copyfile(os.path.join(shared, name), target)
+
+
+ICON = "icon.svg"
+ICON_SHAPES = {"path": {"d"}, "circle": {"cx", "cy", "r"}, "ellipse": {"cx", "cy", "rx", "ry"},
+               "rect": {"x", "y", "width", "height", "rx"}, "g": set()}
+ICON_EVERY = {"class", "transform", "stroke-width", "stroke-dasharray", "stroke-opacity"}
+ICON_CLASSES = {"fb", "fo", "fr", "fi", "fp", "sb", "sr", "so", "sl"}     # the install page's own: its blue, ochre, red, ink, paper
+
+
+def held_icons(named):
+    """Each pack's icon.svg, held to the install page's form: one <svg> of 120 x 96, drawn with the page's shapes and
+    classes and no colour, style, text, link or script of its own. [(the pack's folder, what the page draws)]."""
+    import xml.etree.ElementTree as ET
+    found = []
+    for folder in named["packs"]:
+        path = os.path.join(ROOT, folder, ICON)
+        if not os.path.isfile(path):
+            continue
+        data = read(path)
+        if len(data) > 4096:
+            raise Problem("%s/%s is over 4096 bytes" % (folder, ICON))
+        top = ET.fromstring(data)
+        if top.tag != "{http://www.w3.org/2000/svg}svg" or top.attrib != {"viewBox": "0 0 120 96"}:
+            raise Problem("%s/%s: one <svg viewBox=\"0 0 120 96\">, with nothing else on it" % (folder, ICON))
+        for node in top.iter():
+            if node is top:
+                continue
+            tag = node.tag.split("}")[-1]
+            if tag not in ICON_SHAPES:
+                raise Problem("%s/%s: <%s> is not one of the page's shapes" % (folder, ICON, tag))
+            extra = set(node.attrib) - ICON_SHAPES[tag] - ICON_EVERY
+            if extra:
+                raise Problem("%s/%s: <%s> has %s" % (folder, ICON, tag, ", ".join(sorted(extra))))
+            if node.get("class", "fb") not in ICON_CLASSES:
+                raise Problem("%s/%s: class %s is not one of the page's" % (folder, ICON, node.get("class")))
+            if (node.text or "").strip():
+                raise Problem("%s/%s: <%s> holds text" % (folder, ICON, tag))
+        inner = data.decode("utf-8").strip()
+        found.append((folder, inner[inner.index(">") + 1:inner.rindex("</svg>")]))
+    return found
 
 
 def stage(args, out):
@@ -249,6 +292,8 @@ def main(argv=None):
         return 2
     try:
         os.makedirs(out, exist_ok=True)
+        for folder, _ in held_icons(read_json(NAMED)):
+            print("icon      %-22s in the page's form" % folder)
         named, work = stage(args, out)
         with open(os.path.join(out, "build.log"), "w", encoding="utf-8") as log:
             if args.make:

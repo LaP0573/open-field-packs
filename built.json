@@ -16,6 +16,14 @@
   "sidechain.pack": {
    "bytes": 107850,
    "sha256": "2268639259142f81e703c24d6446e3be74406a6d5ce708b21b964cd8232f723e"
+  },
+  "garden.pack": {
+   "bytes": 374181,
+   "sha256": "d863588864a7440db62370f9a4d406b10adac7031dd1ec59a350da2149a6ee6a"
+  },
+  "loopback.pack": {
+   "bytes": 34309,
+   "sha256": "5a1b93f7ade4d363b50634300d276c2c342287243132c857ee24dc33122382ea"
   }
  }
 }
