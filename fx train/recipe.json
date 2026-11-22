@@ -1,9 +1,9 @@
 {
   "about": "Up to four effects on an instrument, shown as a train of four wagons; presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there.",
   "name": "fx train",
-  "version": 16,
+  "version": 17,
   "interface": 3,
-  "build": "build_r6c_fx_train",
+  "build": "build_r6f_fx_train",
   "sources": [
     "fx train/build_h_fx.s",
     "fx train/build_h_fx.cpp",

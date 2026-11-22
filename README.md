@@ -15,9 +15,13 @@ If you write packs, read them. They use the base the way your pack would, throug
 | Pack | What it does | Category | Version | Needs | Sources | Size | SHA-256 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 10 | base.pack, level 7 | [`8 tracks/`](8%20tracks) | 106,548 bytes | `4779bda0d21fc61245aebd1e434011d0c341a91e3ba16f37c759e1264c2da666` |
-| [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 16 | base.pack, level 8 | [`fx train/`](fx%20train) | 505,416 bytes | `bc88433ed295383944bc62d84452db226ea7d35f19565652d3338b3dcd1126ee` |
+| [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 17 | base.pack, level 8 | [`fx train/`](fx%20train) | 508,460 bytes | `d02ff1b4aba79ea3b5cbfd674c178138fa272d71f2dddf7aeffd5dd9656b147d` |
 | [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 11 | base.pack, level 4 | [`lfo/`](lfo) | 430,318 bytes | `62d6464407751dd9556d4e59462e31d7c87acd8b77c6f91682a65f45035baee4` |
 | [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 10 | base.pack, level 7 | [`sidechain/`](sidechain) | 107,850 bytes | `2268639259142f81e703c24d6446e3be74406a6d5ce708b21b964cd8232f723e` |
+
+**`fx train` 17 has not run on a unit yet.** It was built and proven on a computer. `fx train` 16, which has run on one, is [the file at commit `2bcfe6a`](https://github.com/LaP0573/open-field-packs/raw/2bcfe6a7c946357002db0bbee3d2714466b458c3/fx%20train.pack): copy that over it to go back.
+
+One case is known in `fx train` 17. If you turn the first wagon's knob and press another sound's key before the turn has taken effect (about 0.15 seconds), and that happens twice, first on a turn to none, the train can play a different effect than it shows and run past its limit. Turn that knob to an effect that fits, or hold it to switch the wagon off.
 
 `base.pack`, the shared pack every other one needs, is not here: it lies beside the install page in the open-field repository (`builder/base.pack`), and the install page puts it on every unit it installs.
 
@@ -77,7 +81,11 @@ Put the new version, size and SHA-256 into the table at the top of this page too
 
 A pull request is welcome here. Say what you tried on a unit and what you did not. open-field's [rules for a change](https://github.com/LaP0573/open-field/blob/main/CONTRIBUTING.md) hold here too, the first above all: nothing of the firmware goes into this repository, not a file, not a log, not a few bytes in a comment.
 
-A file here changes only with a new version of its pack, or when open-field moves to another firmware (the same version, built for the new firmware), built and tried on a unit first.
+A file here changes only with a new version of its pack, or when open-field moves to another firmware (the same version, built for the new firmware). It is tried on a unit first, or this page says that it was not.
+
+## Credits
+
+`fx train` 17's fix of the cost ceiling (a turn that goes on to the next effect that fits, and a hold that is held to the ceiling) is from [open-field's pull request 8](https://github.com/LaP0573/open-field/pull/8), by [hooligan333](https://github.com/hooligan333).
 
 ## Licence
 

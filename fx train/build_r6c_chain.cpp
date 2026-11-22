@@ -1,4 +1,36 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-22: the pack `fx train` version 17: fx train 16's chain unit
+// with the cost ceiling kept at a turn and at a hold, and nothing else. The two faults, the mend and what keeps the first
+// wagon right at a coupling are from https://github.com/LaP0573/open-field/pull/8, by hooligan333 on GitHub. Built here is the plainer form that
+// pull request offers beside the one it proposes, with the effects of other packs (level 8) counted as well.
+//
+//   * A turn goes on. A turn of a wagon's knob goes past every effect that would put the train over the ceiling, to the
+//     next one that fits. The refusal (FULL, the red needle, the name in red) shows only where none fits up to the end
+//     of the list, and it names the first one passed. A pick that lands ends that wagon's refusal at once. fx train 16
+//     stopped at the first effect over the ceiling, so the effects behind it could not be reached. On the first wagon,
+//     where the sound rides a pack's effect until the knob's rest, the effect of the unit's it stands on brings that
+//     effect back: such a pick has to fit as both, by its own cost and by what the pack's effect declares, and a turn
+//     that has passed an effect since its last rest goes by it, where it would else go no further.
+//   * A hold is held to the ceiling. A coupling that would put the train over it is refused as a pick is: the wagon stays
+//     uncoupled, nothing is written, and the refusal shows. A pack's effect counts what it declares, the first wagon's
+//     ride too; one whose pack is away counts nothing. Uncoupling, and coupling an empty wagon, always go through.
+//   * A coupling switches nothing on that was not counted. The first wagon's switch and document follow at once, but
+//     while the unit's slot still holds another effect, or waits for a pack's: then the knob's rest brings the effect
+//     and its switch together. An empty first wagon is an effect switched off to the unit, and the switch it is owed
+//     comes with the effect it is given, or goes to the wagon a tap makes the first one, whose own coupling decides it.
+//     Where the unit's own list gives that effect, its pick switches the slot on alone: the document follows it, however
+//     many picks the list makes on the way. Another sound's key inside a rest is given what is owed before it is left.
+//     Another wagon that still runs the effect of before its last pick falls silent
+//     until the rest makes its own. As before, a wagon waiting for its rest runs its effect of before until then (the
+//     first wagon's is counted for as long as it runs, also where another sound's key has dropped that pick), and a
+//     train loaded from a file and a tap that makes another wagon the first one are not held to the ceiling.
+//   * One case is known and left. A first wagon turned to none whose pick another sound's key drops counts nothing while
+//     the effect of before is still in its place. Filled up beside it, then turned to an effect and dropped the same way,
+//     the train runs over the ceiling (251,300 at punch, punch, mother, nitro) until that wagon lands a pick or is
+//     switched off.
+//
+// What fx train 16's unit said follows and holds, but where these words say otherwise.
+//
 // Base 29's try on a unit, the mend of its crash (2026-11-21): the pack `fx train` version 16: fx train 15's chain unit
 // (fx train 15's chain unit, which stays as it was) with two changes and nothing else.
 //
@@ -1433,6 +1465,32 @@ static void mirror_document(int host, u32 slot, const Wagon* w, const char* why)
 // slot runs another effect, it takes the wagon's type, parameters and coupling, and the producer is rebuilt as the
 // browser does it, in the host's own mode only (the producer storage is shared by the synth and the drum; stock
 // rebuilds from the type word otherwise).
+static u8 switch_owed[HOSTS][SLOTS];                           // 17: 1 + the knob of the first wagon coupled while its switch was left to the rest (empty, or the slot another effect's); 0 none
+static u8 document_owed[HOSTS][SLOTS];                         // 17: 1 + the first wagon's knob where an effect came over a switch owed with the document saying off; 0 none
+// 17: the switch owed, given: the slot's and its document's.
+static void switch_give(int host, u32 slot) {
+    switch_owed[host][slot] = 0;
+    document_owed[host][slot] = 0;
+    WR8(HOST[host].fx_active + slot, 1);
+    STOCK_SET_ACTIVE_DOC((void*)patch_record(host, slot), 1);
+}
+
+// 17: the document owed, given once the slot's switch is found on (the unit's list switches the slot on and not its document).
+static void document_give(int host, u32 slot, int knob) {
+    if (document_owed[host][slot] != knob + 1 || !RD8(HOST[host].fx_active + slot)) return;
+    document_owed[host][slot] = 0;
+    STOCK_SET_ACTIVE_DOC((void*)patch_record(host, slot), 1);
+}
+
+// 17: the sound slot left at a change of slot, which drops a push that waits: what is owed is given first.
+static void switch_leave(int host, u32 slot) {
+    int knob = mirror[host][slot];
+    const Wagon* w = &wagons[host][slot][knob];
+    if (w->type < 0 || rack_name[host][slot][knob][0] || slot_type(host, slot) != w->type) return;
+    if (switch_owed[host][slot] == knob + 1 && w->coupled && st.push_pending[host]) switch_give(host, slot);
+    document_give(host, slot, knob);
+}
+
 static void mirror_silent(int host, u32 slot);
 static void mirror_push(int host, u32 slot) {
     int knob = mirror[host][slot];
@@ -1444,11 +1502,13 @@ static void mirror_push(int host, u32 slot) {
     if (w->type >= 0) {
         if (slot_type(host, slot) == w->type) {
             slot_read_params(host, slot, w->params);
+            if (switch_owed[host][slot] == knob + 1 && w->coupled) switch_give(host, slot);   // 17: the switch a hold left to this rest, not read back as off
             w->coupled = RD8(HOST[host].fx_active + slot) ? 1 : 0;
         } else {
             slot_put(host, slot, w->type, w->params, w->coupled);                   // R6c: the firmware's order, the object made before the document
             mirror_document(host, slot, w, "push");                                 // H6c: the document too
         }
+        switch_owed[host][slot] = 0;
     } else {
         WR8(HOST[host].fx_active + slot, 0);
         if (doc_fx_active((void*)(patch_record(host, slot) + 8))) STOCK_SET_ACTIVE_DOC((void*)patch_record(host, slot), 0);   // H6c: an empty mirror wagon is an inactive effect in the document as well
@@ -1494,6 +1554,8 @@ static void mirror_ride(int host, u32 slot, int keep) {
     int coupled = w->coupled;
     rack_name[host][slot][knob][0] = 0;
     wish_from_pick[host][slot] = 0;
+    switch_owed[host][slot] = 0;                               // 17: the ride brings the wagon's own switch
+    document_owed[host][slot] = 0;
     void* record = (void*)patch_record(host, slot);
     STOCK_PICK(record, (int)e->id);
     w = &wagons[host][slot][mirror[host][slot]];
@@ -1581,7 +1643,20 @@ static u32 cargo_cost(int type, const char* name, int coupled) {
     return COST_MAX[type];
 }
 
+// 17: what runs in the first wagon's place now: the slot's producer, which is the effect of before until a pick's rest
+// and for as long as a dropped pick leaves it there. A ride counts what it declares.
+static const Op1fRackEntry* mirror_riding(int host, u32 slot);
+static u32 mirror_runs(int host, u32 slot) {
+    if (wagons[host][slot][mirror[host][slot]].type < 0 || !RD8(HOST[host].fx_active + slot)) return 0;
+    int type = slot_type(host, slot);
+    if (type < 0 || type >= TYPES) return 0;
+    const Op1fRackEntry* riding = mirror_riding(host, slot);
+    return riding && rack_rides(riding) == type ? riding->effect->cycles : COST_MAX[type];
+}
+
 static u32 chain_cost(int host, u32 slot, int except_knob, int with_type, int with_cycles) {
+    // 17: at a turn or a hold (a knob left out) the first wagon counts no less than what runs there; the needle (none
+    // left out) says what the wagons show
     u32 sum = 0;
     for (int k = 0; k < WAGONS; ++k) {
         const Wagon* w = &wagons[host][slot][k];
@@ -1589,7 +1664,12 @@ static u32 chain_cost(int host, u32 slot, int except_knob, int with_type, int wi
             if (with_type >= 0 && with_type < TYPES) sum += with_cycles >= 0 ? (u32)with_cycles : COST_MAX[with_type];
             continue;
         }
-        sum += cargo_cost(w->type, cargo_name(host, slot, k), w->coupled);
+        u32 cost = cargo_cost(w->type, cargo_name(host, slot, k), w->coupled);
+        if (except_knob >= 0 && k == mirror[host][slot]) {                   // 17
+            u32 runs = mirror_runs(host, slot);
+            if (runs > cost) cost = runs;
+        }
+        sum += cost;
     }
     return sum;
 }
@@ -1674,8 +1754,32 @@ static int cargo_index(int host, u32 slot, int knob, const signed char* items, i
     return name ? count : 0;
 }
 
-// A turn of the wagon's knob: the next or previous effect in the browser's order, skipping the picks over the ceiling
-// (and, without the regions of H4, the types another wagon carries); the label changes at once, the instance after
+// 17: the pack's effect the first wagon's place rides as the base has it (the frame's op1f_rack_at), whatever a turn
+// not yet at rest has made of the wagon's type. A pick of the effect it stands on brings it back until that rest.
+static const Op1fRackEntry* mirror_riding(int host, u32 slot) {
+    u32 id = mirror_ride_id[host];
+    if (id == 0 || mirror_ride_slot[host] != slot) return 0;
+    for (u32 i = 0; i < rack_entry_count; ++i) {
+        const Op1fRackEntry* e = rack_entry(i);
+        if (e && e->id == id) return e;
+    }
+    return 0;
+}
+
+static u8 turn_passed[HOSTS][WAGONS];                          // 17: the knob's turn has passed an effect since its last rest
+
+// A refused pick or coupling: the page names the effect in red for a second, with FULL and the red needle (H3).
+static void refuse(int host, int knob, int type, const char* name) {
+    ++st.refusals;
+    st.flash_until[host] = (int)st.frames + FLASH_FRAMES;
+    st.refused_knob[host] = knob;
+    st.refused_type[host] = type;
+    name_put(rk.refused_name[host], name);
+}
+
+// A turn of the wagon's knob: the next or previous effect in the browser's order, going on past the picks over the
+// ceiling to the next that fits, the refusal only where none does up to the list's end (fx train 17), and past, without
+// the regions of H4, the types another wagon carries; the label changes at once, the instance after
 // the knob's rest. R5: past the unit's own eleven, every registered effect, in the list's order: the wagon takes the
 // effect it stands on as its type and the pack's start values as its four words (a stock effect's remembered words are
 // for that effect alone); on the first wagon the pack's effect is a wish the frame turns into a ride after the rest.
@@ -1687,9 +1791,13 @@ static void pick(int host, int knob, int delta) {
     int end = order_count[now];
     int index = cargo_index(host, slot, knob, items, end);
     int step = delta > 0 ? 1 : -1;
+    int passed = NONE;                                                       // 17: the first pick passed for the ceiling, its type
+    const Op1fRackEntry* passed_entry = 0;                                   // and its pack's effect, if it is one
+    const Op1fRackEntry* riding = knob == mirror[host][slot] ? mirror_riding(host, slot) : 0;
+    if ((int)st.frames - st.pending_since[host][knob] >= REST_FRAMES) turn_passed[host][knob] = 0;
     for (int tries = 0; tries < end + 1; ++tries) {
         index += step;
-        if (index < 0 || index >= end) return;                               // the ends of the list
+        if (index < 0 || index >= end) break;                                // the ends of the list
         const Op1fRackEntry* e = 0;
         int type = items[index];
         if (type >= ORDER_RACK) {
@@ -1699,14 +1807,20 @@ static void pick(int host, int knob, int delta) {
             if (type < 0) continue;                                          // not one a pack's effect may stand on (the base refuses such)
         }
         if (!e && type >= 0 && type_in_use(host, slot, type, knob)) continue;
-        if (type >= 0 && chain_cost(host, slot, knob, type, e ? (int)e->effect->cycles : -1) > CEILING_CYCLES) {
-            ++st.refusals;
-            st.flash_until[host] = (int)st.frames + FLASH_FRAMES;
-            st.refused_knob[host] = knob;                                        // the page sags this wagon and names the pick in red (H3)
-            st.refused_type[host] = type;
-            name_put(rk.refused_name[host], rack_name_of(e));
-            return;
+        int back = !e && type >= 0 && riding && type == rack_rides(riding);  // 17: such a pick brings the ride back
+        const Op1fRackEntry* over_as = e;
+        int over = type >= 0 && chain_cost(host, slot, knob, type, e ? (int)e->effect->cycles : -1) > CEILING_CYCLES;
+        if (!over && back && chain_cost(host, slot, knob, type, (int)riding->effect->cycles) > CEILING_CYCLES) {
+            over = 1;                                                        // 17: and it has to fit as that too
+            over_as = riding;
         }
+        if (over) {
+            if (passed == NONE) { passed = type; passed_entry = over_as; }
+            turn_passed[host][knob] = 1;
+            continue;                                                        // 17: on to the next that fits
+        }
+        if (back && turn_passed[host][knob]) continue;                       // 17: no pick of it ends the ride, and the turn would stop there
+        if (st.refused_knob[host] == knob) st.flash_until[host] = (int)st.frames;     // 17: this wagon's refusal is over
         remember(host, slot, knob, w);
         w->type = type;
         if (e) {
@@ -1726,6 +1840,7 @@ static void pick(int host, int knob, int delta) {
         mark_dirty(host);
         return;
     }
+    if (passed != NONE) refuse(host, knob, passed, rack_name_of(passed_entry));   // 17: none that fits up to the list's end
 }
 
 static void move_wagon(int host, int knob, int delta) {
@@ -1745,14 +1860,49 @@ static void move_wagon(int host, int knob, int delta) {
     mark_dirty(host);
 }
 
+// 17: a wagon switched on or off. The first wagon's switch and document follow at once; but a coupling while the slot
+// still holds another effect, or a pack's effect waits to be given, is left to the push and the ride at the knob's rest,
+// which bring the effect and its switch together. Another wagon coupled while its Live is still the effect of before
+// its last pick is unpublished until the rest builds its own: no effect runs that the ceiling did not count.
+static void couple(int host, u32 slot, int knob, int coupled) {
+    Wagon* w = &wagons[host][slot][knob];
+    const char* wish = rack_name[host][slot][knob];
+    w->coupled = coupled ? 1 : 0;
+    if (knob == mirror[host][slot]) {
+        int owed = coupled && (w->type < 0 || slot_type(host, slot) != w->type || wish[0]);
+        if (!coupled || w->type < 0 || (slot_type(host, slot) == w->type && !wish[0])) {
+            int active = w->type >= 0 && w->coupled;                         // an empty first wagon is an effect switched off to the unit
+            WR8(HOST[host].fx_active + slot, active);
+            STOCK_SET_ACTIVE_DOC((void*)patch_record(host, slot), active);
+        }
+        switch_owed[host][slot] = owed ? (u8)(knob + 1) : 0;                 // what is left to the rest, the empty wagon's switch too
+        document_owed[host][slot] = 0;
+    } else if (coupled) {
+        Live* l = &live[host][knob];
+        if (l->type != w->type || !name_same(l->rack_name, wish)) {
+            l->obj = 0;
+            asm volatile("" ::: "memory");
+            l->rack = 0;
+            l->rack_name[0] = 0;
+            l->type = NONE;
+        }
+    }
+}
+
+// A hold of the wagon's knob couples or uncouples it. 17: a coupling is held to the ceiling as a pick is, a pack's
+// effect by what it declares: over it the wagon stays uncoupled, nothing is written and the refusal shows. Uncoupling
+// and coupling an empty wagon always go through.
 static void set_coupled(int host, int knob, int coupled) {
     u32 slot = gui_slot(host);
     Wagon* w = &wagons[host][slot][knob];
-    w->coupled = coupled ? 1 : 0;
-    if (knob == mirror[host][slot]) {
-        WR8(HOST[host].fx_active + slot, w->coupled);
-        STOCK_SET_ACTIVE_DOC((void*)patch_record(host, slot), w->coupled);
+    if (coupled && !w->coupled && w->type >= 0 && w->type < TYPES) {
+        const char* name = cargo_name(host, slot, knob);
+        if (chain_cost(host, slot, knob, w->type, (int)cargo_cost(w->type, name, 1)) > CEILING_CYCLES) {
+            refuse(host, knob, w->type, name);
+            return;
+        }
     }
+    couple(host, slot, knob, coupled);
     mark_dirty(host);
 }
 
@@ -1817,6 +1967,7 @@ static void open_wagon_page(void* self, int host, int knob) {
             ++rk.converts;
         }
         mirror[host][slot] = (u8)knob;
+        if (switch_owed[host][slot]) switch_owed[host][slot] = (u8)(knob + 1);   // 17: the slot's "off" was the empty wagon's: the one tapped brings its own switch
         live[host][knob].obj = 0;                                            // the mirror runs through stock's producer
         live[host][knob].rack = 0;
         live[host][knob].rack_name[0] = 0;
@@ -2398,6 +2549,8 @@ static void chain_from_values(int host, u32 slot, const int* values, char (*name
     mirror[host][slot] = (u8)(values[n++] & 3);
     doc_type[host][slot] = values[n++];
     wish_from_pick[host][slot] = 0;
+    switch_owed[host][slot] = 0;                               // 17
+    document_owed[host][slot] = 0;
     int knobs[WAGONS];
     for (int p = 0; p < WAGONS; ++p) knobs[p] = values[n++] & 3;
     for (int k = 0; k < WAGONS; ++k) {
@@ -3383,6 +3536,8 @@ static void chain_defaults(int host, u32 slot, void* doc, int dt) {
     int knobs[WAGONS] = { 0, 1, 2, 3 };
     set_order(host, slot, knobs);
     mirror[host][slot] = 0;
+    switch_owed[host][slot] = 0;                               // 17
+    document_owed[host][slot] = 0;
     Wagon* first = &wagons[host][slot][0];
     first->type = dt;
     first->coupled = doc_fx_active(doc);
@@ -3489,6 +3644,8 @@ static void reconcile(int host, u32 slot, const char* why, int told = 0) {
         rack_name[host][slot][m][0] = 0;                             // R5: the document brought an effect: a pack's wished on the first wagon is let go
         mw->type = dt;
         mw->coupled = doc_fx_active(doc);
+        document_owed[host][slot] = (switch_owed[host][slot] || document_owed[host][slot]) && !mw->coupled ? (u8)(m + 1) : 0;   // 17: the empty wagon's "off" still stands in it, from pick to pick
+        switch_owed[host][slot] = 0;                             // 17: the document's switch
         if (dt >= 0) doc_fx_params(doc, mw->params); else for (int i = 0; i < PARAMS; ++i) mw->params[i] = 0;
         dedupe(host, slot, m, dt);
         doc_type[host][slot] = dt;
@@ -3686,6 +3843,7 @@ static void frame_host(int host) {
     if (!initialised[host][slot]) return;                                   // the record not loaded yet: stock's producer runs as stock's (chain_ready stays 0)
     // a new current slot: its chain goes live
     if (st.current_slot[host] != (int)slot) {
+        if (st.current_slot[host] >= 0) switch_leave(host, (u32)st.current_slot[host]);   // 17
         st.current_slot[host] = (int)slot;
         chain_ready[host] = 0;
         for (int k = 0; k < WAGONS; ++k) {
@@ -3750,6 +3908,7 @@ static void frame_host(int host) {
                 mw->coupled = active;
                 mark_dirty(host);
             }
+            document_give(host, slot, m);                                       // 17: whenever the switch is found on
         }
     }
     // the other wagons' picks after the knob's rest (R5: a pack's effect put on or taken off a wagon, or another one)
@@ -3771,10 +3930,12 @@ static void frame_host(int host) {
             if (st.press_shift[host][k]) reset_params(host, k);
             else {
                 ++st.holds;
-                int coupled = !wagons[host][slot][k].coupled;
-                set_coupled(host, k, coupled);
+                int wanted = !wagons[host][slot][k].coupled;
+                set_coupled(host, k, wanted);
+                int coupled = wagons[host][slot][k].coupled;                       // 17: as it stands: a coupling over the ceiling is refused
                 int gap = st.press_ms[host][k] - st.last_turn_ms[host][k];         // H3b: every hold logged with the turn before it, for the read-out (H4b: in ms)
-                STOCK_LOG(3, LOG_FILE, 8, "chain hold: knob %d %s, the last turn %d ms before the press", k, coupled ? "coupled" : "uncoupled", gap > 99999 ? 99999 : gap);
+                STOCK_LOG(3, LOG_FILE, 8, "chain hold: knob %d %s, the last turn %d ms before the press", k,
+                          coupled ? "coupled" : wanted ? "refused, over the ceiling" : "uncoupled", gap > 99999 ? 99999 : gap);
             }
         }
     }
