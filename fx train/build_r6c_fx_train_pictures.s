@@ -9,7 +9,7 @@
 .global op1f_art_fx_train
 .type op1f_art_fx_train, STT_OBJECT
 op1f_art_fx_train:
-    .long 0x31545241, 8, 356824, 16
+    .long 0x31545241, 8, 356824, 17
     .ascii "fx train"
     .fill 8, 1, 0
 .global op1f_art_fx_train_path

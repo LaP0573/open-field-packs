@@ -22,7 +22,7 @@ op1f_card_fx_train_level:
 .global op1f_card_fx_train
 .type op1f_card_fx_train, STT_OBJECT
 op1f_card_fx_train:
-    .long 0x44524143, 64, 8, 16
+    .long 0x44524143, 64, 8, 17
     .ascii "fx train"
     .fill 8, 1, 0
     .long fx_train_frame
