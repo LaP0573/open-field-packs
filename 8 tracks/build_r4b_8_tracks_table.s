@@ -81,6 +81,8 @@ op1f_boot_table:
     .long 0x00000012, 0x8c0d6cd0, op1f_clips_load, 0x24b4cc54, 0    /* A call to ours, which makes the firmware's call and then loads our own list of the clips of tracks 5 to 8. */
     .long 0x00000012, 0x8c0d6ea0, op1f_tape_seconds, 0x790b3215, 0    /* A call to ours, which counts the clips of all eight tracks. */
     .long 0x00000012, 0x8c0d84ae, op1f_tape_clone, 0x269d869b, 0    /* A call to ours, which makes the firmware's call and then copies tracks 5 to 8. */
+    .long 0x00000011, 0x11a0820c, op1f_solo_block, 0x0ac8dd2d, 0    /* A call to ours, which makes the firmware's call and then applies the same solo over tracks 1 to 8: a track 5 to 8 held with the tape key solos too, and a solo leaves out tracks 5 to 8 that are not held. */
+    .long 0x00000010, 0x84010250, op1f_tape_key_up, 0x5ec95481, 0    /* Ours notes that a track key held with the tape key is let go, which ends the solo of its track 5 to 8; the firmware's own handler then runs for every key. */
 .size op1f_boot_table, .-op1f_boot_table
 .global op1f_boot_table_end
 .type op1f_boot_table_end, STT_OBJECT

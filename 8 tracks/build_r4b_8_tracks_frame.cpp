@@ -1,4 +1,8 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// Step R6g, the pack 8 tracks (version 11), edited in place: where the solo unit (build_r6g_solo.cpp) is linked,
+// its guard once a frame (op1f_solo_frame with the frame's mode: no hold of tracks 5-8 outlives the tape) and the line
+// `ext solo:` (tag 16) after `ext rec:`, its counts in the gate's word. Without that unit nothing changes.
+//
 // Step R4b, the pack 8 tracks (version 9): 8 tracks 8's frame unit with one call more, and nothing else
 // changed: at the head of each frame, op1f_tape_keeps_frame (8 tracks 9's values unit), which reads tracks 5 to
 // 8's strip and the selected track from a tape the base has just told of, and keeps the base's values of the tape
@@ -95,6 +99,14 @@ extern "C" u32 op1f_tape_free_chunks OP1F_NAMED("op1f_tape_free_chunks");
 extern "C" void op1f_sums_frame() OP1F_NAMED("op1f_sums_frame");
 extern "C" void op1f_xmap_frame() OP1F_NAMED("op1f_xmap_frame");
 extern "C" void op1f_tape_keeps_frame() OP1F_NAMED("op1f_tape_keeps_frame");   // R4b: the tape's values through level 7
+// R6g (8 tracks 11, build_r6g_solo.cpp): the hold-to-solo of tracks 5-8, LaP0573/open-field#6. Weak, so a link
+// without that unit is as before: no guard, no line.
+extern "C" void OP1F_WEAK op1f_solo_frame(unsigned mode) OP1F_NAMED("op1f_solo_frame");
+extern "C" u32 OP1F_WEAK op1f_ext_solo_holds OP1F_NAMED("op1f_ext_solo_holds");
+extern "C" u32 OP1F_WEAK op1f_ext_solo_ends OP1F_NAMED("op1f_ext_solo_ends");
+extern "C" u32 OP1F_WEAK op1f_ext_solo_drops OP1F_NAMED("op1f_ext_solo_drops");
+extern "C" u32 OP1F_WEAK op1f_ext_solo_blocks OP1F_NAMED("op1f_ext_solo_blocks");
+extern "C" u32 OP1F_WEAK op1f_ext_solo_stock_blocks OP1F_NAMED("op1f_ext_solo_stock_blocks");
 
 // Asked weakly: the base's count of the pictures it served, and a function of the pack `sidechain`, which says that
 // pack runs.
@@ -137,6 +149,10 @@ static u32 svg_served() {
 #endif
 }
 
+static int solo_there() {                                          // R6g: the solo unit is linked
+    return &op1f_solo_frame != 0;
+}
+
 static int sidechain_runs() {
 #ifdef OP1F_HOST
     return mock_sidechain_there;
@@ -165,6 +181,10 @@ static QUIET_OUT_OF_LINE u32 signature() {
     s = quiet_mix(s, op1f_ext_page_holds); s = quiet_mix(s, op1f_ext_page_knob_moves); s = quiet_mix(s, op1f_ext_params_saves);
     s = quiet_mix(s, op1f_ext_params_loads); s = quiet_mix(s, op1f_ext_track_restores); s = quiet_mix(s, svg_served());
     s = quiet_mix(s, op1f_help_ext_frames); s = quiet_mix(s, op1f_signalflow_ext_reads); s = quiet_mix(s, op1f_signalflow_meter_frames);
+    if (solo_there()) {                                               // R6g: the solo's counts
+        s = quiet_mix(s, op1f_ext_solo_holds); s = quiet_mix(s, op1f_ext_solo_ends); s = quiet_mix(s, op1f_ext_solo_drops);
+        s = quiet_mix(s, op1f_ext_solo_blocks); s = quiet_mix(s, op1f_ext_solo_stock_blocks);
+    }
     return s;
 }
 
@@ -198,6 +218,9 @@ static QUIET_OUT_OF_LINE void say(int why) {
     }
     STOCK_LOG(3, LOG_FILE, 5, "ext rec: %u track 5-8 selections, %u clip keys blocked, %u monitor blocks diverted%s",
               op1f_ext_track_selects, op1f_ext_keys_blocked, op1f_ext_monitor_blocks, op1f_record_track_label());
+    if (solo_there())                                                 // R6g: a line of its own, so the elder lines keep their words
+        STOCK_LOG(3, LOG_FILE, 16, "ext solo: %u holds of tracks 5-8, %u ended by their key, %u by leaving the tape, %u blocks soloed with 5-8 held, %u with only 1-4 held",
+                  op1f_ext_solo_holds, op1f_ext_solo_ends, op1f_ext_solo_drops, op1f_ext_solo_blocks, op1f_ext_solo_stock_blocks);
     STOCK_LOG(3, LOG_FILE, 6, "ext mix: %u knob or mute changes on tracks 5-8, last second's peaks %u/%u/%u/%u",
               op1f_ext_mix_changes, state.vu5, state.vu6, state.vu7, state.vu8);
     STOCK_LOG(3, LOG_FILE, 7, "ext xfade: %u loop computes, %u junction fades, %u waits for a chunk, %u blocks from the loop buffers, %u clip edge fades",
@@ -229,6 +252,7 @@ extern "C" void eight_tracks_frame(const Op1fFrame* now) OP1F_NAMED("eight_track
 extern "C" void eight_tracks_frame(const Op1fFrame* now) {
     int framed = now != 0 && now->bytes >= (unsigned)FRAME_LEVEL_1_BYTES;    // a frame of level 1 at the least: its mode, clock and popup
     if (framed && op1f_mixer_page && now->mode != (unsigned)MODE_MIXER) op1f_mixer_page = 0;   // the key's release went elsewhere
+    if (framed && solo_there()) op1f_solo_frame(now->mode);           // R6g: out of the tape, no hold of tracks 5-8 lasts
     op1f_tape_keeps_frame();                                          // R4b: a tape told of, and the base's values of the tape
     op1f_sums_frame();                                                // sums learnt by reading on their way to the file, the sums' log lines
     op1f_xmap_frame();                                                // binds the mounted tape's extension file to its json
