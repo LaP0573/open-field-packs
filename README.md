@@ -29,8 +29,8 @@ The example packs for people who write packs (`wink`, `yoyo`, `list`, `sketch`, 
 
 ## Putting a pack on the unit
 
-- **With the install page**: tick the pack in its step 5. The page downloads the file from this repository at the commit the open-field listing names, checks its SHA-256, and the helper copies it onto the unit with the rest.
-- **Later, from the install page's packs section**: with open-field on the unit and the unit on USB, the page lists the packs the unit has and sends the ones you tick over USB MIDI, each file held to the same SHA-256. The unit asks you on its own screen before anything changes: T1 applies, T2 leaves everything as it was.
+- **With the install page**: tick the pack in its step 5. The page downloads the file from this repository's `main`, the branch the open-field listing follows, checks it (its size, its name, its version and what it asks of the base), and the helper copies it onto the unit with the rest.
+- **Later, from the install page's packs section**: with open-field on the unit and the unit on USB, the page lists the packs the unit has and sends the ones you tick over USB MIDI, each file the one the page checked. The unit asks you on its own screen before anything changes: T1 applies, T2 leaves everything as it was.
 - **By hand**: download the file, put the unit into its disk mode, copy the file into the folder `packs`, leave the disk mode, and switch the unit off and on. The open-field guide, `docs/guide.md`, says more.
 
 ## What is where
@@ -61,7 +61,7 @@ This works the way [A first pack](https://github.com/LaP0573/open-field/blob/mai
 python -I build.py --open-field ../open-field
 ```
 
-It takes the tools and headers from the commit `open-field.json` names, whatever that checkout stands at, builds into `out/`, and says `the same` for each file that comes out byte for byte as kept. The listing of packs, `catalog/packs.json` in open-field, names each file here by commit and SHA-256, and the install page holds every download to it.
+It takes the tools and headers from the commit `open-field.json` names, whatever that checkout stands at, builds into `out/`, and says `the same` for each file that comes out byte for byte as kept. The listing of packs, `catalog/packs.json` in open-field, follows this repository's `main`: the install page takes each file from there and checks it before it offers it.
 
 ## Changing one
 
@@ -82,6 +82,8 @@ Put the new version, size and SHA-256 into the table at the top of this page too
 A pull request is welcome here. Say what you tried on a unit and what you did not. open-field's [rules for a change](https://github.com/LaP0573/open-field/blob/main/CONTRIBUTING.md) hold here too, the first above all: nothing of the firmware goes into this repository, not a file, not a log, not a few bytes in a comment.
 
 A file here changes only with a new version of its pack, or when open-field moves to another firmware (the same version, built for the new firmware). It is tried on a unit first, or this page says that it was not.
+
+What is merged into `main` here reaches owners by itself: the install page reads each file from `main` when it opens, a few minutes after the merge at most, with no change to the open-field listing. So a new file goes into `main` only when it is ready.
 
 ## Credits
 
