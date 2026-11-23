@@ -154,6 +154,9 @@ extern "C" int op1f_ext_chunk_mapped(u32 track, u32 logical) asm("op1f_ext_chunk
 extern "C" void __attribute__((weak)) op1f_duck_block_gains() asm("op1f_duck_block_gains");          // this block's gains into the hold-to-solo words (1-4) and op1f_duck_gain (5-8)
 extern "C" void __attribute__((weak)) op1f_duck_detect(int speed, int w0) asm("op1f_duck_detect");  // the detector over this block's frames
 extern "C" i32 __attribute__((weak)) op1f_duck_gain[EXT_TRACKS] asm("op1f_duck_gain");             // Q31 per extension track, 0x7fffffff when idle
+// Step R6g (build_r6g_solo.cpp): the hold-to-solo of tracks 5-8, LaP0573/open-field#6. Weak, so a link without that unit is as before.
+extern "C" i32 __attribute__((weak)) op1f_ext_solo_gain(u32 t) asm("op1f_ext_solo_gain");          // 0 for a track soloed out in this block, else 0x7fffffff
+extern "C" int __attribute__((weak)) op1f_ext_solo_heard(u32 t) asm("op1f_ext_solo_heard");        // not 0 while the track is held: its mute is passed over
 
 static inline i32 mult_t(i32 a, i32 b) {                            // R = Ra * Rb (T): fraction multiply, truncated
     i32 r;
@@ -180,10 +183,15 @@ static inline i32 shl1_s(i32 a) {                                   // R = Ra <<
 }
 
 // B3a: the four gain targets of extension track t from the module's strip, stock's law (see the header).
+// R6g: times the solo's factor, a factor of its own (0 for a track soloed out); a held track passes over its mute
+// while held, as stock's press clears a held track 1-4's mute byte and its release puts it back.
 static void ext_gain_targets(u32 t, i32* target) {
     const i32 half = 0x40000000;
-    i32 g = mult_t(op1f_ext_params[t], op1f_ext_params[8 + t]);     // volume x mute gain
+    i32 mute = op1f_ext_params[8 + t];
+    if (&op1f_ext_solo_heard != 0 && op1f_ext_solo_heard(t)) mute = 0x7fffffff;
+    i32 g = mult_t(op1f_ext_params[t], mute);                         // volume x mute gain
     if (&op1f_duck_gain != 0) g = mult_t(g, op1f_duck_gain[t]);   // Build G: the duck's gain of this track
+    if (&op1f_ext_solo_gain != 0 && op1f_ext_solo_gain(t) == 0) g = 0;   // R6g: soloed out (no multiply by 0x7fffffff otherwise, so the gain stays version 10's bit for bit)
     i32 p = op1f_ext_params[4 + t];                                   // pan
     i32 r1 = add_s(p, half);                                          // p + 0.5
     i32 a = shl1_s(sub_s(0x7fffffff, r1));                            // sat(1 - 2p)

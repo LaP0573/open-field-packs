@@ -511,6 +511,20 @@
    "sum": "0x269d869b",
    "group": "8 tracks",
    "name": "In the tape list's copy of a tape: the call that copies the tape."
+  },
+  {
+   "address": "0x11a0820c",
+   "length": 8,
+   "sum": "0x0ac8dd2d",
+   "group": "8 tracks",
+   "name": "In the tape's audio driver: the call that, once a block, applies the solo of a held track key to tracks 1 to 4."
+  },
+  {
+   "address": "0x84010250",
+   "length": 4,
+   "sum": "0x5ec95481",
+   "group": "8 tracks",
+   "name": "A word in the tape controller's table: its key-up handler."
   }
  ],
  "image": [],
@@ -991,6 +1005,18 @@
      "form": "call",
      "target": "op1f_tape_clone",
      "does": "A call to ours, which makes the firmware's call and then copies tracks 5 to 8."
+    },
+    {
+     "address": "0x11a0820c",
+     "form": "call",
+     "target": "op1f_solo_block",
+     "does": "A call to ours, which makes the firmware's call and then applies the same solo over tracks 1 to 8: a track 5 to 8 held with the tape key solos too, and a solo leaves out tracks 5 to 8 that are not held."
+    },
+    {
+     "address": "0x84010250",
+     "form": "word",
+     "target": "op1f_tape_key_up",
+     "does": "Ours notes that a track key held with the tape key is let go, which ends the solo of its track 5 to 8; the firmware's own handler then runs for every key."
     }
    ]
   }

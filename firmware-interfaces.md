@@ -17,7 +17,7 @@ typedef int (*FileSizeFn)(const char* path);
 
 **The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says "ours", it names the threads our code calls the function on today; that it is safe on another thread has not been shown.
 
-There are 127 functions bound in the sources. 33 are described below, by subject. The other 94 are listed at the end with their type and the files that bind them: their words are still to be written.
+There are 129 functions bound in the sources. 33 are described below, by subject. The other 96 are listed at the end with their type and the files that bind them: their words are still to be written.
 
 ## The log
 
@@ -116,6 +116,7 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8c084782` | `void json_to_string(void* out_string, void* json)` | `build_r6c_chain.cpp`, `build_r2_lfopresets.cpp` |
 | `0x8c0bce20` | `void mode_switch(int mode)` | `build_r4b_duck.cpp` |
 | `0x8c0c1dd0` | `void* tape_model(void)` | `build_b_mix.cpp`, `build_b_record.cpp`, `build_r4b_duck.cpp` |
+| `0x8c0c2158` | `int tape_key_up(void* self, int key)` | `build_r6g_solo.cpp` |
 | `0x8c0cf364` | `int synth_key_up(void* self, int key)` | `build_r4c_lfo_alone.cpp` |
 | `0x8c0cf904` | `int synth_key_shift(void* self, const int* event)` | `build_r4c_lfo_alone.cpp` |
 | `0x8c0cfe7c` | `int synth_key_down(void* self, const int* event)` | `build_i_lfo4.cpp`, `build_r4c_lfo_alone.cpp` |
@@ -168,6 +169,7 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8f00b1d0` | `void split(u32 track, i32 position)` | `build_d_clip.cpp` |
 | `0x8f00c5e0` | `void clipboard_load(void)` | `build_k_clip.cpp` |
 | `0x8f01e3ec` | `i32* track_output(int track)` | `build_b_record.cpp` |
+| `0x8f01e850` | `void solo_writer(void)` | `build_r6g_solo.cpp` |
 | `0x8f01ec34` | `int read_block(int speed, void* state, int rolling)` | `build_b_play.cpp`, `build_r4b_duck_alone.cpp` |
 | `0x8f01f4e0` | `void mixer(int speed, void* state)` | `build_b_play.cpp` |
 | `0x8f01ff94` | `void set_position(i32 position)` | `build_d_clip.cpp` |

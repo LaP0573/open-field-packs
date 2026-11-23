@@ -14,7 +14,7 @@ If you write packs, read them. They use the base the way your pack would, throug
 
 | Pack | What it does | Category | Version | Needs | Sources | Size | SHA-256 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 10 | base.pack, level 7 | [`8 tracks/`](8%20tracks) | 106,548 bytes | `4779bda0d21fc61245aebd1e434011d0c341a91e3ba16f37c759e1264c2da666` |
+| [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 11 | base.pack, level 7 | [`8 tracks/`](8%20tracks) | 108,948 bytes | `20fdc8534e03a27f4f8b0dcea2504d9a32734dfc81b5863623d4f1cca496d8d2` |
 | [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 17 | base.pack, level 8 | [`fx train/`](fx%20train) | 508,460 bytes | `d02ff1b4aba79ea3b5cbfd674c178138fa272d71f2dddf7aeffd5dd9656b147d` |
 | [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 11 | base.pack, level 4 | [`lfo/`](lfo) | 430,318 bytes | `62d6464407751dd9556d4e59462e31d7c87acd8b77c6f91682a65f45035baee4` |
 | [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 10 | base.pack, level 7 | [`sidechain/`](sidechain) | 107,850 bytes | `2268639259142f81e703c24d6446e3be74406a6d5ce708b21b964cd8232f723e` |
@@ -86,6 +86,8 @@ A file here changes only with a new version of its pack, or when open-field move
 ## Credits
 
 `fx train` 17's fix of the cost ceiling (a turn that goes on to the next effect that fits, and a hold that is held to the ceiling) is from [open-field's pull request 8](https://github.com/LaP0573/open-field/pull/8), by [hooligan333](https://github.com/hooligan333).
+
+`8 tracks` 11's solo of tracks 5 to 8 (the tape key held with a track key solos track 5 to 8, as a held track key solos tracks 1 to 4) answers [open-field's issue 6](https://github.com/LaP0573/open-field/issues/6), found and worked out by [hasis](https://github.com/hasis).
 
 ## Licence
 

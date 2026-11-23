@@ -16,7 +16,7 @@
 //   * op1f_tape_key_filter / op1f_tape_shift_key_filter, called by the entry trampolines in build_b_record.s
 //     at the TapeController's two key-down handlers: with the tape key held, track key 1 selects track 5 and
 //     track key 2 track 6 (keys 3 and 4 are swallowed: tracks 7-8 do not exist yet); the stock press handler
-//     is not run for them, because it writes four-entry tables (0x849a8714, 0x11902e34, 0x84c61d8c). B2 to
+//     is not run for them, because it writes four-entry tables (0x849a8714, 0x11902e34, 0x84c62218). B2 to
 //     B3b swallowed the clip keys (10, 11, 12, their shift variants, the shift + blue encoder lift and, by a
 //     misreading, the arrows 0x24/0x25) while track 5 or 6 was selected; since B3c every key runs stock, whose
 //     tape_c lift, drop and clear helpers the B3c trampolines serve for tracks 4-5 (build_b_edit.cpp). Plain
@@ -38,6 +38,9 @@
 //   * B3a (build_b_mix.cpp): with the tape key held, the blue and green knobs set the selected track's volume
 //     and pan (op1f_tape_encoder_filter) and shift + track key 1/2 toggles the mute of track 5/6
 //     (op1f_tape_shift_key_filter); tracks 1-4 keep stock's shift + track key mutes.
+//   * R6g (8 tracks 11, build_r6g_solo.cpp): tape + track key 1-4 going down begins track 5-8's hold to solo (before
+//     the select's two conditions, as stock's press), which
+//     its key's release ends (LaP0573/open-field#6).
 // The record path itself (L1 record function, B0b's service loop, the version-2 saver) needs no change:
 // B0a's slots hold six tracks and B0b writes dirty tracks 4-5 through the extension maps.
 // Freestanding like the other units. Logging only from the GUI thread (the key handlers run there).
@@ -75,6 +78,7 @@ static const char LOG_FILE[] = "../src/main/ctls/op1f_tape_record.cpp";
 extern "C" u32 op1f_cache_tracks asm("op1f_cache_tracks");   // 6 with the heap-1 cache, 4 after B0a's fallback
 extern "C" int op1f_ext_mix_adjust(int track, int knob, int delta) asm("op1f_ext_mix_adjust");   // B3a, build_b_mix.cpp
 extern "C" int op1f_ext_mix_toggle_mute(int track) asm("op1f_ext_mix_toggle_mute");
+extern "C" void __attribute__((weak)) op1f_ext_solo_press(u32 j) asm("op1f_ext_solo_press");   // R6g, build_r6g_solo.cpp: tape + track key j+1 holds track 5+j; weak, so a link without that unit is as before
 
 // Counters for the measurement line (weak references in the first frame hook's measuring unit).
 extern "C" u32 op1f_ext_track_selects asm("op1f_ext_track_selects");   // track 5/6 selected through the key combination
@@ -95,6 +99,7 @@ extern "C" int op1f_tape_key_filter(void*, const int* event) {
     if (key >= KEY_TRACK_1 && key <= KEY_TRACK_4 && TAPE_KEY_HELD) {
         u32 track = (u32)STOCK_TRACKS + (u32)(key - KEY_TRACK_1);        // 4..7 for track keys 1..4
         if (track < EIGHT_TRACKS && op1f_cache_tracks >= EIGHT_TRACKS) {
+            if (&op1f_ext_solo_press != 0) op1f_ext_solo_press(track - STOCK_TRACKS);   // R6g: the hold to solo begins, before the conditions, as stock's press sets its held byte
             if (TRANSPORT_MODE != 1 && STOCK_CLIPS_IDLE()) {               // the same two conditions as stock's 0x8c0c18ec
                 SELECTED_TRACK = (i32)track;
                 STOCK_NOTIFY(STOCK_TAPE_MODEL());

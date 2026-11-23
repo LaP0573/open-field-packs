@@ -1,9 +1,9 @@
 {
-  "about": "Tape tracks 5 to 8: recording, playback, mixing, editing, undo, the disk mode's track files, the screens for eight tracks; and tapes whose files the original firmware still reads. Needs the base (base.pack) and nothing else; works together with the sidechain when that pack is there.",
+  "about": "Tape tracks 5 to 8: recording, playback, mixing, editing, undo, the disk mode's track files, the screens for eight tracks, a held track key's solo over all eight; and tapes whose files the original firmware still reads. Needs the base (base.pack) and nothing else; works together with the sidechain when that pack is there.",
   "name": "8 tracks",
-  "version": 10,
+  "version": 11,
   "interface": 2,
-  "build": "build_r4c_8_tracks",
+  "build": "build_r6g_8_tracks",
   "sources": [
     "8 tracks/build_b_cache.cpp",
     "8 tracks/build_b_storage.cpp",
@@ -35,6 +35,7 @@
     "8 tracks/build_k_sums.cpp",
     "8 tracks/build_r4b_8_tracks_table.s",
     "8 tracks/build_r4b_8_tracks_frame.cpp",
+    "8 tracks/build_r6g_solo.cpp",
     "8 tracks/build_r4c_8_tracks_card.s",
     "8 tracks/build_r4c_8_tracks_pictures.s",
     "8 tracks/build_r2_8_tracks_needs.s"
