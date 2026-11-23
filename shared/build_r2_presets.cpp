@@ -250,7 +250,7 @@ static void build_screens() {
 // left edge (the origin the constructor set), the laid-out box is read, and the label's origin word is moved right
 // by (14 - width) / 2 less the glyph's own offset from the pen, then the letter is laid out again from there. The
 // box is the geometry without the stroke, so a single upright stroke measures 0 wide and is put at the cell's middle
-// by the same rule (H6c skipped a zero width). H6f: the layout 0x8fc388b6 compares the new text with the label's
+// by the same rule (H6c skipped a zero width). H6f: the layout 0x8fc3a436 compares the new text with the label's
 // string and lays nothing out again when they match (0x8fc38e48: the lengths, then the bytes), so H6e's second set
 // of the same letter did nothing and the letters stayed at the edge; the label is cleared with an empty text before
 // the second layout. The shift of each character is kept once measured (glyph_shift), so a letter seen before is
