@@ -10,7 +10,7 @@
 // screen 32 (0x84c9a708, built by 0x8fc591f0 from singlelfo.svg, the render 0x8fc599d4; I2), since I3 the random
 // LFO's 33 (rndlfo.svg), the element LFO's 34 (reroutelfo.svg) and the velocity LFO's 36 (velocitylfo.svg), and
 // since I4 the midi LFO's 35 (midilfo.svg, the render 0x8fc568f8): the controllers' page table maps the slot's LFO
-// type to the screen 31 + type (0x8fc25af4). Two things are added to each, and nothing of it is replaced:
+// type to the screen 31 + type (0x8fc275e4). Two things are added to each, and nothing of it is replaced:
 //
 //   * A marker under the destination's box says which effect wagon the LFO's effect destination turns: a small
 //     wagon in that wagon's knob colour. The four markers are groups of the module's copy of the page's artwork

@@ -7,7 +7,7 @@
  "about": [
   "The places where the pack `lfo` changes OS 1.7.3+0 of the OP-1 Field, and nothing else. No byte of the firmware is in this file.",
   "It has the form of open-field's profiles/op1f-1.7.3.json, which says what each field means. open-field's tools/place_sum.py works out a place's sum from your own firmware file.",
-  "The pack's table, build_r4b_lfo_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
+  "The pack's table, build_r15_lfo_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
   "module_base and reserved_bytes are the room for open-field's code, as its main profile names it: the pack is linked for the room behind the loader."
  ],
  "stock_sha256": "d134eb1ac7ad88e8370d988329cd5d7419f016005b1d269034f9cf7166fad0ec",
@@ -23,32 +23,11 @@
    "name": "In the synth's audio stage: the load of the effect's object, right before the firmware runs the sound's effect."
   },
   {
-   "address": "0x84013834",
-   "length": 4,
-   "sum": "0xf74c1ee5",
+   "address": "0x11a03e34",
+   "length": 8,
+   "sum": "0xf625992e",
    "group": "lfo",
-   "name": "A word in the synth controller's table: its key-down handler."
-  },
-  {
-   "address": "0x84013838",
-   "length": 4,
-   "sum": "0x5c888013",
-   "group": "lfo",
-   "name": "A word in the synth controller's table: its handler for a key pressed with shift."
-  },
-  {
-   "address": "0x8401383c",
-   "length": 4,
-   "sum": "0x6a39f2c6",
-   "group": "lfo",
-   "name": "A word in the synth controller's table: its key-up handler."
-  },
-  {
-   "address": "0x84013840",
-   "length": 4,
-   "sum": "0x455bee11",
-   "group": "lfo",
-   "name": "A word in the synth controller's table: its knob handler."
+   "name": "In the drum's audio stage: the load of the effect's object, right before the firmware runs the sound's effect."
   },
   {
    "address": "0x11a04334",
@@ -84,12 +63,54 @@
    "sum": "0x349e40c1",
    "group": "lfo",
    "name": "Where the synth starts a note on several voices: the call that starts a voice's LFO anew."
+  },
+  {
+   "address": "0x11a037c8",
+   "length": 8,
+   "sum": "0x954908cb",
+   "group": "lfo",
+   "name": "In the drum's audio stage, inside the loop over the voices: the load of a word every sounding voice reads."
+  },
+  {
+   "address": "0x11a03858",
+   "length": 8,
+   "sum": "0x972bbb9b",
+   "group": "lfo",
+   "name": "In the drum's audio stage, inside the loop over the voices, behind the step that takes a voice's velocity: the load of a buffer's address."
+  },
+  {
+   "address": "0x11a0387a",
+   "length": 8,
+   "sum": "0xad7ff9db",
+   "group": "lfo",
+   "name": "In the drum's audio stage, inside the loop over the voices, once a voice's buffers are filled: the load of a table's address."
+  },
+  {
+   "address": "0x11a03a48",
+   "length": 8,
+   "sum": "0x7dad539c",
+   "group": "lfo",
+   "name": "In the drum's audio stage, right behind the loop over the voices, once a block: the load of an address."
+  },
+  {
+   "address": "0x8f0075fc",
+   "length": 8,
+   "sum": "0x93114942",
+   "group": "lfo",
+   "name": "Where the drum begins a hit on a voice: the first of the two calls that set the voice back to its start."
+  },
+  {
+   "address": "0x8f008338",
+   "length": 8,
+   "sum": "0x93114942",
+   "group": "lfo",
+   "name": "Where the drum begins a hit on a voice: the second of the two calls that set the voice back to its start."
   }
  ],
  "image": [],
  "tables": [
   {
-   "file": "lfo/build_r4b_lfo_table.s",
+   "file": "lfo/build_r15_lfo_table.s",
    "part": "lfo",
    "symbol": "op1f_boot_table",
    "entries": [
@@ -100,28 +121,10 @@
      "does": "Only when the pack `fx train` is away: a call to our stub, which runs our LFOs on the sound's effect and then does the load."
     },
     {
-     "address": "0x84013834",
-     "form": "word",
-     "target": "op1f_lfo_alone_key_down",
-     "does": "Only when the pack `fx train` is away: ours deals with the keys of the LFO page and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x84013838",
-     "form": "word",
-     "target": "op1f_lfo_alone_key_shift",
-     "does": "Only when the pack `fx train` is away: ours deals with the keys of the LFO page and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x8401383c",
-     "form": "word",
-     "target": "op1f_lfo_alone_key_up",
-     "does": "Only when the pack `fx train` is away: ours deals with the keys of the LFO page and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x84013840",
-     "form": "word",
-     "target": "op1f_lfo_alone_encoder",
-     "does": "Only when the pack `fx train` is away: ours deals with the knobs of the LFO page and hands every other turn to the firmware's handler."
+     "address": "0x11a03e34",
+     "form": "call",
+     "target": "op1f_lfo4_drum_f5_stub",
+     "does": "Only when the pack `fx train` is away: a call to our stub, which runs our LFOs on the drum sound once a block and then does the load."
     },
     {
      "address": "0x11a04334",
@@ -151,6 +154,42 @@
      "address": "0x8f007bd6",
      "form": "call",
      "target": "op1f_lfo4_reset_synth",
+     "does": "A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice."
+    },
+    {
+     "address": "0x11a037c8",
+     "form": "call",
+     "target": "op1f_lfo4_drum_s1_stub",
+     "does": "A call to our stub, which runs our LFOs for the voice (their first part) and then does the load."
+    },
+    {
+     "address": "0x11a03858",
+     "form": "call",
+     "target": "op1f_lfo4_drum_s2_stub",
+     "does": "A call to our stub, which runs our LFOs for the voice (their part at the velocity) and then does the load."
+    },
+    {
+     "address": "0x11a0387a",
+     "form": "call",
+     "target": "op1f_lfo4_drum_s3_stub",
+     "does": "A call to our stub, which runs our LFOs for the voice (their part at the level) and then does the load."
+    },
+    {
+     "address": "0x11a03a48",
+     "form": "call",
+     "target": "op1f_lfo4_drum_c4_stub",
+     "does": "A call to our stub, which runs our LFOs' part that comes once a block and then does the load."
+    },
+    {
+     "address": "0x8f0075fc",
+     "form": "call",
+     "target": "op1f_lfo4_reset_drum",
+     "does": "A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice."
+    },
+    {
+     "address": "0x8f008338",
+     "form": "call",
+     "target": "op1f_lfo4_reset_drum",
      "does": "A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice."
     }
    ]

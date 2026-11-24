@@ -1,4 +1,19 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// Step R15 (lfo 12): the presets of the UFO page, the page of lfo's LFO layer
+// "ufo", on synth and drum sounds. The keys come from the LFO unit on the UFO page (op1f_lfo4_key and op1f_lfo4_turn
+// ask this unit first) and from lfo's input function while the list or save screen lies over it
+// (build_r15_lfo_input.cpp); every up through op1f_lfo4_key:
+//   * plain T4 on the UFO page: held HOLD_MS, the list opens; let go before, a tap: the stock page of the LFO under
+//     the searchlight (op1f_lfo4_open_searchlight). The hold no longer saves, shift + T4 is no key of this unit's: it
+//     closes the list and answers -1 (the unit's list of LFO kinds). On the list the grey tap saves, T4 loads and
+//     closes, T1 to T3 close; the save screen goes with the list.
+//   * the page up is the input unit's word (op1f_lfo12_page_up); the list and save screen are shown over the UFO page
+//     by lfo's page copy (build_r4c_train.cpp), which asks op1f_lfo12_presets_screen; the view is
+//     op1f_lfo12_presets_view. Names fx train 16 does not know, so it shows no LFO presets of its own any more. No
+//     screen request of the firmware's and no page step of fx train's is made from here.
+// What follows holds but where it speaks of shift + T4, of the hold's save, of the synth alone and of the names
+// replaced above.
+//
 // Step R2, the pack `lfo`: the LFO presets unit as the pack carries it from R2 on. A sibling of
 // Build I's LFO presets unit, which stays as it was for the packs built before. What changed, and nothing else, as
 // in the effect presets' sibling (fx train 11's chain unit):
@@ -96,7 +111,6 @@ typedef void (*StringCtorFn)(void* out, const char* text);           // 0x8c03e4
 typedef void (*FreeFn)(void* block);                                 // 0x8d4e63cc: the match of the allocator stock's strings use
 typedef int (*FileSizeFn)(const char* path);                         // 0x8c051f9c: the file's size, -1 when it is not there
 typedef u32 (*FileMtimeFn)(const char* path);                        // 0x8fcbc350: the file's modification time, 0 when it is not there
-typedef void (*RequestScreenFn)();                                   // 0x8c0b2554: the GUI asks the current controller's screen-id virtual and queues the screen
 
 #define STOCK_LOG ((LogFn)0x8c053a20u)
 #define STOCK_JSON_TO_STRING ((JsonToStringFn)0x8c084782u)
@@ -120,12 +134,6 @@ typedef void (*RequestScreenFn)();                                   // 0x8c0b25
 #define STOCK_FREE ((FreeFn)0x8d4e63ccu)
 #define STOCK_FILE_SIZE ((FileSizeFn)0x8c051f9cu)
 #define STOCK_FILE_MTIME ((FileMtimeFn)0x8fcbc350u)
-#define STOCK_REQUEST_SCREEN ((RequestScreenFn)0x8c0b2554u)
-// J5i: the request's queue takes one writer at a time and stops the OS when a second one enters its push; stock
-// makes the request on the key thread. From the frame call, on the display thread, it is made with interrupts
-// masked (Build H's chain unit has the note).
-#define STOCK_IRQ_OFF(mask) asm volatile("cli %0;" : "=d"(mask) : : "memory")
-#define STOCK_IRQ_ON(mask) asm volatile("sti %0;" : : "d"(mask) : "memory")
 
 static const char LOG_FILE[] = "../src/main/op1f_lfopresets.cpp";
 
@@ -134,7 +142,7 @@ enum { PRESET_INTS = OP1F_LFO_PRESET_INTS, WAGON_INTS = OP1F_LFO_PRESET_WAGON_IN
 enum { PRESET_FORMAT = 1, JSON_ARRAY_KIND = 6, JSON_OBJECT_KIND = 7, JSON_STRING_KIND = 4, JSON_BOOL_KIND = 5 };
 enum { KEY_T1 = 6, KEY_T4 = 9, KEY_CLICK0 = 54, KEY_PRESS0 = 61 };
 enum { KNOB_BLUE = 0, KNOB_OCHRE = 1, KNOB_GREY = 2, KNOB_RED = 3 };
-enum { HOLD_MS = 400, SWALLOW_MS = 300, FLASH_MS = 1000, SAVE_SHOW_MS = 200, SAVE_HOLD_MS = 700, SAVED_MS = 1000 };   // the effect presets' own times (Build H's chain unit)
+enum { HOLD_MS = 400, SWALLOW_MS = 300, FLASH_MS = 1000, SAVED_MS = 1000 };   // the effect presets' own times (Build H's chain unit); R15: T4's hold is HOLD_MS
 enum { FLASH_NONE = 0, FLASH_SAVED = 1, FLASH_DELETED = 2, FLASH_FULL = 3 };
 enum { SAVE_NONE = OP1F_SAVE_NONE, SAVE_SAVING = OP1F_SAVE_SAVING, SAVE_SAVED = OP1F_SAVE_SAVED };
 enum { PRINT_FRAMES = 232, FAILURE_LINES = 4, EVENT_LINES = 200, COUNT_LINES = 120 };
@@ -148,11 +156,15 @@ extern "C" u32 __attribute__((weak)) op1f_lfo_alone_ms() asm("op1f_lfo_alone_ms"
 // Build H's presets unit: the two preset screens exist
 extern "C" int __attribute__((weak)) op1f_presets_available() asm("op1f_presets_available");
 // R2: the pack's card (written by tools/pack_build.py from the recipe), whose first folder holds the presets; the copy
-// of the presets of user/lf/ into it (build_r2_move.cpp), which says whether the store may be used; the train's page
-// step of `fx train`, where that pack runs.
+// of the presets of user/lf/ into it (build_r2_move.cpp), which says whether the store may be used.
 extern "C" const Op1fCard op1f_card_lfo asm("op1f_card_lfo");
 extern "C" int op1f_r2_move_done(void) asm("op1f_r2_move_done");
-extern "C" void __attribute__((weak)) op1f_train_page_now(int host) asm("op1f_train_page_now");
+// R15: the LFO unit's (build_i_lfo4.cpp) and the input unit's (build_r15_lfo_input.cpp).
+extern "C" int op1f_lfo4_place() asm("op1f_lfo4_place");                                     // the place on the screen, -1 in another mode
+extern "C" void op1f_lfo4_view(int place, Op1fLfoTrainView* out) asm("op1f_lfo4_view");
+extern "C" void op1f_lfo4_open_searchlight(int place) asm("op1f_lfo4_open_searchlight");     // the tap: the stock page of the searchlight's LFO
+extern "C" int op1f_lfo4_release_knobs() asm("op1f_lfo4_release_knobs");                     // the page's knobs let go; which were down, a bit a knob
+extern "C" int op1f_lfo12_page_up() asm("op1f_lfo12_page_up");                               // the UFO page, or this unit's screens over it, is up
 enum { PRESETS_FOLDER = 0, PATH_ROOM = 40, SHUT_LINES = 16, REMOVE_LINES = 16 };
 static struct {                                                // R2: the store's own words beside the elder's
     volatile u32 owed;                                         // a scan asked while the store was shut: 1, or 2 for a forced one
@@ -176,7 +188,7 @@ static struct {                                                // the store, one
     int count;                                                 // used slots
     int scanned;                                               // the folder was scanned once (the first file load)
 } presets;
-static struct {                                                // the list's state (the synth's alone: the drum has one LFO)
+static struct {                                                // the list's state, for the place on the screen (R15: a synth's or a drum's)
     int started;
     int open, cursor, first, editing, caret;
     int loaded_slot;                                           // the slot the four LFOs were loaded from or saved as, or -1
@@ -185,7 +197,7 @@ static struct {                                                // the list's sta
     int flash_kind, flash_slot;                                // one row's word for a second: saved, deleted, list full
     u32 flash_until_ms;
     int pending_delete_slot;                                   // the slot emptied when its deleted flash ends, or -1
-    int t4_pressed, t4_acted;                                  // shift + T4 held: the save after SAVE_HOLD_MS, else the tap at the release
+    int t4_pressed, t4_acted;                                  // R15: T4 held on the page: the list after HOLD_MS, else the tap at the release
     u32 t4_ms;
     int pressed[WAGONS], acted[WAGONS], held_at_open[WAGONS];  // the knobs on the list (the red hold deletes); a knob that was down on the page when the list opened
     u32 press_ms[WAGONS], swallow_until[WAGONS];
@@ -207,16 +219,6 @@ static void start() {
     ls.pending_delete_slot = -1;
     ls.flash_slot = -1;
     ls.save_slot = -1;
-}
-
-static u32 udiv(u32 n, u32 d) {                                  // restoring shift-subtract division (the module links no runtime)
-    if (d == 0) return 0;
-    u32 q = 0, r = 0;
-    for (int i = 31; i >= 0; --i) {
-        r = (r << 1) | ((n >> i) & 1u);
-        if (r >= d) { r -= d; q |= 1u << i; }
-    }
-    return q;
 }
 
 static char* put_text(char* p, const char* s) {
@@ -643,7 +645,7 @@ static void list_open() {
     if (row >= 0) ls.cursor = row;
     list_clamp();
     u32 t = now_ms();
-    int down = op1f_lfotrain_release_knobs();                                // a knob held on the page fires no hold under the list, and the click of its release is not a tap on the list
+    int down = op1f_lfo4_release_knobs();                                    // a knob held on the page fires no hold under the list, and the click of its release is not a tap on the list
     for (int k = 0; k < WAGONS; ++k) { ls.pressed[k] = 0; ls.acted[k] = 0; ls.swallow_until[k] = t; ls.held_at_open[k] = (down >> k) & 1; }
     ++ls.opens;
 }
@@ -656,10 +658,12 @@ static void list_close() {
 static void event_line(const char* what, int s) {
     if (ls.event_lines >= (u32)EVENT_LINES) return;
     ++ls.event_lines;
+    int place = op1f_lfo4_place();
+    if (place < 0) return;
     Op1fLfoTrainView v;
-    op1f_lfotrain_view(&v);
-    STOCK_LOG(3, LOG_FILE, 14, "lfo presets: %s slot %d (%s), synth s%d: %s, %s, %s, %s; on %d%d%d%d; the searchlight on knob %d; %u values held to their range in all",
-              what, s + 1, (s >= 0 && s < PRESETS) ? presets.name[s] : "", v.slot,
+    op1f_lfo4_view(place, &v);
+    STOCK_LOG(3, LOG_FILE, 14, "lfo presets: %s slot %d (%s), place %d (8 on: drum): %s, %s, %s, %s; on %d%d%d%d; the searchlight on knob %d; %u values held to their range in all",
+              what, s + 1, (s >= 0 && s < PRESETS) ? presets.name[s] : "", place,
               op1f_lfo4_kind_name(v.kind[0]), op1f_lfo4_kind_name(v.kind[1]), op1f_lfo4_kind_name(v.kind[2]), op1f_lfo4_kind_name(v.kind[3]),
               v.on[0], v.on[1], v.on[2], v.on[3], v.lamp, ls.held);
 }
@@ -760,14 +764,18 @@ static void t4_press() {
     ls.t4_acted = 0;
 }
 
-static void t4_release() {
+static void t4_release() {                                                     // R15: the tap (let go before the hold opened the list): the searchlight's stock page
     ls.t4_pressed = 0;
-    if (!ls.t4_acted) {                                                        // the tap (any release before the save): the list opens or closes
-        if (ls.save_state == SAVE_SAVING) ls.save_state = SAVE_NONE;           // "saving" was showing: cancelled
-        if (ls.open) list_close(); else if (op1f_lfotrain_open()) list_open();
-    }
-    STOCK_REQUEST_SCREEN();                                                    // the GUI asks the screen-id virtual now (a release alone may not)
-    if (&op1f_train_page_now) op1f_train_page_now(0);                          // R2: the page follows the key (fx train's page step, where that pack runs)
+    if (ls.t4_acted || ls.open) return;
+    int place = op1f_lfo4_place();
+    if (place >= 0) op1f_lfo4_open_searchlight(place);
+}
+
+// R15: the UFO page left, or shift + T4 or T1 to T3 on the list: the list, the hold and the save screen go.
+static void presets_leave() {
+    list_close();
+    ls.t4_pressed = 0;
+    ls.save_state = SAVE_NONE;
 }
 
 static void list_press(int knob) {
@@ -829,44 +837,44 @@ extern "C" int op1f_lfopresets_turn(int knob, int delta) {
     return 1;
 }
 
-// A key-down on the LFO page (shifted: with shift held), before the page's own handling. -1: not the list's key.
+// A key-down on the UFO page (shifted: with shift held), before the page's own handling. -1: not the list's key.
 extern "C" int op1f_lfopresets_key_down(int key, int shifted) asm("op1f_lfopresets_key_down");
 extern "C" int op1f_lfopresets_key_down(int key, int shifted) {
     start();
+    if (key == KEY_T4 && shifted) { presets_leave(); return -1; }            // R15: shift + T4 is the unit's list of LFO kinds
     if (!ls.open) {
-        if (key == KEY_T4 && shifted) { t4_press(); return 1; }               // shift + T4 on the page: a tap opens the list at the release, a hold saves
+        if (key == KEY_T4) { t4_press(); return 1; }                          // R15: T4 on the page: held, the list; a tap at the release, the searchlight's page
         return -1;
     }
     if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) { list_press(key - KEY_PRESS0); return 1; }
     if (key >= KEY_CLICK0 && key < KEY_CLICK0 + WAGONS) { list_click(key - KEY_CLICK0, shifted); return 1; }
     if (key == KEY_T4) {
-        if (shifted) { t4_press(); return 1; }                                // the tap closes the list at the release, the hold saves
         if (ls.editing) rename_keep(); else preset_load(ls.cursor);
-        list_close();                                                         // back to the page (the GUI re-asks the screen after this key)
+        list_close();                                                         // back to the UFO page
         return 1;
     }
-    if (key >= KEY_T1 && key < KEY_T4) { list_close(); return -1; }           // another page: the list closes, the page's own handling closes the page and stock goes on
+    if (key >= KEY_T1 && key < KEY_T4) { presets_leave(); return -1; }       // another page: the list closes and stock goes on
     return shifted ? 1 : -1;                                                  // shift + another key on the list: nothing; any other key is stock's
 }
 
-// Every key-up of the synth: the list's knobs let go, and T4 let go (the tap of shift + T4; the hold has acted already).
+// Every key-up the UFO page took: the list's knobs let go, and T4 let go (the tap; the hold has acted already).
 extern "C" void op1f_lfopresets_key_up(int key) asm("op1f_lfopresets_key_up");
 extern "C" void op1f_lfopresets_key_up(int key) {
     if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) list_release(key - KEY_PRESS0);
     if (key == KEY_T4 && ls.t4_pressed) t4_release();
 }
 
-// The save screen over everything, the list over the page; 0 for the page or stock.
-extern "C" int op1f_lfopresets_screen_wanted() asm("op1f_lfopresets_screen_wanted");
-extern "C" int op1f_lfopresets_screen_wanted() {
+// The save screen over everything, the list over the page; 0 for the page or stock. R15: lfo's page copy shows it.
+extern "C" int op1f_lfo12_presets_screen() asm("op1f_lfo12_presets_screen");
+extern "C" int op1f_lfo12_presets_screen() {
     if (ls.save_state != SAVE_NONE) return OP1F_SAVE_SCREEN_ID;
     if (ls.open) return OP1F_PRESETS_SCREEN_ID;
     return 0;
 }
 
-// The list's view: Build H's presets unit dresses the two screens from it while the effect presets show nothing.
-extern "C" void op1f_lfopresets_view(Op1fPresetsView* out) asm("op1f_lfopresets_view");
-extern "C" void op1f_lfopresets_view(Op1fPresetsView* out) {
+// The list's view: lfo's presets copy (build_r2_presets.cpp) dresses the two screens from it.
+extern "C" void op1f_lfo12_presets_view(Op1fPresetsView* out) asm("op1f_lfo12_presets_view");
+extern "C" void op1f_lfo12_presets_view(Op1fPresetsView* out) {
     out->open = ls.open;
     out->count = presets.count;
     out->first = ls.first;
@@ -905,51 +913,24 @@ extern "C" void op1f_lfopresets_view(Op1fPresetsView* out) {
         out->cell[c] = ls.cell_text[c];
     }
     out->save_state = ls.save_state;
-    out->save_host = 0;                                                        // the synth's box on the save screen
+    int place = op1f_lfo4_place();
+    out->save_host = place >= 8 ? 1 : 0;                                       // R15: the synth's box on the save screen, or the drum's
     out->save_number = ls.save_slot + 1;
-    u32 held = now_ms() - ls.save_ms;
-    int spokes = ls.save_state == SAVE_SAVING ? (int)udiv(held * (u32)OP1F_SAVE_SPOKES, (u32)SAVE_HOLD_MS) : OP1F_SAVE_SPOKES;
-    out->save_progress = spokes > OP1F_SAVE_SPOKES ? OP1F_SAVE_SPOKES : spokes;
+    out->save_progress = OP1F_SAVE_SPOKES;                                     // R15: saved by a tap, never "saving"
 }
 
-// J5i: the screen request from the frame call (the display thread), behind the mask the binding's note asks for.
-// The request at the key's release (t4_release) runs on the key thread, as stock's own, and stays plain.
-static void request_screen_from_frame() {
-    u32 mask;
-    STOCK_IRQ_OFF(mask);
-    STOCK_REQUEST_SCREEN();
-    STOCK_IRQ_ON(mask);
-}
-
-// Every frame, after the LFO unit's: the hold of shift + T4, the red hold, the flash, and the counts on the log.
+// Every frame, after the LFO unit's: the hold of T4, the red hold, the flash, and the counts on the log. Run by lfo's
+// frame where fx train is away, by fx train's where it runs.
 extern "C" void op1f_lfopresets_frame() asm("op1f_lfopresets_frame");
 extern "C" void op1f_lfopresets_frame() {
     start();
     u32 t = now_ms();
-    if (!op1f_lfotrain_open()) {                                               // the page left the screen (another page's key, another mode): the list, the hold and the save screen go with it
-        ls.open = 0;
-        ls.editing = 0;
-        ls.t4_pressed = 0;
-        ls.save_state = SAVE_NONE;
+    if (!op1f_lfo12_page_up()) presets_leave();                                // the page left the screen (another page's key, another mode, the ride's end)
+    if (ls.t4_pressed && !ls.t4_acted && t - ls.t4_ms >= (u32)HOLD_MS) {      // R15: T4 held on the UFO page: the list
+        ls.t4_acted = 1;
+        list_open();
     }
-    if (ls.t4_pressed && !ls.t4_acted) {
-        u32 held = t - ls.t4_ms;
-        if (held >= (u32)SAVE_HOLD_MS) {                                       // the hold: the save (its screen says saved!)
-            ls.t4_acted = 1;
-            if (!preset_save()) ls.save_state = SAVE_NONE;                     // the list is full: no saved!, the list says so
-            if (!ls.open) list_open();                                         // the list shows the new preset after the confirmation
-            request_screen_from_frame();
-        } else if (held >= (u32)SAVE_SHOW_MS && ls.save_state == SAVE_NONE) {  // "saving" with the clock filling towards the save
-            ls.save_state = SAVE_SAVING;
-            ls.save_slot = free_slot();                                        // the number the save would take (-1 when the list is full)
-            ls.save_ms = ls.t4_ms;
-            request_screen_from_frame();
-        }
-    }
-    if (ls.save_state == SAVE_SAVED && t - ls.save_ms >= (u32)SAVED_MS) {      // the confirmation ends, the list is back
-        ls.save_state = SAVE_NONE;
-        request_screen_from_frame();
-    }
+    if (ls.save_state == SAVE_SAVED && t - ls.save_ms >= (u32)SAVED_MS) ls.save_state = SAVE_NONE;   // the confirmation ends, the list is back
     if (ls.open && ls.pressed[KNOB_RED] && !ls.acted[KNOB_RED] && t - ls.press_ms[KNOB_RED] >= (u32)HOLD_MS) {
         ls.acted[KNOB_RED] = 1;
         delete_begin();

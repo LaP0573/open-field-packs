@@ -1,22 +1,24 @@
 {
-  "about": "Four LFOs on a synth sound, their page and their presets as files. Needs the base (base.pack) and nothing else. With the effect train there, an LFO can turn any wagon; without it, the sound's one effect.",
+  "about": "Four LFOs on a synth or drum sound, as the row UFO in the sound's own list of LFOs, their page and their presets as files. Needs the base (base.pack) and nothing else. With the effect train there, an LFO can turn any wagon; without it, the sound's one effect.",
   "name": "lfo",
-  "version": 11,
+  "version": 12,
   "interface": 3,
-  "build": "build_r4c_lfo",
+  "build": "build_r15_lfo",
   "sources": [
     "lfo/build_i_lfo4.s",
     "lfo/build_i_lfo4.cpp",
+    "lfo/build_r15_lfo4_drum.s",
     "lfo/build_r2_lfopresets.cpp",
     "lfo/build_j5h_lfo_alone.s",
     "lfo/build_r4c_lfo_alone.cpp",
-    "lfo/build_r4b_lfo_table.s",
+    "lfo/build_r15_lfo_table.s",
     "lfo/build_r4c_train_lfo.cpp",
     "lfo/build_r2_presets_lfo.cpp",
     "shared/build_r2_move.cpp",
     "lfo/build_r2_lfo_frame.cpp",
-    "lfo/build_r4c_lfo_card.s",
-    "lfo/build_r4c_lfo_pictures.s",
+    "lfo/build_r15_lfo_input.cpp",
+    "lfo/build_r15_lfo_card.s",
+    "lfo/build_r15_lfo_pictures.s",
     "lfo/build_r2_lfo_needs.s"
   ],
   "works_with": [
@@ -45,10 +47,11 @@
     }
   ],
   "card": {
-    "level": 4,
+    "level": 8,
     "frame": "lfo_frame",
     "pick": null,
     "pictures": true,
+    "input": "lfo_input",
     "folders": [
       {
         "name": "lfo",
@@ -60,27 +63,22 @@
         "shown": false
       }
     ],
-    "asks": []
+    "asks": [
+      {
+        "kind": "lfo",
+        "name": "ufo",
+        "drum": true,
+        "shown": "lfo_ufo_shown"
+      }
+    ]
   },
   "marks": [
     {
-      "site": "0x84013834",
-      "away": "fx train"
-    },
-    {
-      "site": "0x84013838",
-      "away": "fx train"
-    },
-    {
-      "site": "0x8401383c",
-      "away": "fx train"
-    },
-    {
-      "site": "0x84013840",
-      "away": "fx train"
-    },
-    {
       "site": "0x11a052b4",
+      "away": "fx train"
+    },
+    {
+      "site": "0x11a03e34",
       "away": "fx train"
     }
   ],

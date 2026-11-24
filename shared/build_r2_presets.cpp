@@ -9,8 +9,9 @@
 // asks op1f_fx_presets_document, or op1f_lfo_presets_document in lfo, for the document of a screen's number).
 //
 // This one text is compiled into fx train and, through lfo/build_r2_presets_lfo.cpp with OP1F_R2_LFO_COPY
-// defined, into lfo, where it shows the LFO presets while fx train is away. lfo's copy stands back while fx train
-// runs: it makes nothing, and its op1f_presets_available answers fx train's.
+// defined, into lfo. R15 (lfo 12): lfo's copy makes and dresses its own two documents whether fx train runs or not,
+// from lfo's view alone (op1f_lfo12_presets_view, a name fx train does not know), and its op1f_presets_available
+// answers for them. (lfo 11's stood back while fx train ran.) fx train's copy compiles as before.
 //
 // What follows is the elder unit's description, which holds but for the screens' numbers.
 //
@@ -79,13 +80,13 @@ extern "C" const Op1fCard op1f_card_lfo OP1F_NAMED("op1f_card_lfo");
 extern "C" const Op1fCard op1f_card_fx_train OP1F_NAMED("op1f_card_fx_train");
 #endif
 
+#ifdef OP1F_R2_LFO_COPY
+extern "C" void op1f_lfo12_presets_view(Op1fPresetsView* out) OP1F_NAMED("op1f_lfo12_presets_view");   // R15: the LFO presets' list and save state (build_r2_lfopresets.cpp)
+#else
 extern "C" void __attribute__((weak)) op1f_lfopresets_view(Op1fPresetsView* out) OP1F_NAMED("op1f_lfopresets_view");   // the LFO presets (I8): their list and save state, in the same view
 // J5h: the LFOs stand without the pack `fx train`, and the chain unit's view is optional here: with that unit away
 // the two documents show the LFO presets alone, and where neither unit is there nothing is made.
 extern "C" void __attribute__((weak)) op1f_presets_view(int host, Op1fPresetsView* out) OP1F_NAMED("op1f_presets_view");
-#ifdef OP1F_R2_LFO_COPY
-// R2: fx train's copy of this unit, there while fx train runs: its two documents are made.
-extern "C" int __attribute__((weak)) op1f_fx_train_presets_ready() OP1F_NAMED("op1f_fx_train_presets_ready");
 #endif
 
 static const char LOG_FILE[] = "../src/main/op1f_presets.cpp";
@@ -362,12 +363,9 @@ static void dress_save(const Op1fPresetsView& v) {
 
 // ---------------------------------------------------------------- the frame, the documents
 
-// The two documents are made. In lfo's copy while fx train runs, fx train's answer.
+// The two documents are made (R15: in lfo's copy its own, with fx train or without).
 extern "C" int op1f_presets_available() OP1F_NAMED("op1f_presets_available");
 extern "C" int op1f_presets_available() {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_presets_view != 0) return &op1f_fx_train_presets_ready != 0 ? op1f_fx_train_presets_ready() : 0;
-#endif
     return list_built && save_built;
 }
 
@@ -394,21 +392,24 @@ extern "C" void* op1f_fx_presets_document(int id) {
 
 extern "C" void op1f_presets_frame() OP1F_NAMED("op1f_presets_frame");
 extern "C" void op1f_presets_frame() {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_presets_view != 0) return;                                 // R2: fx train runs: its copy makes and dresses the two
-#endif
+#ifndef OP1F_R2_LFO_COPY
     if (&op1f_presets_view == 0 && &op1f_lfopresets_view == 0) return;   // J5h: neither the train's presets nor the LFOs': nothing is made, nothing is said
+#endif
     build_screens();
     if (!list_built || !save_built) return;
     int mode = (int)RD32(MODE_GUI);
     int host = (mode == 0 || mode == 1) ? mode : -1;
     if (host >= 0) {
         Op1fPresetsView v;
+#ifdef OP1F_R2_LFO_COPY
+        op1f_lfo12_presets_view(&v);                                     // R15: the LFO presets of the place on the screen, a synth's or a drum's
+#else
         v.open = 0;                                                      // J5h: what the lines below read of it when the train's unit is away
         v.save_state = OP1F_SAVE_NONE;
         v.save_host = host;
         if (&op1f_presets_view != 0) op1f_presets_view(host, &v);
         if (host == 0 && !v.open && v.save_state == OP1F_SAVE_NONE && &op1f_lfopresets_view != 0) op1f_lfopresets_view(&v);   // I8: the LFO presets show on the same two screens (no id is free below the power popup's): while the effect presets show nothing, the LFO library's view is dressed
+#endif
         if (v.open) {
             dress_list(v);
             ++frames_shown;

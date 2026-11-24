@@ -42,6 +42,10 @@ Saved trains are files, 64 slots, in the `fx` folder in disk mode. Copy them to 
 
 Each sound keeps its own train. Save a synth or drum sound and its train goes into the sound file with it, and comes back when you load that sound. A stock sound, or one saved before, arrives with its single effect on the blue wagon. Changing the engine keeps the train.
 
+## With lfo
+
+T3 is still the train's. With lfo 12 or later on the unit, the UFOs are no longer on the train's page: they live in the sound's own LFO list as "ufo", and T4 from the train shows the sound's LFO page, which is the UFOs when the sound is on ufo. Shift + T4 is the sound's LFO list. See lfo's manual.
+
 ## Without the pack
 
 T3 is stock again, and the sound keeps one effect: the one that was under the lamp. Your saved trains stay on the disk.

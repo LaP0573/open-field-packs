@@ -1,4 +1,11 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// Step R15 (lfo 12): lfo's copy (OP1F_R2_LFO_COPY) shows the UFOs as the page of its
+// LFO layer "ufo", with fx train or without: it makes the document from its own fxtrain.svg, gives it to the base once
+// with op1f_page_stand_in (ask 0), dresses it with the UFOs alone for the place build_r15_lfo_input.cpp names, and shows
+// the LFO presets' list and save screen over it with op1f_page_show (op1f_lfo_ufo_frame, op1f_lfo_page_frame, at the
+// end of this file). The train, its page step and its heal are fx train's copy's alone, which compiles as before;
+// what is said below of lfo's copy holds for lfo 11.
+//
 // Step R4c (base 27): the effect train's page and the UFOs' page, in fx train (version 13) and lfo (version 11). A
 // sibling of fx train 12's train unit, which stays as it was for the packs before, with one change and nothing else:
 // the page step runs from the frame only while the unit is in the instrument's mode (the frame's `mode` is the host
@@ -151,9 +158,11 @@ extern "C" void* op1f_lfo_presets_document(int id) OP1F_NAMED("op1f_lfo_presets_
 #define PRESETS_DOCUMENT op1f_fx_presets_document
 extern "C" void* op1f_fx_presets_document(int id) OP1F_NAMED("op1f_fx_presets_document");
 #endif
+// R15: what lfo's copy no longer uses of the train (fx train's copy uses all of it).
 #ifdef OP1F_R2_LFO_COPY
-// R2: fx train's copy of this unit, there while fx train runs: its document is made, and so are its presets'.
-extern "C" int __attribute__((weak)) op1f_fx_train_page_ready() OP1F_NAMED("op1f_fx_train_page_ready");
+#define FX_ONLY __attribute__((unused))
+#else
+#define FX_ONLY
 #endif
 
 static const char LOG_FILE[] = "../src/main/op1f_train.cpp";
@@ -887,7 +896,7 @@ static void dress_ufo(const Op1fLfoTrainView& v) {
 
 // ---------------------------------------------------------------- the page, dressed from the chain
 
-static void dress(int host, const Op1fChainView& v, int running) {
+static FX_ONLY void dress(int host, const Op1fChainView& v, int running) {
     int shift = STOCK_SHIFT() != 0;
     int shown_label[CARGOS][LABEL_VARIANTS];
     for (int t = 0; t < CARGOS; ++t) for (int c = 0; c < LABEL_VARIANTS; ++c) shown_label[t][c] = 0;
@@ -996,13 +1005,9 @@ static void dress(int host, const Op1fChainView& v, int running) {
 
 // ---------------------------------------------------------------- the frame, the page
 
-// The train's document is made (T3 and T4 open a page only then). In lfo's copy while fx train runs, fx train's
-// answer: the page is that pack's.
+// The train's document is made (T3 and T4 open a page only then). R15: in lfo's copy its own, the UFOs'.
 extern "C" int op1f_train_available() OP1F_NAMED("op1f_train_available");
 extern "C" int op1f_train_available() {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_chain_view != 0) return &op1f_fx_train_page_ready != 0 ? op1f_fx_train_page_ready() : 0;
-#endif
     return screen_built;
 }
 
@@ -1010,7 +1015,6 @@ extern "C" int op1f_train_available() {
 // R2: for lfo's copy, which answers by it while this pack runs.
 extern "C" int op1f_fx_train_page_ready() OP1F_NAMED("op1f_fx_train_page_ready");
 extern "C" int op1f_fx_train_page_ready() { return screen_built; }
-#endif
 
 // R2: the document the page shows for the host now, 0 for none (the mode's own screen), in the order the
 // controllers' screen answers had (H5, H5b, I6, I8): the presets' save screen or list over the train, the LFO
@@ -1137,10 +1141,6 @@ static void page_heal(const Op1fFrame* now, int host) {
     }
 }
 
-#ifdef OP1F_R2_LFO_COPY
-#define PAGE_FRAME op1f_lfo_page_frame
-extern "C" void op1f_lfo_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_lfo_page_frame");
-#else
 #define PAGE_FRAME op1f_train_page_frame
 extern "C" void op1f_train_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_train_page_frame");
 
@@ -1148,14 +1148,10 @@ extern "C" void op1f_train_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_tra
 // Writes no line.
 extern "C" void op1f_train_page_now(int host) OP1F_NAMED("op1f_train_page_now");
 extern "C" void op1f_train_page_now(int host) { page_step(host); }
-#endif
 
 // R2: once a frame from the pack's frame function, after the page is dressed: whether another pack's page is on top,
 // the page step, and a line when its counts moved (at most every PRINT_FRAMES frames).
 extern "C" void PAGE_FRAME(const Op1fFrame* now) {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_chain_view != 0) return;                                             // fx train runs: the page is its
-#endif
     page_other = now->page != 0 && now->page != &OWN_CARD ? 1u : 0u;
     int mode = (int)RD32(MODE_GUI);
     int host = mode == 0 || mode == 1 ? mode : -1;
@@ -1179,9 +1175,6 @@ extern "C" void PAGE_FRAME(const Op1fFrame* now) {
 
 extern "C" void op1f_train_frame() OP1F_NAMED("op1f_train_frame");
 extern "C" void op1f_train_frame() {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_chain_view != 0) return;                                             // R2: fx train runs: its copy makes and dresses the page
-#endif
     int chain = &op1f_chain_view != 0;                                             // J5h: the effect train's unit is there (the pack fx train runs)
     if (!chain && &op1f_lfotrain_view == 0) return;                                // neither the train nor the LFOs: no screen is made, nothing is said
     build_screen();
@@ -1240,3 +1233,89 @@ extern "C" void op1f_train_frame() {
         }
     }
 }
+
+#else
+
+// ---------------------------------------------------------------- R15: lfo 12, the UFO page as the layer's page
+
+enum { ASK_UFO = 0, STAND_LINES = 4 };
+extern "C" void op1f_lfo4_view(int place, Op1fLfoTrainView* out) OP1F_NAMED("op1f_lfo4_view");   // build_i_lfo4.cpp: a place's four
+extern "C" int op1f_lfo12_ufo_place(const Op1fFrame* now) OP1F_NAMED("op1f_lfo12_ufo_place");   // build_r15_lfo_input.cpp: the place to dress, or -1
+extern "C" int op1f_lfo12_presets_screen() OP1F_NAMED("op1f_lfo12_presets_screen");             // build_r2_lfopresets.cpp: the save screen's id, the list's, or 0
+
+static int stand_given;                             // the base took the document as the layer's page
+static u32 stand_refusals, stand_lines;
+static int dressed_place = -1;                      // the place dressed at the last frame, -1 for none
+static void* presets_asked;                         // the presets' document shown over the UFO page, 0 for none
+static void* presets_refused_doc;                   // the document the base last refused, 0 once another is wanted
+static u32 presets_shows, presets_closes, presets_refused, presets_said[3], presets_countdown;
+
+// Once a frame from lfo_frame: the document made once, given to the base as the page of the layer "ufo" (ask 0) until
+// it takes it, the UFO scene shown, and the UFOs dressed for the place op1f_lfo12_ufo_place names; with no place, or
+// another, the next dressing places the saucers where they stand. A line when frames were dressed in the period.
+extern "C" void op1f_lfo_ufo_frame(const Op1fFrame* now) OP1F_NAMED("op1f_lfo_ufo_frame");
+extern "C" void op1f_lfo_ufo_frame(const Op1fFrame* now) {
+    build_screen();
+    if (!screen_built) return;
+    if (!stand_given) {
+        stand_given = op1f_page_stand_in(&OWN_CARD, ASK_UFO, (void*)screen_object[1]);
+        if (!stand_given) ++stand_refusals;
+        if (stand_lines < (u32)STAND_LINES && (stand_given || stand_refusals == 1u)) {
+            ++stand_lines;
+            STOCK_LOG(3, LOG_FILE, 8, "ufo page: the document %08x %s by the base as the page of the layer ufo at frame %u", screen_object[1], stand_given ? "taken" : "refused", now->frame);
+        }
+    }
+    if (scene_is_ufo != 1) { show_scene(1); scene_is_ufo = 1; }
+    lfo_mode = 1;
+    int place = op1f_lfo12_ufo_place(now);
+    if (place >= 0) {
+        if (place != dressed_place) ufo_seeded = 0;
+        dressed_place = place;
+        Op1fLfoTrainView lv;
+        op1f_lfo4_view(place, &lv);
+        advance_phases(0);
+        dress_ufo(lv);
+        ++lfo_frames;
+        ++frames_shown;
+        ++frames_period;
+        last_shown_host = place;
+    } else {
+        ufo_seeded = 0;
+        dressed_place = -1;
+    }
+    if (++print_countdown < (u32)PRINT_FRAMES) return;
+    print_countdown = 0;
+    if (!frames_period) return;
+    STOCK_LOG(3, LOG_FILE, 4, "ufo page: %u frames dressed this period (%u in all), place %d, %u card shows, %u ufo moves, %u landings and take-offs; the stand-in %s",
+              frames_period, lfo_frames, last_shown_host, card_shows, ufo_moves, ufo_landings, stand_given ? "taken" : "not taken");
+    frames_period = 0;
+}
+
+// Once a frame from lfo_frame, after the presets' two documents are dressed: the list or the save screen shown over the
+// UFO page while the presets unit wants one (the card's one page in the base's stack: the other document comes to the
+// top in its place), closed when it wants neither (the UFO page shows again). A document the base refused is not
+// asked again until another is wanted. A line when the counts moved.
+extern "C" void op1f_lfo_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_lfo_page_frame");
+extern "C" void op1f_lfo_page_frame(const Op1fFrame* now) {
+    int id = op1f_lfo12_presets_screen();
+    void* want = id != 0 && &op1f_presets_available != 0 && op1f_presets_available() ? PRESETS_DOCUMENT(id) : 0;
+    if (want == 0) {
+        presets_refused_doc = 0;
+        if (presets_asked != 0) {
+            presets_asked = 0;
+            ++presets_closes;
+            op1f_page_close(&OWN_CARD);
+        }
+    } else if (want != presets_asked && want != presets_refused_doc) {
+        if (op1f_page_show(&OWN_CARD, want, 0)) { presets_asked = want; presets_refused_doc = 0; ++presets_shows; }
+        else { presets_refused_doc = want; ++presets_refused; }
+    }
+    if (++presets_countdown < (u32)PRINT_FRAMES) return;
+    presets_countdown = 0;
+    if (presets_said[0] == presets_shows && presets_said[1] == presets_closes && presets_said[2] == presets_refused) return;
+    presets_said[0] = presets_shows;
+    presets_said[1] = presets_closes;
+    presets_said[2] = presets_refused;
+    STOCK_LOG(3, LOG_FILE, 9, "ufo page: the lfo presets shown over it %u times, closed %u, refused by the base %u; at frame %u", presets_shows, presets_closes, presets_refused, now->frame);
+}
+#endif

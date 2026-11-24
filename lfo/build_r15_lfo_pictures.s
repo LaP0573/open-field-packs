@@ -9,7 +9,7 @@
 .global op1f_art_lfo
 .type op1f_art_lfo, STT_OBJECT
 op1f_art_lfo:
-    .long 0x31545241, 3, 337582, 11
+    .long 0x31545241, 3, 337582, 12
     .ascii "lfo"
     .fill 13, 1, 0
 .global op1f_art_lfo_path
