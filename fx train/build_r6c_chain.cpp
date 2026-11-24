@@ -1,4 +1,29 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-24: the pack `fx train` version 18: the train is the effect layer "train"
+// of base 37 (the card's ask 2), no longer a page that takes T3 over. What changes in this unit, and nothing else:
+//
+//   * The rides. op1f_riding(card, 2) once a frame into op1f_train_rides (bit n place n: 0 to 7 a synth slot, 8 to 15
+//     a drum slot, 16 the master), for the key thread and the audio thread; a change marks the host's file to be
+//     written, so that the flag below reaches the files at a ride's end.
+//   * The sound. A wagon other than the first one (the mirror, the unit's own effect, which plays as always) plays only
+//     while its place rides "train". The LFOs' wagon picks aim at those wagons only then; else as on the first wagon.
+//     The first wagon's place riding "train" is no pack's effect (mirror_ride_id 0).
+//   * The starts. A load of a place's integers (chain_from_values) whose store has another wagon with an effect,
+//     coupled, no flag and no pack's effect on the first wagon makes a ride start due RIDE_DELAY_FRAMES frames on,
+//     which the input unit's frame asks for (op1f_train_ride_due) and answers (op1f_train_ride_answer).
+//   * The flag "kept, not riding": the 48th integer carries FLAG_NOT_RIDING more when the place does not ride, no start
+//     is due and none was given up; read `& 0xf` for the parked mask as before, so fx train 16 and 17 ignore it.
+//   * The keys come from the base's input (fx train/build_r14_train_input.cpp) through op1f_train_key and
+//     op1f_train_turn, which take no controller; the controllers' key words and their handlers are gone, the encoder
+//     word stays for the LFO page's destination walk, for a place that rides. On the train page T3 held opens the
+//     presets, a tap wants the stock page of the first wagon's effect; a knob's click moves the first wagon and wants
+//     its stock page (an empty wagon, or one with a pack's effect: nothing); no browser, no T3 made up for stock; a
+//     turn of the first wagon passes over the packs' effects; shift + T3 is always the unit's list. The page wished
+//     is taken by op1f_train_take_page; op1f_train_up says once a frame whose train page is up (train_open). The
+//     packs' layers are no wagon's cargo.
+//
+// What fx train 17's unit said follows and holds, but where these words say otherwise.
+//
 // 2026-11-22: the pack `fx train` version 17: fx train 16's chain unit
 // with the cost ceiling kept at a turn and at a hold, and nothing else. The two faults, the mend and what keeps the first
 // wagon right at a coupling are from https://github.com/LaP0573/open-field/pull/8, by hooligan333 on GitHub. Built here is the plainer form that
@@ -289,7 +314,7 @@
 #include "build_i_lfo4.h"
 #include "build_i_patch.h"
 #include "build_q_quiet.h"
-#include "build_r5_card.h"                                  // R5: level 8's list and runs beside levels 1 to 7's words (build_r1_card.h's, at their places)
+#include "build_r6e_card.h"                                 // R5: level 8's list and runs beside levels 1 to 7's words; R14: base 35's layers (op1f_riding, the layer helpers)
 
 typedef unsigned int u32;
 typedef unsigned short u16;
@@ -297,10 +322,7 @@ typedef unsigned char u8;
 typedef int i32;
 
 typedef void (*LogFn)(int level, const char* file, int line, const char* format, ...);
-typedef int (*KeyEventFn)(void* self, const int* event);
-typedef int (*KeyUpFn)(void* self, int key);
 typedef int (*EncoderFn)(void* self, int index, int delta);
-typedef void (*BrowserFn)(void* self, int slot);
 typedef void (*ApplyFn)(void* descriptor);
 typedef void (*ProcessFn)(void* self, int* left, int* right, void* ctx);
 typedef void (*InitFn)(void* self, int index);
@@ -376,7 +398,7 @@ enum { HOSTS = 2, SLOTS = 8, WAGONS = 4, TYPES = 11, NONE = -1, PARAMS = 8, CHAI
 enum { CHAIN_INTS = 3 + WAGONS + WAGONS * (2 + PARAMS) };                  // 47: the H1e to H2 chain (the tag 91)
 enum { CHAIN_INTS_V2 = CHAIN_INTS + 1 };                                   // 48: H3 adds the bypass's remembered couplings (the tag 92)
 enum { BUS_SAMPLES = 64 };
-enum { KEY_T1 = 6, KEY_T3 = 8, KEY_CLICK0 = 54, KEY_PRESS0 = 61, PAGE_FX = 2, PAGE_LFO = 3 };
+enum { KEY_T1 = 6, KEY_T3 = 8, KEY_T4 = 9, KEY_CLICK0 = 54, KEY_PRESS0 = 61, PAGE_FX = 2, PAGE_LFO = 3 };
 // H6h: the LFO's type words and parameter blocks beside the effect's, and the two descriptor
 // tables the converter 0x8d510b64 reads as (min, max, step), six bytes per parameter, 48 per type; the static tables read as
 // (0, 0, step) for every knob parameter, which the knobs' behaviour contradicts, so every knob turn on the effect and LFO pages
@@ -415,29 +437,34 @@ typedef void (*JsonFromBoolFn)(void* json, int value);                          
 enum { KNOB_BLUE = 0, KNOB_OCHRE = 1, KNOB_GREY = 2, KNOB_RED = 3 };
 static const char ALPHABET[] = " abcdefghijklmnopqrstuvwxyz0123456789-.";          // the rename editor's letters, in the font's lowercase (the OS font keeps the capitals' shapes at the lowercase codes; the uppercase codes are icons: H5b)
 enum { ALPHABET_COUNT = 39 };
-typedef void (*RequestScreenFn)();                                                   // 0x8c0b2554: the GUI asks the current controller's screen-id virtual and queues the screen (it runs after key events; the module calls it after a change at a key release)
-#define STOCK_REQUEST_SCREEN ((RequestScreenFn)0x8c0b2554u)
-// J5i: stock makes the request on the thread that handles key events, and the request's queue takes one writer at a
-// time: its push (0x8fc232b4) stops the OS with "already pushing" when a second one enters. A request from a frame
-// function, which runs on the display thread, is made with interrupts
-// masked: the key thread cannot be inside the push while this thread runs, and cannot enter it before the mask is
-// lifted. Nothing in the request waits (0x8c0bc5cc and 0x8c0bc20c are getters, the controller's screen-id virtual
-// answers from state, 0x8fc234f4 looks at the queue's last entry and pushes).
-#define STOCK_IRQ_OFF(mask) asm volatile("cli %0;" : "=d"(mask) : : "memory")
-#define STOCK_IRQ_ON(mask) asm volatile("sti %0;" : : "d"(mask) : "memory")
+// R14: the screens come and go by the base's pages (the input unit's frame: op1f_layer_page, op1f_page_show), so no
+// screen request of the firmware's is made here any more (fx train 17's STOCK_REQUEST_SCREEN, from the key thread and
+// masked from the frame).
 extern "C" int __attribute__((weak)) op1f_presets_available() asm("op1f_presets_available");   // Build H's presets unit (H5): the list screen exists
 // R2: the pack's card (written by tools/pack_build.py from the recipe), whose first folder holds the presets; the copy
-// of the presets of user/fx/ into it (build_r2_move.cpp), which says whether the store may be used; the train's page
-// step (the pack's train unit).
+// of the presets of user/fx/ into it (build_r2_move.cpp), which says whether the store may be used. R14: fx train 17's
+// page step (op1f_train_page_now, op1f_train_seen, op1f_train_show_again) is gone with its key handlers.
 extern "C" const Op1fCard op1f_card_fx_train asm("op1f_card_fx_train");
 extern "C" int op1f_r2_move_done(void) asm("op1f_r2_move_done");
-extern "C" void op1f_train_page_now(int host) asm("op1f_train_page_now");
-// R6b (M5): the train unit's word of what the last frame showed of this pack's pages for the host (TRAIN_SEEN_...), and
-// its page asked again as its own request. Weak: away (an older train unit), T3 and the record are fx train 14's.
-extern "C" int __attribute__((weak)) op1f_train_seen(int host) asm("op1f_train_seen");
-extern "C" void __attribute__((weak)) op1f_train_show_again(int host) asm("op1f_train_show_again");
-enum { TRAIN_SEEN_AWAY = -1, TRAIN_SEEN_NONE = 0, TRAIN_SEEN_OURS = 1, TRAIN_SEEN_TRAIN = 2, GONE_FRAMES = 30 };
-enum { PRESETS_FOLDER = 0, PATH_ROOM = 40, SHUT_LINES = 16, REMOVE_LINES = 16, NOTE_KEY_FIRST = 13, NOTE_KEY_LAST = 53, PAGE_TURN = -1 };
+enum { PRESETS_FOLDER = 0, PATH_ROOM = 40, SHUT_LINES = 16, REMOVE_LINES = 16, NOTE_KEY_FIRST = 13, NOTE_KEY_LAST = 53 };
+// R14: the layer "train" is the card's ask 2; a place is 0 to 7 a synth slot, 8 + slot a
+// drum slot, 16 the master. A ride start after a load: no sooner than RIDE_DELAY_FRAMES frames on, again at the next
+// frame on OP1F_NOT_NOW up to RIDE_TRY_FRAMES frames after it was first due (lfo 12's rule). The flag "kept, not riding"
+// rides on the 48th integer. The page a key wishes (op1f_train_take_page). The keys whose down this unit took.
+enum { TRAIN_ASK = 2, PLACES = HOSTS * SLOTS, RIDE_DELAY_FRAMES = 5, RIDE_TRY_FRAMES = 120, RIDE_LINES = 40, FLAG_NOT_RIDING = 256 };
+enum { TAKE_NONE = 0, TAKE_OWN = 1, TAKE_UNIT = 2, KEYS_KEPT = 96 };
+extern "C" volatile unsigned op1f_train_rides asm("op1f_train_rides");
+volatile unsigned op1f_train_rides;                                                  // the frame's op1f_riding(card, TRAIN_ASK): bit n for place n (16 the master)
+static int place_rides(int host, u32 slot) { return (int)((op1f_train_rides >> ((u32)host * (u32)SLOTS + (slot & 7u))) & 1u); }
+static struct {                                                                      // the ride starts a load makes due (the display thread's, but `due` read by the key thread's flag)
+    u8 due[PLACES], no_flag[PLACES];                                                 // a start is due; one was given up (no flag until the place rides or loads again)
+    u32 due_at[PLACES], first_due[PLACES];                                           // the frame it is due at; the frame it was first due at
+    u32 next, lines, started, given_up, others;                                      // where the next walk starts; the lines; the starts, give-ups, places found on another effect
+    int in_frame;                                                                    // op1f_chain_frame is running: a load now is a load of this frame
+} rd;
+static u8 ride_began[HOSTS];                                                         // bit s: the host's slot s began to ride "train" at this frame (rides_frame, for frame_host; the display thread's)
+static volatile int take_page;                                                       // the page a key wished (TAKE_...), for op1f_train_take_page
+static u32 down_taken[KEYS_KEPT / 32];                                               // the keys whose down op1f_train_key took: their up is this unit's
 static struct {                                                                      // R2: the store's own words beside the elder's
     volatile u32 owed;                                                               // a scan asked while the store was shut: 1, or 2 for a forced one
     volatile u32 removing[2];                                                        // the slots whose file is to be taken off the disk, a bit each
@@ -447,12 +474,6 @@ static struct {                                                                 
     u32 removed, remove_failures, remove_lines;
 } r2;
 static int removal_owed(int slot) { return (int)((r2.removing[slot >> 5] >> (slot & 31)) & 1u); }
-// The end of a key handler: the page follows the key. Not for the keys that play notes (13 to 53), which the firmware
-// may hand in on the audio thread and none of which changes the page; a turn (PAGE_TURN) always.
-static int page_after(int host, int key, int taken) {
-    if (key < NOTE_KEY_FIRST || key > NOTE_KEY_LAST) op1f_train_page_now(host);
-    return taken;
-}
                   // H4b: the hold and the clean window in milliseconds of the core clock (400 MHz, the measurement unit's time base; H1 to H4 counted 23 frames for the hold and H3b 15 for the window)
 enum { SWALLOW_FRAMES = 10, INIT_WAIT_FRAMES = 300 };                                // the click after a hold; the wait for a record's document at boot
 enum { OBJECT_BYTES = 512 };
@@ -481,7 +502,7 @@ static const u32 POWER_POPUP_SHOWN = 0x84c9b3e4u;             // the power popup
 
 struct HostAddr {
     u32 slot_word, built_slot, type_array, param_block, fx_active, patch_table;
-    u32 key_down, key_shift, key_up, encoder;                 // stock's handlers, called for what the module leaves alone
+    u32 key_down, key_shift, key_up, encoder;                 // stock's handlers (R14: only the encoder is called, for the turns the module leaves alone)
 };
 static const HostAddr HOST[HOSTS] = {
     { 0x11904704u, 0x84a01524u, 0x11904794u, 0x119036e0u, 0x84a0154cu, 0x080235dcu, 0x8c0cfe7cu, 0x8c0cf904u, 0x8c0cf364u, 0x8c0d5c10u },
@@ -627,22 +648,16 @@ static struct {
     char line[200];
     QuietGate quiet;                                           // Q1: the gate of the periodic lines (build_q_quiet.h); the last field, so that no other field's place moved
 } st;
-static int train_away_frames[HOSTS];                     // R6b (M5): frames in a row in the instrument's mode with no page of this pack on the screen
-static u32 train_records_ended[HOSTS], train_shown_again[HOSTS];   // R6b: since the start, for the tests and a line
 
 extern "C" u32 op1f_fx_t0[HOSTS] asm("op1f_fx_t0");          // the start stubs' stamps (build_h_fx.cpp)
 extern "C" u32 __attribute__((weak)) op1f_fx_voices asm("op1f_fx_voices");   // Q1 (build_h_fx.cpp): what the synth stage's own records counted in the last period, 0 while no synth voice sounds
 extern "C" void __attribute__((weak)) op1f_lfopage_frame() asm("op1f_lfopage_frame");     // Build I's LFO page unit (I2, I3): the LFO pages' wagon marker, every frame
 extern "C" void __attribute__((weak)) op1f_lfo4_block(int host) asm("op1f_lfo4_block");   // build_i_lfo4.cpp (I5, I6): the three other LFOs' fx-side calls, first in the chain's run
 extern "C" void __attribute__((weak)) op1f_lfo4_frame() asm("op1f_lfo4_frame");           // build_i_lfo4.cpp: its frame work on the GUI thread (the instances built, the holds, the log)
-// I6: the LFO train on T4 (build_i_lfo4.cpp). The key functions answer -1 for a key that is not theirs.
-extern "C" int __attribute__((weak)) op1f_lfotrain_key_down(void* self, const int* event, int shifted) asm("op1f_lfotrain_key_down");
-extern "C" void __attribute__((weak)) op1f_lfotrain_key_up(int key) asm("op1f_lfotrain_key_up");
-extern "C" int __attribute__((weak)) op1f_lfotrain_encoder(void* self, int index, int delta) asm("op1f_lfotrain_encoder");
+// R14: the weak op1f_lfotrain_* key calls of I6 are gone (no pack offers them since lfo 12 takes its keys through the base).
 extern "C" void __attribute__((weak)) op1f_lfo4_store_load(int slot, const int* values) asm("op1f_lfo4_store_load");   // a synth slot's three other LFOs and its lamp, from the chain file
 extern "C" int __attribute__((weak)) op1f_lfo4_store_save(int slot, int* values) asm("op1f_lfo4_store_save");         // the same for the file; 0 while the slot has nothing but stock's one LFO on the first wagon
 extern "C" void __attribute__((weak)) op1f_lfo_file_chain_saved() asm("op1f_lfo_file_chain_saved");   // R4c (lfo 11): the chain's file was written now, and lfo's own file follows it
-extern "C" int __attribute__((weak)) op1f_train_available() asm("op1f_train_available");   // Build H's train page unit (H2): the train screen exists
 // I8: the LFO presets (Build I's LFO presets unit), a library of its own beside this unit's: its folder and files at the first file load, its frame work
 extern "C" void __attribute__((weak)) op1f_lfopresets_scan() asm("op1f_lfopresets_scan");
 extern "C" void __attribute__((weak)) op1f_lfopresets_frame() asm("op1f_lfopresets_frame");
@@ -1133,6 +1148,10 @@ static int lfofx_apply(int host, void* object, u32* block, int cls) {
     op1f_lfofx_calls[host] = op1f_lfofx_calls[host] + 1;       // I5
     LfoApplyFn real = (LfoApplyFn)(*(u32**)object)[2];
     u32 slot = RD32(HOST[host].built_slot) & 7u;               // the slot stock's apply reads the effect type of (0x8d503078 / 0x8d503064)
+    if (!place_rides(host, slot)) {                            // R14: the other wagons play only while the place rides "train": the pick is the first wagon's, stock's own way
+        lfofx_stock[host] = lfofx_stock[host] + 1;
+        return real(object, block, cls);
+    }
     if (*(u32*)object == MIDI_LFO_FX_VTABLE) return lfofx_apply_midi(host, object, block, cls, real, slot);   // I4
     int knob = lfo_fx_knob_of(host, slot);
     if (knob == mirror[host][slot] || !chain_ready[host] || !lfo_class_to_fx(*(u32*)object, block)) {
@@ -1242,6 +1261,10 @@ extern "C" int op1f_lfofx_extra(int host, void* object, u32* block, int pick, co
         return real(object, block, cls);
     }
     u32 slot = RD32(HOST[host].built_slot) & 7u;
+    if (!place_rides(host, slot)) {                            // R14: no ride of "train": every pick is the first wagon's (the lamp's effect on the scratch)
+        lfox_stock[host] = lfox_stock[host] + 1;
+        return real(object, block, cls);
+    }
     u32 vtable = *(u32*)object;
     int lamp = mirror[host][slot];
     if (vtable == MIDI_LFO_FX_VTABLE) {                        // four destinations, each with its wagon: a call for the lamp's effect, one for each other wagon (as lfofx_apply_midi)
@@ -1327,6 +1350,8 @@ extern "C" void op1f_fx_chain_run(int host) {
         Wagon* ws = wagons[host][slot];
         u32 ord = order_word[host][slot];
         int mir = mirror[host][slot];
+        u32 rides = op1f_train_rides;                             // R14: read once a call
+        int extras = (int)((rides >> ((u32)host * (u32)SLOTS + slot)) & 1u);   // the other wagons play only while the place rides "train"
         for (int pos = 0; pos < WAGONS; ++pos) {
             int knob = (int)((ord >> (8 * pos)) & 3u);
             Wagon* w = &ws[knob];
@@ -1336,6 +1361,7 @@ extern "C" void op1f_fx_chain_run(int host) {
                 void* obj = (void*)RD32(FX_PRODUCER);
                 if (obj) run_one(host, knob, obj, (void*)STOCK_CTX);
             } else {
+                if (!extras) continue;
                 u32 rack = live[host][knob].rack;                 // R5: a pack's effect on this wagon: its run, or silence
                 if (rack) {
                     if (rack != (u32)RACK_SILENT) run_rack(host, knob, w, &live[host][knob], rack);
@@ -1719,7 +1745,11 @@ static void order_build() {
     items[n++] = NONE;
     for (int t = 0; t < TYPES; ++t)
         if (t != TYPE_VOCODER && (t != TYPE_FAZER || fazer)) items[n++] = (signed char)t;
-    for (u32 i = 0; i < rack_entry_count && n < ORDER_MOST; ++i) items[n++] = (signed char)(ORDER_RACK + (int)i);
+    for (u32 i = 0; i < rack_entry_count && n < ORDER_MOST; ++i) {
+        const Op1fRackEntry* e = rack_entry(i);
+        if (e && e->effect && (e->effect->head.flags & (u32)OP1F_EFFECT_LAYER)) continue;   // R14: a layer ("train" itself among them) is no wagon's cargo: the base runs none at a pack's place
+        items[n++] = (signed char)(ORDER_RACK + (int)i);
+    }
     for (int i = 2; i < n; ++i) {                             // none stays first; the rest by name
         signed char item = items[i];
         const char* name = order_name(item);
@@ -1800,6 +1830,7 @@ static void pick(int host, int knob, int delta) {
         if (index < 0 || index >= end) break;                                // the ends of the list
         const Op1fRackEntry* e = 0;
         int type = items[index];
+        if (type >= ORDER_RACK && knob == mirror[host][slot]) continue;    // R14: no pack's effect on the first wagon: its pick would make the place ride it and end the train
         if (type >= ORDER_RACK) {
             e = rack_entry((u32)(type - ORDER_RACK));
             if (e == 0) return;
@@ -1951,8 +1982,10 @@ static void reset_params(int host, int knob) {
     apply_params(host, knob);
 }
 
-// The tap: the wagon becomes the mirror and stock shows its page (the browser for an empty wagon).
-static void open_wagon_page(void* self, int host, int knob) {
+// The tap: the wagon becomes the mirror (its effect pushed into the unit's slot) and the stock page of its effect is
+// wished (R14: the input unit's frame shows it, the page choice UNIT; fx train 17 made up a T3 for stock here, and
+// opened the unit's list for an empty wagon, which is now nothing: the list would end the ride).
+static void open_wagon_page(int host, int knob) {
     u32 slot = gui_slot(host);
     int old = mirror[host][slot];
     if (old != knob) {
@@ -1980,26 +2013,19 @@ static void open_wagon_page(void* self, int host, int knob) {
         st.pending_since[host][old] = (int)st.frames - REST_FRAMES;
         mark_dirty(host);
     }
-    st.train_open[host] = 0;
     ++st.page_opens;
-    u32* vtable = *(u32**)self;
-    if (wagons[host][slot][knob].type < 0) {
-        ((BrowserFn)vtable[0x3c / 4])(self, (int)slot);                     // the effect browser, as shift + T3
-        return;
-    }
-    if (*page_of(self) == PAGE_FX) *page_of(self) = 0;                       // T3 on page 2 would toggle; from another page it shows the effect
-    int event[4] = { KEY_T3, 0, 0, 0 };
-    ((KeyEventFn)HOST[host].key_down)(self, event);
+    take_page = TAKE_UNIT;
 }
 
-// ---------------------------------------------------------------- the handlers (vtable words)
+// ---------------------------------------------------------------- the keys (R14: from the base's input)
 
 // H5: the presets list's handlers (defined after the persistence, which they use)
 static void t3_press(int host);
 static void t3_release(int host);
 static void list_release(int host, int knob);
 static void list_turn(int host, int knob, int delta);
-static int list_key_down(void* self, int host, const int* event, int shifted);
+static int list_key(int host, int key, int shifted);
+static void presets_leave(int host);
 static void list_frame(int host);
 
 // A knob's physical press reaches the controller as the key 61 + knob at key-down (through the shifted key-down
@@ -2025,72 +2051,120 @@ static void knob_release(int host, int knob) {
     st.pressed[host][knob] = 0;
 }
 
-static int knob_click(void* self, int host, int knob, int shifted) {
+// The click: shift + click randomises the wagon's values; a click moves the mirror to the wagon and wishes its stock
+// page. R14: an empty wagon, or one that carries a pack's effect (its page would be the base's page of a ride, and the
+// place rides "train"), does nothing.
+static int knob_click(int host, int knob, int shifted) {
     if ((int)st.frames < st.swallow_until[host][knob]) {                   // the click after a hold
         st.swallow_until[host][knob] = 0;
         ++st.swallowed;
         return 1;
     }
+    u32 slot = gui_slot(host);
     if (shifted) randomize(host, knob);
-    else { ++st.taps; open_wagon_page(self, host, knob); }
+    else if (wagons[host][slot][knob].type >= 0 && !cargo_name(host, slot, knob)) { ++st.taps; open_wagon_page(host, knob); }
     return 1;
 }
 
-extern "C" int op1f_fx_key_down(void* self, const int* event) asm("op1f_fx_key_down");
-extern "C" int op1f_fx_key_down(void* self, const int* event) {
-    int host = host_of(self);
-    int key = event[0];
-    if (host == 0 && &op1f_lfotrain_key_down && !(st.train_open[0] && ls.open[0])) {   // I6: the LFO train on T4 and its keys while it is open; the presets list keeps every key
-        int taken = op1f_lfotrain_key_down(self, event, 0);
-        if (taken >= 0) return page_after(host, key, taken);
-    }
-    if (!st.train_open[host]) {
-        if (key == KEY_T3 && (&op1f_train_available == 0 || op1f_train_available())) {   // no page to show: T3 runs stock
-            st.train_open[host] = 1;
-            ++st.train_opens;
-            return page_after(host, key, 1);
+static int host_of_place(int place) { return place >= (int)OP1F_PLACE_DRUM ? 1 : 0; }
+static int valid_place(int place) { return place >= 0 && place < (int)PLACES; }
+
+// The place on the screen: the synth's slot in the synth mode (MODE_GUI 0), 8 + the drum's slot in the drum mode (1),
+// -1 in another mode.
+extern "C" int op1f_train_place() asm("op1f_train_place");
+extern "C" int op1f_train_place() {
+    u32 mode = RD32(MODE_GUI);
+    if (mode == 0u) return (int)gui_slot(0);
+    if (mode == 1u) return (int)OP1F_PLACE_DRUM + (int)gui_slot(1);
+    return -1;
+}
+
+// The train page's keys, the presets' list not showing: the knobs' press and click, T3 held for
+// the presets (a tap wishes the stock page of the first wagon's effect); T1, T2, T4 and every other key are stock's.
+static int page_key(int host, int key, int shifted) {
+    if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) { knob_press(host, key - KEY_PRESS0, shifted); return 1; }
+    if (key >= KEY_CLICK0 && key < KEY_CLICK0 + WAGONS) return knob_click(host, key - KEY_CLICK0, shifted);
+    if (key == KEY_T3 && !shifted) { t3_press(host); return 1; }             // held HOLD_MS: the presets' list (list_frame); let go before: the tap (t3_release)
+    if (key >= KEY_T1 && key <= KEY_T4) presets_leave(host);                 // another page: stock leaves the train's
+    return 0;
+}
+
+// A key for a place (what: OP1F_DOWN, OP1F_DOWN_SHIFT, OP1F_UP), on the key thread: 1 taken, 0 stock's. The input
+// unit calls it while the train page, or the presets over it, is up and the place rides "train"; the up of a down it
+// took comes here whatever shows then. The keys 13 to 53 (the keyboard, shift) are never the page's: they may come on
+// the audio thread. Shift + T3: 0 always (the unit's list of effects), the presets' list closed first.
+extern "C" int op1f_train_key(int place, int key, int what) asm("op1f_train_key");
+extern "C" int op1f_train_key(int place, int key, int what) {
+    if (!valid_place(place) || key < 0 || key >= KEYS_KEPT || (key >= NOTE_KEY_FIRST && key <= NOTE_KEY_LAST)) return 0;
+    int host = host_of_place(place);
+    u32 bit = 1u << (key & 31);
+    u32* taken = &down_taken[key >> 5];
+    if (what == OP1F_UP) {
+        int mine = (*taken & bit) != 0;
+        *taken &= ~bit;
+        if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) {             // the knob let go: the list's red hold or the wagon's hold ends (both: the list may have opened while it was down)
+            list_release(host, key - KEY_PRESS0);
+            knob_release(host, key - KEY_PRESS0);
         }
-        return page_after(host, key, ((KeyEventFn)HOST[host].key_down)(self, event));
+        if (key == KEY_T3 && ls.t3_pressed[host]) t3_release(host);         // the tap (the hold has opened the list already)
+        return mine;
     }
-    if (ls.open[host]) return page_after(host, key, list_key_down(self, host, event, 0));         // H5: the list over the train takes every key
-    if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) { knob_press(host, key - KEY_PRESS0, 0); return page_after(host, key, 1); }
-    if (key >= KEY_CLICK0 && key < KEY_CLICK0 + WAGONS) return page_after(host, key, knob_click(self, host, key - KEY_CLICK0, 0));
-    if (key == KEY_T3) {
-        // R6b (M5): the first wagon's page only from the train on the screen; else the train shown, nothing to the firmware
-        if (&op1f_train_seen == 0 || op1f_train_seen(host) == TRAIN_SEEN_TRAIN) open_wagon_page(self, host, mirror[host][gui_slot(host)]);
-        else if (&op1f_train_show_again != 0) { ++train_shown_again[host]; op1f_train_show_again(host); }
-        return page_after(host, key, 1);
-    }
-    if (key >= KEY_T1 && key < KEY_T1 + 4) st.train_open[host] = 0;         // another page: the train closes
-    return page_after(host, key, ((KeyEventFn)HOST[host].key_down)(self, event));
+    if ((what != OP1F_DOWN && what != OP1F_DOWN_SHIFT) || !place_rides(host, (u32)place & 7u)) return 0;
+    int shifted = what == OP1F_DOWN_SHIFT;
+    int answer;
+    if (key == KEY_T3 && shifted) { presets_leave(host); answer = 0; }
+    else if (ls.open[host]) answer = list_key(host, key, shifted);           // H5: the list over the train takes its keys first
+    else answer = page_key(host, key, shifted);
+    if (answer) *taken |= bit;
+    return answer;
 }
 
-extern "C" int op1f_fx_key_shift(void* self, const int* event) asm("op1f_fx_key_shift");
-extern "C" int op1f_fx_key_shift(void* self, const int* event) {
-    int host = host_of(self);
-    int key = event[0];
-    if (host == 0 && &op1f_lfotrain_key_down && !(st.train_open[0] && ls.open[0])) {   // I6
-        int taken = op1f_lfotrain_key_down(self, event, 1);
-        if (taken >= 0) return page_after(host, key, taken);
-    }
-    if (!st.train_open[host]) return page_after(host, key, ((KeyEventFn)HOST[host].key_shift)(self, event));
-    if (ls.open[host]) return page_after(host, key, list_key_down(self, host, event, 1));         // H5
-    if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) { knob_press(host, key - KEY_PRESS0, 1); return page_after(host, key, 1); }
-    if (key >= KEY_CLICK0 && key < KEY_CLICK0 + WAGONS) return page_after(host, key, knob_click(self, host, key - KEY_CLICK0, 1));
-    if (key == KEY_T3) { t3_press(host); return page_after(host, key, 1); }                          // H5: a tap opens the presets list at the release, a hold saves the chain as a preset (H3's bypass is gone)
-    return page_after(host, key, ((KeyEventFn)HOST[host].key_shift)(self, event));
+// A knob turned (knob 0 to 3; shifted: shift held, the wagon moves), on the key thread: the list's scroll, caret and
+// letter while it shows, else the wagon's effect before or after. 1.
+extern "C" int op1f_train_turn(int place, int knob, int steps, int shifted) asm("op1f_train_turn");
+extern "C" int op1f_train_turn(int place, int knob, int steps, int shifted) {
+    if (!valid_place(place) || knob < 0 || knob >= WAGONS) return 0;
+    int host = host_of_place(place);
+    if (steps == 0) return 1;
+    if (ls.open[host]) { list_turn(host, knob, steps); return 1; }            // H5
+    if (st.pressed[host][knob]) st.acted[host][knob] = 1;                   // a turn while pressed: no hold (stock sends no click either)
+    st.last_turn_ms[host][knob] = (int)st.ms;                               // H3b: a press in the next 120 ms arms no hold (H4b)
+    if (shifted) move_wagon(host, knob, steps);
+    else pick(host, knob, steps);
+    st.turn_knob[host] = knob;                                              // the page's card (H2)
+    st.turn_frame[host] = (int)st.frames;
+    st.turn_move[host] = shifted ? 1 : 0;                                   // the page's hop (H3)
+    return 1;
 }
 
-extern "C" int op1f_fx_key_up(void* self, int key) asm("op1f_fx_key_up");
-extern "C" int op1f_fx_key_up(void* self, int key) {
-    int host = host_of(self);
-    if (host == 0 && &op1f_lfotrain_key_up) op1f_lfotrain_key_up(key);       // I6: the LFO train sees its knobs released; stock's bookkeeping runs below as ever
-    if (st.train_open[host] && key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) {
-        if (ls.open[host]) list_release(host, key - KEY_PRESS0);              // H5
-        else knob_release(host, key - KEY_PRESS0);
+// The page a key wished since the last read: TAKE_NONE, TAKE_OWN (the train page) or TAKE_UNIT (the stock page of the
+// first wagon's effect). Cleared by the read; the display thread (the input unit's frame).
+extern "C" int op1f_train_take_page() asm("op1f_train_take_page");
+extern "C" int op1f_train_take_page() {
+    unsigned was = op1f_mask();                                // the key thread writes the wish: read and cleared as one
+    int w = take_page;
+    take_page = TAKE_NONE;
+    op1f_unmask(was);
+    return w;
+}
+
+// The train page left the screen for a host: the presets' list and its hold go, and the knobs held on it let go.
+static void train_leave(int host) {
+    presets_leave(host);
+    for (int k = 0; k < WAGONS; ++k) st.pressed[host][k] = 0;
+}
+
+// Once a frame, from the input unit's frame: the place whose train page, or the presets over it, is on the screen,
+// -1 for none. Its host's train is open (the view, the holds and the presets read it), the other host's is not.
+extern "C" void op1f_train_up(int place) asm("op1f_train_up");
+extern "C" void op1f_train_up(int place) {
+    int up = valid_place(place) ? host_of_place(place) : -1;
+    for (int h = 0; h < HOSTS; ++h) {
+        int open = h == up;
+        if (st.train_open[h] && !open) train_leave(h);
+        if (open && !st.train_open[h]) ++st.train_opens;
+        st.train_open[h] = open;
     }
-    if (key == KEY_T3 && ls.t3_pressed[host]) t3_release(host);             // H5: the tap of shift + T3 (the hold has acted already)
-    return page_after(host, key, ((KeyUpFn)HOST[host].key_up)(self, key));        // stock's release bookkeeping either way
 }
 
 // H6h: a knob turn stock handles on the effect page or the LFO page, with the descriptor entry the converter uses for it
@@ -2368,11 +2442,13 @@ static int lfo_dest_turn(void* self, int host, int index, int delta, int* result
     return 1;
 }
 
-// what the LFO pages are told (Build I's LFO page unit)
+// what the LFO pages are told (Build I's LFO page unit). R14: while the place does not ride "train" the LFO acts on the
+// first wagon (the gates of lfofx_apply and op1f_lfofx_extra), so the pages are told the first wagon; the stored pick
+// is kept untouched for the next ride.
 extern "C" void op1f_lfofx_view(int host, Op1fLfoFxView* out) asm("op1f_lfofx_view");
 extern "C" void op1f_lfofx_view(int host, Op1fLfoFxView* out) {
     u32 slot = gui_slot(host);
-    int knob = lfo_fx_knob_of(host, slot);
+    int knob = place_rides(host, slot) ? lfo_fx_knob_of(host, slot) : mirror[host][slot];
     u32 kind = lfo_type_word(host, slot);
     int value = int_of(lfo_block_of(host, slot)[LFO_DEST_WORD]);
     out->known = initialised[host][slot];
@@ -2390,9 +2466,10 @@ extern "C" void op1f_lfofx_midi_view(int host, Op1fLfoMidiView* out) {
     u32 slot = gui_slot(host);
     out->known = initialised[host][slot];
     out->midi = lfo_type_word(host, slot) == (u32)LFO_TYPE_MIDI;
+    int rides = place_rides(host, slot);                                     // R14: not riding, every destination the first wagon's (as op1f_lfofx_view)
     for (int i = 0; i < MIDI_DESTS; ++i) {
         int value = int_of(lfo_block_of(host, slot)[LFO_MIDI_DEST_WORD + i]);
-        int knob = lfo_midi_knob_of(host, slot, i);
+        int knob = rides ? lfo_midi_knob_of(host, slot, i) : mirror[host][slot];
         out->to_fx[i] = value >= LFO4_FX_LO && value < LFO4_FX_HI;
         out->knob[i] = knob;
         out->type[i] = wagons[host][slot][knob].type;
@@ -2400,28 +2477,14 @@ extern "C" void op1f_lfofx_midi_view(int host, Op1fLfoMidiView* out) {
 }
 
 extern "C" int op1f_fx_encoder(void* self, int index, int delta) asm("op1f_fx_encoder");
+// R14: the controllers' encoder word, for the turns the base's input left to stock (the train page's own come through
+// op1f_train_turn): on the LFO page the destination knob walks the effect wagons only while the place on the screen
+// rides "train"; every other turn is stock's.
 extern "C" int op1f_fx_encoder(void* self, int index, int delta) {
     int host = host_of(self);
-    if (host == 0 && &op1f_lfotrain_encoder) {                               // I6: a knob turned on the LFO train picks the kind for its wagon
-        int taken = op1f_lfotrain_encoder(self, index, delta);
-        if (taken >= 0) return page_after(host, PAGE_TURN, taken);
-    }
-    if (!st.train_open[host]) {
-        int result = 0;
-        if (lfo_dest_turn(self, host, index, delta, &result)) return page_after(host, PAGE_TURN, result);  // I2, I3: the LFO's destination knob, a wagon a detent inside the effect's range
-        return page_after(host, PAGE_TURN, stock_knob_turn(self, host, index, delta));                     // H6h: logged on the effect and LFO pages (off since H6j)
-    }
-    if (delta == 0) return page_after(host, PAGE_TURN, 1);
-    if (ls.open[host]) { list_turn(host, index & 3, delta); return page_after(host, PAGE_TURN, 1); }      // H5: the list's scroll, caret and letter
-    int knob = index & 3;
-    if (st.pressed[host][knob]) st.acted[host][knob] = 1;                   // a turn while pressed: no hold (stock sends no click either)
-    st.last_turn_ms[host][knob] = (int)st.ms;                               // H3b: a press in the next 120 ms arms no hold (H4b)
-    if (index >= 0 && index < WAGONS) pick(host, index, delta);
-    else if (index >= 4 && index < 4 + WAGONS) move_wagon(host, index - 4, delta);
-    st.turn_knob[host] = knob;                                              // the page's card (H2)
-    st.turn_frame[host] = (int)st.frames;
-    st.turn_move[host] = index >= 4;                                        // the page's hop (H3)
-    return page_after(host, PAGE_TURN, 1);
+    int result = 0;
+    if (place_rides(host, gui_slot(host)) && lfo_dest_turn(self, host, index, delta, &result)) return result;   // I2, I3: the LFO's destination knob, a wagon a detent inside the effect's range
+    return stock_knob_turn(self, host, index, delta);                                                         // H6h: logged on the effect and LFO pages (off since H6j)
 }
 
 // ---------------------------------------------------------------- the persistence: the module's own file
@@ -2514,7 +2577,9 @@ static void chain_values(int host, u32 slot, int* values, int riding) {     // C
         values[n++] = w->coupled;
         for (int i = 0; i < PARAMS; ++i) values[n++] = int_of(w->params[i]);
     }
-    values[n++] = bypass_mask[host][slot];                                     // H3: the 48th integer
+    int place = host * SLOTS + (int)slot;                                      // R14: the flag "kept, not riding": not riding, no start due, none given up
+    int flag = !place_rides(host, slot) && !rd.due[place] && !rd.no_flag[place];
+    values[n++] = bypass_mask[host][slot] + (flag ? (int)FLAG_NOT_RIDING : 0);  // H3: the 48th integer (read & 0xf for the parked mask)
 }
 
 // H6j: the wagon H6 to H6i made of a file's "none" (json_fx_type): an uncoupled delay with eight zero parameters. No knob
@@ -2585,6 +2650,27 @@ static void chain_from_values(int host, u32 slot, const int* values, char (*name
     u32 parked = (u32)values[CHAIN_INTS] & 0xfu;                            // H3's bypass parked these: back on the line (H5 has no bypass key)
     if (parked) for (int k = 0; k < WAGONS; ++k) if ((parked & (1u << k)) && wagons[host][slot][k].type >= 0) wagons[host][slot][k].coupled = 1;
     bypass_mask[host][slot] = 0;
+    // R14: a store with another wagon that carries an effect and is coupled (its parked bit too,
+    // coupled just above), no flag and no pack's effect on the first wagon makes a ride start due RIDE_DELAY_FRAMES
+    // frames on (a load inside the chain's frame counts from this frame, one outside it from the next).
+    int place = host * SLOTS + (int)slot;
+    rd.due[place] = 0;
+    rd.no_flag[place] = 0;
+    int m = mirror[host][slot], extra = 0;
+    for (int k = 0; k < WAGONS; ++k) if (k != m && wagons[host][slot][k].type >= 0 && wagons[host][slot][k].coupled) extra = 1;
+    int flagged = ((u32)values[CHAIN_INTS] & (u32)FLAG_NOT_RIDING) != 0;
+    if (extra && !flagged && !rack_name[host][slot][m][0]) {
+        rd.due_at[place] = rd.first_due[place] = st.frames + (u32)RIDE_DELAY_FRAMES + (rd.in_frame ? 0u : 1u);
+        rd.due[place] = 1;
+    }
+}
+
+// R14: a place's chain made anew from its document (a sound with none of this unit's integers): nothing due, the flag
+// free to follow its ride again.
+static void ride_forget(int host, u32 slot) {
+    int place = host * SLOTS + (int)slot;
+    rd.due[place] = 0;
+    rd.no_flag[place] = 0;
 }
 
 static void load_file() {
@@ -2752,16 +2838,14 @@ static void save_pending() {
 // file is made), so a file the host wrote through the disk mode (Build H's disk unit shows the folder as fx/) is a
 // preset at the next list open. The list is a screen of the GUI's own (Build H's presets unit, the id 37 since H6d) dressed
 // from op1f_presets_view; the keys below route to it while it is open.
-//   * shift + T3 on the train: a tap (the release before the save) opens the list, a hold saves the current chain
-//     into the lowest free slot as chain NN (the slot's number), the save screen showing the number from 200 ms,
-//     the save at 700 ms, saved! for a second, then the list on the new preset; on the list the same: a tap closes
-//     it, a hold saves.
+//   * R14: T3 held HOLD_MS on the train page opens the list (fx train 17: shift + T3's tap, and its hold of 700 ms
+//     saved); shift + T3 is the unit's list of effects, which closes the list first.
 //   * On the list: the blue knob scrolls, its tap (or T3) loads the highlighted preset into the current slot (the
 //     types, the order, the couplings and the parameters; the mirror stays on its knob and takes its new effect,
 //     the other instances rebuild) and closes the list; the ochre knob's tap opens the rename editor; the grey
-//     knob's tap saves (as the hold of shift + T3); the red knob held HOLD_MS empties the highlighted preset's slot
-//     after a deleted flash of a second (its file becomes {}); T1, T2 and T4 close the list and the train and run
-//     stock.
+//     knob's tap saves the current chain into the lowest free slot as chain NN (the slot's number), saved! for a
+//     second; the red knob held HOLD_MS empties the highlighted preset's slot after a deleted flash of a second (its
+//     file becomes {}); T1, T2 and T4 close the list and are stock's.
 //   * The editor: the edited preset is scrolled to the window's first row and its name shows in twelve cells; the
 //     blue knob moves the caret, the ochre knob steps the letter (space, a to z, 0 to 9, dash, dot), the grey knob's
 //     tap or T3 keeps the name (all spaces: chain NN), the red knob's tap cancels.
@@ -3239,11 +3323,23 @@ static void preset_load(int host, int row) {
     values[2] = doc_type[host][slot];                                          // the document has not changed: the next reconcile finds the chain standing
     chain_from_values(host, slot, values, presets.rack[s]);                   // R5: a pack's effect by its name
     int moved_from = -1;
-    if (wagons[host][slot][mirror[host][slot]].type < 0) {                        // H6g: a file whose wagons leave the mirrored knob empty (a two- or three-effect chain made on the PC fills the
-        for (int p = 0; p < WAGONS; ++p) {                                        // blue, ochre and grey knobs): the mirror moves to the first effect in signal order, so stock's page shows an
-            int k = knob_at(host, slot, p);                                        // effect of the chain, on, instead of the previous effect switched off (as first heard on the unit)
-            if (wagons[host][slot][k].type >= 0) { moved_from = mirror[host][slot]; mirror[host][slot] = (u8)k; ++ls.mirror_moves; break; }
+    int riding = place_rides(host, slot), m = mirror[host][slot];
+    char* first = rack_name[host][slot][m];
+    // R14: riding "train", the mirror takes no pack's effect (its pick would end the train): it goes to the first wagon in signal order with one of the unit's own, else to the first empty one, else (four packs' effects) its wagon is loaded empty.
+    if (wagons[host][slot][m].type < 0 || (riding && first[0])) {               // H6g: a file whose wagons leave the mirrored knob empty (a two- or three-effect chain made on the PC fills the
+        int to = -1, empty = -1;                                                  // blue, ochre and grey knobs): the mirror moves to the first effect in signal order, so stock's page shows an
+        for (int p = 0; p < WAGONS && to < 0; ++p) {                              // effect of the chain, on, instead of the previous effect switched off (as first heard on the unit)
+            int k = knob_at(host, slot, p);
+            if (wagons[host][slot][k].type < 0) { if (empty < 0) empty = k; }
+            else if (!riding || !rack_name[host][slot][k][0]) to = k;
         }
+        if (to < 0 && first[0]) to = empty;
+        if (to < 0 && first[0]) {
+            wagons[host][slot][m].type = NONE;
+            for (int i = 0; i < PARAMS; ++i) wagons[host][slot][m].params[i] = 0;
+            first[0] = 0;
+        }
+        if (to >= 0 && to != m) { moved_from = m; mirror[host][slot] = (u8)to; ++ls.mirror_moves; }
     }
     st.push_pending[host] = 0;
     mirror_write(host, slot);                                                  // stock's slot takes the mirrored wagon's effect, parameters and coupling
@@ -3257,7 +3353,7 @@ static void preset_load(int host, int row) {
     STOCK_LOG(3, LOG_FILE, 15, "presets: loaded slot %d (%s) onto %s s%u: %s, %s, %s, %s; %u of %u cycles a block%s; mirror knob %d%s", s + 1, presets.name[s], host ? "drum" : "synth", slot,
               wagon_word(host, slot, 0), wagon_word(host, slot, 1), wagon_word(host, slot, 2), wagon_word(host, slot, 3),
               cost, (u32)CEILING_CYCLES, cost > (u32)CEILING_CYCLES ? " (OVER THE BUDGET: the block may overrun)" : "",
-              mirror[host][slot], moved_from >= 0 ? " (moved from an empty wagon)" : "");
+              mirror[host][slot], moved_from < 0 ? "" : rack_name[host][slot][moved_from][0] ? " (moved from a pack's effect)" : " (moved from an empty wagon)");
 }
 
 static void preset_delete_now(int s) {
@@ -3320,13 +3416,19 @@ static void t3_press(int host) {
     ls.t3_acted[host] = 0;
 }
 
+// R14: T3 let go on the train page before the hold opened the list: the tap, the stock page of the first wagon's
+// effect wished (fx train 17: shift + T3's tap opened or closed the list, its hold saved).
 static void t3_release(int host) {
     ls.t3_pressed[host] = 0;
-    if (!ls.t3_acted[host]) {                                                  // the tap (any release before the save): the list opens or closes
-        if (ls.save_state == SAVE_SAVING && ls.save_host == host) ls.save_state = SAVE_NONE;   // H5b: "saving" was showing: cancelled
-        if (ls.open[host]) list_close(host); else list_open(host);
-    }
-    STOCK_REQUEST_SCREEN();                                                    // the GUI asks the screen-id virtual now (a release alone may not)
+    if (ls.t3_acted[host] || ls.open[host]) return;
+    take_page = TAKE_UNIT;
+}
+
+// R14: the list, T3's hold and the save screen go (shift + T3, T1, T2, T4, the train page left).
+static void presets_leave(int host) {
+    list_close(host);
+    ls.t3_pressed[host] = 0;
+    if (ls.save_host == host) ls.save_state = SAVE_NONE;
 }
 
 static void list_press(int host, int knob) {
@@ -3377,51 +3479,27 @@ static void list_turn(int host, int knob, int delta) {
     }
 }
 
-static int list_key_down(void* self, int host, const int* event, int shifted) {
-    int key = event[0];
+// A key-down while the list shows over the train page (shift + T3 is the caller's): 1 taken, 0 stock's. T3 keeps the
+// rename or loads, and closes the list; T1, T2 and T4 close it and are stock's; shift + another key does nothing.
+static int list_key(int host, int key, int shifted) {
     if (key >= KEY_PRESS0 && key < KEY_PRESS0 + WAGONS) { list_press(host, key - KEY_PRESS0); return 1; }
     if (key >= KEY_CLICK0 && key < KEY_CLICK0 + WAGONS) { list_click(host, key - KEY_CLICK0, shifted); return 1; }
-    if (key == KEY_T3) {
-        if (shifted) { t3_press(host); return 1; }                              // the tap closes the list at the release, the hold saves
+    if (key == KEY_T3 && !shifted) {
         if (ls.editing[host]) rename_keep(host); else preset_load(host, ls.cursor[host]);
-        list_close(host);                                                       // back to the train (the GUI re-asks the screen after this key)
+        list_close(host);                                                       // back to the train page
         return 1;
     }
-    if (key >= KEY_T1 && key < KEY_T1 + 4) { list_close(host); st.train_open[host] = 0; }   // another page: the list and the train close
-    else if (shifted) return 1;                                                 // shift + another key on the list: nothing
-    return ((KeyEventFn)(shifted ? HOST[host].key_shift : HOST[host].key_down))(self, event);
-}
-
-// J5i: the screen request from the frame call (the display thread), behind the mask the binding's note asks for.
-// The requests at key releases (t3_release) run on the key thread, as stock's own, and stay plain.
-static void request_screen_from_frame() {
-    u32 mask;
-    STOCK_IRQ_OFF(mask);
-    STOCK_REQUEST_SCREEN();
-    STOCK_IRQ_ON(mask);
+    if (key >= KEY_T1 && key <= KEY_T4) { presets_leave(host); return 0; }    // another page: the list closes, stock leaves the train's
+    return shifted ? 1 : 0;                                                     // shift + another key on the list: nothing; any other key is stock's
 }
 
 static void list_frame(int host) {
     int now = (int)st.ms;
-    if (ls.t3_pressed[host] && !ls.t3_acted[host]) {
-        int held = now - ls.t3_ms[host];
-        if (held >= SAVE_HOLD_MS) {                                            // the hold: the save (its screen says saved!)
-            ls.t3_acted[host] = 1;
-            preset_save(host);
-            if (!ls.open[host]) list_open(host);                               // the list shows the new preset after the confirmation
-            request_screen_from_frame();
-        } else if (held >= SAVE_SHOW_MS && ls.save_state == SAVE_NONE) {       // H5b: "saving" with the clock filling towards the save
-            ls.save_state = SAVE_SAVING;
-            ls.save_host = host;
-            ls.save_slot = free_slot();                                        // the number the save would take (-1 when the list is full)
-            ls.save_ms = ls.t3_ms[host];
-            request_screen_from_frame();
-        }
+    if (ls.t3_pressed[host] && !ls.t3_acted[host] && now - ls.t3_ms[host] >= HOLD_MS) {   // R14: T3 held on the train page: the list (the input unit's frame shows it over the page)
+        ls.t3_acted[host] = 1;
+        if (st.train_open[host]) list_open(host);
     }
-    if (ls.save_state == SAVE_SAVED && ls.save_host == host && now - ls.save_ms >= SAVED_MS) {   // H5b: the confirmation ends, the list (or the train) is back
-        ls.save_state = SAVE_NONE;
-        request_screen_from_frame();
-    }
+    if (ls.save_state == SAVE_SAVED && ls.save_host == host && now - ls.save_ms >= SAVED_MS) ls.save_state = SAVE_NONE;   // H5b: the confirmation ends, the list is back
     if (ls.open[host] && ls.pressed[host][KNOB_RED] && !ls.acted[host][KNOB_RED] && now - ls.press_ms[host][KNOB_RED] >= HOLD_MS) {
         ls.acted[host][KNOB_RED] = 1;
         delete_begin(host);
@@ -3543,6 +3621,7 @@ static void chain_defaults(int host, u32 slot, void* doc, int dt) {
     first->coupled = doc_fx_active(doc);
     if (dt >= 0) doc_fx_params(doc, first->params);
     doc_type[host][slot] = dt;
+    ride_forget(host, slot);                                   // R14: one effect: no start due
 }
 
 // I9: a new instrument was loaded from a file onto the slot (Build I's patch unit
@@ -3811,7 +3890,8 @@ extern "C" const char* op1f_chain_rack_value(int host, int knob, int index) {
 // comparisons when nothing changed): its id for the audio thread, or silence while its pack is away, while its memory
 // is made ready, or where the base refuses it; each said once, at its change.
 static void rack_frame(int host, u32 slot) {
-    mirror_ride_id[host] = op1f_rack_at(&op1f_card_fx_train, host ? (u32)OP1F_PLACE_DRUM + slot : slot);
+    u32 id = op1f_rack_at(&op1f_card_fx_train, host ? (u32)OP1F_PLACE_DRUM + slot : slot);
+    mirror_ride_id[host] = place_rides(host, slot) ? 0u : id;              // R14: the base answers the train's own layer while the place rides it: no pack's effect
     mirror_ride_slot[host] = slot;
     for (int k = 0; k < WAGONS; ++k) {
         Live* l = &live[host][k];
@@ -3837,24 +3917,35 @@ static void rack_frame(int host, u32 slot) {
     }
 }
 
+// The slot's wagons' instances made anew, at a change of slot (a push that waits dropped) and, R14, when a ride of
+// "train" begins at the slot on the screen (its extra wagons were kept as they were while it did not ride: no old tail
+// plays, a pack's effect is told fresh). No block runs them meanwhile (chain_ready).
+static void make_live(int host, u32 slot, int drop_push) {
+    chain_ready[host] = 0;
+    for (int k = 0; k < WAGONS; ++k) {
+        Wagon* w = &wagons[host][slot][k];
+        if (k == mirror[host][slot]) { live[host][k].obj = 0; live[host][k].rack = 0; live[host][k].rack_name[0] = 0; live[host][k].type = NONE; st.pending_type[host][k] = NONE; continue; }
+        build_wagon(host, k, w, rack_name[host][slot][k]);                   // R5: a pack's effect, or the wagon's own object
+        for (int i = 0; i < PARAMS; ++i) live[host][k].ctx[i] = w->params[i];
+        st.pending_type[host][k] = w->type;
+    }
+    if (drop_push) st.push_pending[host] = 0;
+    chain_ready[host] = 1;
+}
+
 static void frame_host(int host) {
     u32 slot = gui_slot(host);
+    u32 began = ride_began[host];                                           // R14: the slots whose ride of "train" began at this frame (rides_frame)
+    ride_began[host] = 0;
     if (!initialised[host][slot]) init_slot(host, slot);
     if (!initialised[host][slot]) return;                                   // the record not loaded yet: stock's producer runs as stock's (chain_ready stays 0)
     // a new current slot: its chain goes live
     if (st.current_slot[host] != (int)slot) {
         if (st.current_slot[host] >= 0) switch_leave(host, (u32)st.current_slot[host]);   // 17
         st.current_slot[host] = (int)slot;
-        chain_ready[host] = 0;
-        for (int k = 0; k < WAGONS; ++k) {
-            Wagon* w = &wagons[host][slot][k];
-            if (k == mirror[host][slot]) { live[host][k].obj = 0; live[host][k].rack = 0; live[host][k].rack_name[0] = 0; live[host][k].type = NONE; st.pending_type[host][k] = NONE; continue; }
-            build_wagon(host, k, w, rack_name[host][slot][k]);               // R5: a pack's effect, or the wagon's own object
-            for (int i = 0; i < PARAMS; ++i) live[host][k].ctx[i] = w->params[i];
-            st.pending_type[host][k] = w->type;
-        }
-        st.push_pending[host] = 0;
-        chain_ready[host] = 1;
+        make_live(host, slot, 1);
+    } else if ((began >> slot) & 1u) {
+        make_live(host, slot, 0);                                           // R14: a ride begun at the slot on the screen: its extra wagons start clean
     }
     int m = mirror[host][slot];
     Wagon* mw = &wagons[host][slot][m];
@@ -3923,9 +4014,9 @@ static void frame_host(int host) {
         }
     }
     rack_frame(host, slot);                                                 // R5: the packs' effects made ready at the wagons' places
-    // the holds
+    // the holds (R14: while the train page is up)
     for (int k = 0; k < WAGONS; ++k) {
-        if (st.pressed[host][k] && st.hold_armed[host][k] && !st.acted[host][k] && (int)st.ms - st.press_ms[host][k] >= HOLD_MS) {
+        if (st.train_open[host] && st.pressed[host][k] && st.hold_armed[host][k] && !st.acted[host][k] && (int)st.ms - st.press_ms[host][k] >= HOLD_MS) {
             st.acted[host][k] = 1;
             if (st.press_shift[host][k]) reset_params(host, k);
             else {
@@ -4093,8 +4184,86 @@ static void allocate_regions() {
     STOCK_LOG(3, LOG_FILE, 12, "chain regions: %d x %u bytes at %08x (heap %d block %08x): the same effect may ride on several wagons", (int)REGION_COUNT, (u32)REGION_BYTES, base, (int)REGION_HEAP, (u32)region_pool);
 }
 
+// ---------------------------------------------------------------- R14: the rides and the starts
+
+// The places that ride "train", once a frame from op1f_riding (it walks the cards), for the key thread and the audio
+// thread. A ride begun or ended marks its host's file to be written, so that the flag reaches the file at a ride's end
+// (lfo 12's PC test found that fault); a place that begins to ride lets its flag follow its ride again.
+static void rides_frame() {
+    u32 rides = op1f_riding(&op1f_card_fx_train, (unsigned)TRAIN_ASK);
+    u32 turned = (rides ^ op1f_train_rides) & ((1u << PLACES) - 1u);
+    op1f_train_rides = rides;
+    for (int p = 0; p < PLACES; ++p) {
+        if (!((turned >> p) & 1u)) continue;
+        int host = p >> 3;
+        if ((rides >> p) & 1u) {
+            rd.no_flag[p] = 0;
+            ride_began[host] = (u8)(ride_began[host] | (1u << (p & 7)));   // frame_host makes the extra wagons anew where it is the slot on the screen
+        }
+        if (!file_loaded || !known[host][p & 7]) continue;         // the base's rides at the start, before the file is read: nothing to write (a write now would put empty chains over the file)
+        st.dirty[host] = 1;                                        // not mark_dirty: the chain did not change, the presets' lamp stays
+        st.dirty_since[host] = (int)st.frames;
+    }
+}
+
+static void ride_line(int place, const char* what, int answer) {
+    if (rd.lines >= (u32)RIDE_LINES) return;
+    ++rd.lines;
+    STOCK_LOG(3, LOG_FILE, 47, "chain train: %s s%u: the ride a load asked for %s (answer %d, %u frames after it was due; %u started, %u given up, %u on another effect)",
+              place >= (int)OP1F_PLACE_DRUM ? "drum" : "synth", (u32)place & 7u, what, answer, st.frames - rd.first_due[place], rd.started, rd.given_up, rd.others);
+}
+
+// A place whose ride the input unit's frame should start now (op1f_layer_start), or -1: due, its frame come, not
+// riding yet (a riding place's due is dropped: the base's member may have started it). The walk starts after the
+// place it answered last, so that one place answered OP1F_NOT_NOW holds no other back. A place that rides another
+// pack's effect (op1f_rack_at) is not started: it plays that effect as saved, and its flag is written.
+extern "C" int op1f_train_ride_due() asm("op1f_train_ride_due");
+extern "C" int op1f_train_ride_due() {
+    for (int i = 0; i < PLACES; ++i) {
+        int p = (int)((rd.next + (u32)i) & (u32)(PLACES - 1));
+        if (!rd.due[p]) continue;
+        int host = p >> 3;
+        if (place_rides(host, (u32)p & 7u)) { rd.due[p] = 0; continue; }
+        if ((i32)(st.frames - rd.due_at[p]) < 0) continue;
+        if (op1f_rack_at(&op1f_card_fx_train, (u32)p) != 0) {
+            rd.due[p] = 0;
+            ++rd.others;
+            ride_line(p, "not made: the place rides another pack's effect", 0);
+            st.dirty[host] = 1;                                    // its flag reaches the file
+            st.dirty_since[host] = (int)st.frames;
+            continue;
+        }
+        rd.next = (u32)(p + 1) & (u32)(PLACES - 1);
+        return p;
+    }
+    return -1;
+}
+
+// op1f_layer_start's answer for that place: 0 it rides; OP1F_NOT_NOW due again at the next frame, until
+// RIDE_TRY_FRAMES frames after it was first due; anything else given up (no flag until the place rides or loads again).
+extern "C" void op1f_train_ride_answer(int place, int answer) asm("op1f_train_ride_answer");
+extern "C" void op1f_train_ride_answer(int place, int answer) {
+    if (!valid_place(place) || !rd.due[place]) return;
+    if (answer == 0) {
+        rd.due[place] = 0;
+        ++rd.started;
+        ride_line(place, "started", answer);
+        return;
+    }
+    if (answer == OP1F_NOT_NOW && st.frames - rd.first_due[place] < (u32)RIDE_TRY_FRAMES) {
+        rd.due_at[place] = st.frames;                              // due at the next walk, the next frame's (whether the input unit's frame asks before or after the chain's frame counts)
+        return;
+    }
+    rd.due[place] = 0;
+    rd.no_flag[place] = 1;
+    ++rd.given_up;
+    ride_line(place, "given up", answer);
+}
+
 extern "C" void op1f_chain_frame(u16* fb) asm("op1f_chain_frame");
 extern "C" void op1f_chain_frame(u16* fb) {
+    rides_frame();                                                 // R14: the places that ride "train", first
+    rd.in_frame = 1;
     if (st.frames == 0) {
         allocate_regions();                                        // H4: before any instance is built
         for (int h = 0; h < HOSTS; ++h) {
@@ -4121,19 +4290,8 @@ extern "C" void op1f_chain_frame(u16* fb) {
     st.last_cycles = now;
     for (int h = 0; h < HOSTS; ++h)
         for (u32 s = 0; s < SLOTS; ++s) if (!initialised[h][s]) init_slot(h, s);
-    int mode = (int)RD32(MODE_GUI);
     order_build();                                                 // R6b (M1): the picker's order, after the base's list is read
-    for (int host = 0; host < HOSTS; ++host) {
-        int gone = 0;                                              // R6b (M5): in its own mode, no page of this pack on the screen for GONE_FRAMES frames
-        if (st.train_open[host] && mode == host && &op1f_train_seen != 0) {
-            int seen = op1f_train_seen(host);
-            if (seen == TRAIN_SEEN_NONE) gone = ++train_away_frames[host] >= (int)GONE_FRAMES;
-            else if (seen != TRAIN_SEEN_AWAY) train_away_frames[host] = 0;
-        } else {
-            train_away_frames[host] = 0;
-        }
-        if (gone) { ++train_records_ended[host]; train_away_frames[host] = 0; }
-        if (st.train_open[host] && (mode != host || gone)) { st.train_open[host] = 0; list_close(host); if (ls.save_host == host) ls.save_state = SAVE_NONE; }
+    for (int host = 0; host < HOSTS; ++host) {                     // R14: the train page's record is op1f_train_up's (fx train 17 ended it here at a change of mode or GONE_FRAMES frames away)
         frame_host(host);
         list_frame(host);                                          // H5: the T3 hold, the red hold, the flash
     }
@@ -4151,6 +4309,7 @@ extern "C" void op1f_chain_frame(u16* fb) {
         st.print_countdown = PRINT_FRAMES;
         print_lines(0);                                            // Q1: printed when the gate says so (build_q_quiet.h)
     }
+    rd.in_frame = 0;
 }
 
 // ---------------------------------------------------------------- I6: what the LFO unit (build_i_lfo4.cpp) asks of this one
@@ -4192,9 +4351,10 @@ extern "C" void op1f_chain_lfo_picks(int host, u32 slot, int write, u8* pick, u8
 
 // I8: the knob (0..3) of the effect wagon a choice turns now: the chosen one while it carries an effect, else the
 // one under the effect train's lamp (extra_knob_of, the rule the fx side runs by). An LFO preset writes this knob
-// in place of a choice of 0, so it does not depend on where the lamp stood when it was saved.
+// in place of a choice of 0, so it does not depend on where the lamp stood when it was saved. R14: while the place
+// does not ride "train", the first wagon's (op1f_lfofx_extra's gate), the choice kept for the next ride.
 extern "C" int op1f_chain_lfo_knob(int host, u32 slot, int pick) asm("op1f_chain_lfo_knob");
 extern "C" int op1f_chain_lfo_knob(int host, u32 slot, int pick) {
     if ((host != 0 && host != 1) || slot >= (u32)SLOTS) return 0;
-    return extra_knob_of(host, slot, pick);
+    return place_rides(host, slot) ? extra_knob_of(host, slot, pick) : mirror[host][slot];
 }

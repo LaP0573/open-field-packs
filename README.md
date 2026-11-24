@@ -9,7 +9,7 @@ I want them to feel stock. Each one should look and play like something Teenage 
 | Pack | What it does | |
 | --- | --- | --- |
 | 8 tracks | Eight tape tracks instead of four. | [manual](8%20tracks/README.md) |
-| fx train | Up to four effects in a row on each sound, with presets. Version 17 hasn't been on a unit yet. | [manual](fx%20train/README.md) |
+| fx train | Up to four effects in a row on each synth and drum sound, picked as "train" in the sound's own list of effects, with presets. | [manual](fx%20train/README.md) |
 | lfo | Four LFOs on each synth and drum sound, picked as "ufo" in the sound's own LFO list, with presets. | [manual](lfo/README.md) |
 | sidechain | One tape track ducks another, or ducks to the beat. | [manual](sidechain/README.md) |
 

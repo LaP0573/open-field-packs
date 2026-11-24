@@ -17,7 +17,7 @@ typedef int (*FileSizeFn)(const char* path);
 
 **The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says "ours", it names the threads our code calls the function on today; that it is safe on another thread has not been shown.
 
-There are 127 functions bound in the sources. 38 are described below, by subject. The other 89 are listed at the end with their type and the files that bind them: their words are still to be written.
+There are 126 functions bound in the sources. 37 are described below, by subject. The other 89 are listed at the end with their type and the files that bind them: their words are still to be written.
 
 ## The log
 
@@ -89,7 +89,6 @@ A screen of the firmware is an object with a picture: an SVG text, parsed into a
 
 | Address | The call | What the caller hands over and gets back | Called from |
 | --- | --- | --- | --- |
-| `0x8c0b2554` | `void request_screen(void)` | Asks the firmware to show the screen the present mode wants now. The firmware does this itself after every key; our code calls it after a change that no key press follows, such as a timer running out. It takes no argument. From the display thread, call it with interrupts masked for the length of the call: the firmware stops when two threads are inside it at once. | Ours: the key thread, and the display thread with interrupts masked. |
 | `0x8fc24ca4` | `int shift(void)` | Not 0 while the shift key is held. | Ours: the key thread, the display thread. |
 
 ## Sounds and their LFOs

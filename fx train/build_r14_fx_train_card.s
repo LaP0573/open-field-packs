@@ -11,6 +11,8 @@
  * a sequencer, the notes heard, a sound stage, working memory, pictures that take a place, values kept in the
  * unit's files or an effect in the unit's lists of effects; the list follows the card, each ask's table follows
  * the list, and the list of names of an ask of places follows its table.
+ * Base 35 (module/build_r6e_card.h, "Base 35: layers"): the card asks for a layer, so a second word in front
+ * of it names the mark op1f_layer_1, and a base before 35 leaves the pack out. Nothing reads that word either.
  */
 .section .rodata
 .balign 4
@@ -19,20 +21,25 @@
 op1f_card_fx_train_level:
     .long op1f_level_8
 .size op1f_card_fx_train_level, .-op1f_card_fx_train_level
+.global op1f_card_fx_train_layer
+.type op1f_card_fx_train_layer, STT_OBJECT
+op1f_card_fx_train_layer:
+    .long op1f_layer_1
+.size op1f_card_fx_train_layer, .-op1f_card_fx_train_layer
 .global op1f_card_fx_train
 .type op1f_card_fx_train, STT_OBJECT
 op1f_card_fx_train:
-    .long 0x44524143, 64, 8, 17
+    .long 0x44524143, 64, 8, 18
     .ascii "fx train"
     .fill 8, 1, 0
     .long fx_train_frame
     .long op1f_art_fx_train
     .long 0
-    .long 0
+    .long fx_train_input
     .long op1f_card_fx_train_folders
     .long 2
     .long op1f_card_fx_train_asks
-    .long 2
+    .long 3
 .size op1f_card_fx_train, .-op1f_card_fx_train
 .global op1f_card_fx_train_folders
 .type op1f_card_fx_train_folders, STT_OBJECT
@@ -53,6 +60,7 @@ op1f_card_fx_train_folders:
 op1f_card_fx_train_asks:
     .long 5, 36, op1f_card_fx_train_ask_0
     .long 6, 324, op1f_card_fx_train_ask_1
+    .long 7, 180, op1f_card_fx_train_ask_2
 .size op1f_card_fx_train_asks, .-op1f_card_fx_train_asks
 .global op1f_card_fx_train_ask_0
 .type op1f_card_fx_train_ask_0, STT_OBJECT
@@ -94,3 +102,20 @@ op1f_card_fx_train_ask_1:
     .long 3
     .fill 252, 1, 0
 .size op1f_card_fx_train_ask_1, .-op1f_card_fx_train_ask_1
+.global op1f_card_fx_train_ask_2
+.type op1f_card_fx_train_ask_2, STT_OBJECT
+op1f_card_fx_train_ask_2:
+    .long 180
+    .ascii "train"
+    .fill 11, 1, 0
+    .long 4
+    .long fx_train_shown
+    .fill 16, 1, 0
+    .long 0
+    .long 0
+    .long 4
+    .long 0
+    .long 0
+    .long 0
+    .fill 112, 1, 0
+.size op1f_card_fx_train_ask_2, .-op1f_card_fx_train_ask_2

@@ -7,7 +7,7 @@
  "about": [
   "The places where the pack `fx train` changes OS 1.7.3+0 of the OP-1 Field, and nothing else. No byte of the firmware is in this file.",
   "It has the form of open-field's profiles/op1f-1.7.3.json, which says what each field means. open-field's tools/place_sum.py works out a place's sum from your own firmware file.",
-  "The pack's table, build_r4b_fx_train_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
+  "The pack's table, build_r14_fx_train_table.s, is made from this file: python -I build.py --open-field <your checkout of open-field> --make.",
   "module_base and reserved_bytes are the room for open-field's code, as its main profile names it: the pack is linked for the room behind the loader."
  ],
  "stock_sha256": "d134eb1ac7ad88e8370d988329cd5d7419f016005b1d269034f9cf7166fad0ec",
@@ -44,53 +44,11 @@
    "name": "In the drum's audio stage: the first load behind the place where the sound's effect is run."
   },
   {
-   "address": "0x84013834",
-   "length": 4,
-   "sum": "0xf74c1ee5",
-   "group": "fx train",
-   "name": "A word in the synth controller's table: its key-down handler."
-  },
-  {
-   "address": "0x84013838",
-   "length": 4,
-   "sum": "0x5c888013",
-   "group": "fx train",
-   "name": "A word in the synth controller's table: its handler for a key pressed with shift."
-  },
-  {
-   "address": "0x8401383c",
-   "length": 4,
-   "sum": "0x6a39f2c6",
-   "group": "fx train",
-   "name": "A word in the synth controller's table: its key-up handler."
-  },
-  {
    "address": "0x84013840",
    "length": 4,
    "sum": "0x455bee11",
    "group": "fx train",
    "name": "A word in the synth controller's table: its knob handler."
-  },
-  {
-   "address": "0x8400ea3c",
-   "length": 4,
-   "sum": "0xf74c1ee5",
-   "group": "fx train",
-   "name": "A word in the drum controller's table: its key-down handler."
-  },
-  {
-   "address": "0x8400ea40",
-   "length": 4,
-   "sum": "0xd4310f5a",
-   "group": "fx train",
-   "name": "A word in the drum controller's table: its handler for a key pressed with shift."
-  },
-  {
-   "address": "0x8400ea44",
-   "length": 4,
-   "sum": "0x6a39f2c6",
-   "group": "fx train",
-   "name": "A word in the drum controller's table: its key-up handler."
   },
   {
    "address": "0x8400ea48",
@@ -187,7 +145,7 @@
  "image": [],
  "tables": [
   {
-   "file": "fx train/build_r4b_fx_train_table.s",
+   "file": "fx train/build_r14_fx_train_table.s",
    "part": "fx train",
    "symbol": "op1f_boot_table",
    "entries": [
@@ -216,52 +174,16 @@
      "does": "A call to our stub, which runs the effects of the drum's train and then does the load."
     },
     {
-     "address": "0x84013834",
-     "form": "word",
-     "target": "op1f_fx_key_down",
-     "does": "Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x84013838",
-     "form": "word",
-     "target": "op1f_fx_key_shift",
-     "does": "Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x8401383c",
-     "form": "word",
-     "target": "op1f_fx_key_up",
-     "does": "Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler."
-    },
-    {
      "address": "0x84013840",
      "form": "word",
      "target": "op1f_fx_encoder",
-     "does": "Ours deals with the knobs of the effect train and of the LFO page and hands every other turn to the firmware's handler."
-    },
-    {
-     "address": "0x8400ea3c",
-     "form": "word",
-     "target": "op1f_fx_key_down",
-     "does": "Ours deals with the keys of the effect train and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x8400ea40",
-     "form": "word",
-     "target": "op1f_fx_key_shift",
-     "does": "Ours deals with the keys of the effect train and hands every other key to the firmware's handler."
-    },
-    {
-     "address": "0x8400ea44",
-     "form": "word",
-     "target": "op1f_fx_key_up",
-     "does": "Ours deals with the keys of the effect train and hands every other key to the firmware's handler."
+     "does": "Ours lets the LFO page's destination knob walk the effect wagons while the sound rides the train, and hands every other turn to the firmware's handler."
     },
     {
      "address": "0x8400ea48",
      "form": "word",
      "target": "op1f_fx_encoder",
-     "does": "Ours deals with the knobs of the effect train and hands every other turn to the firmware's handler."
+     "does": "Ours lets the LFO page's destination knob walk the effect wagons while the sound rides the train, and hands every other turn to the firmware's handler."
     },
     {
      "address": "0x8401e90c",

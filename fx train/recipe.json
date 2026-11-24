@@ -1,9 +1,9 @@
 {
-  "about": "Up to four effects on an instrument, shown as a train of four wagons; presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. The fifteen names in exports are the ones fx train 17 offers, in the order its file holds them: it was made beside lfo 11, which asked for all fifteen. lfo 12 asks for eight of them, so they are named here and the file is made again byte for byte beside either lfo.",
+  "about": "Up to four effects on an instrument, shown as a train of four wagons. The train is one more effect in a synth or drum sound's own list of effects (shift + T3), named train; on a sound that has it, T3 shows the train. Presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. exports names the eight names its file offers other packs, in the order the file holds them, so the file comes out the same whatever packs are built beside it.",
   "name": "fx train",
-  "version": 17,
+  "version": 18,
   "interface": 3,
-  "build": "build_r6f_fx_train",
+  "build": "build_r14_fx_train",
   "sources": [
     "fx train/build_h_fx.s",
     "fx train/build_h_fx.cpp",
@@ -12,14 +12,15 @@
     "fx train/build_i_lfofx.s",
     "fx train/build_r5_lfopage.cpp",
     "fx train/build_r4c_patch.cpp",
-    "fx train/build_r4b_fx_train_table.s",
+    "fx train/build_r14_fx_train_table.s",
     "fx train/build_r6b_train.cpp",
     "shared/build_r2_presets.cpp",
     "shared/build_r2_move.cpp",
     "fx train/build_r5_fx_train_frame.cpp",
-    "fx train/build_r6c_fx_train_card.s",
-    "fx train/build_r6c_fx_train_pictures.s",
-    "fx train/build_r2_fx_train_needs.s"
+    "fx train/build_r14_fx_train_card.s",
+    "fx train/build_r14_fx_train_pictures.s",
+    "fx train/build_r2_fx_train_needs.s",
+    "fx train/build_r14_train_input.cpp"
   ],
   "works_with": [
     {
@@ -32,21 +33,14 @@
     "lfo"
   ],
   "exports": [
-    "op1f_chain_close_train",
     "op1f_chain_file_loaded",
     "op1f_chain_lfo_knob",
     "op1f_chain_lfo_picks",
     "op1f_chain_ms",
-    "op1f_chain_screen_wanted",
     "op1f_chain_touch",
-    "op1f_chain_train_open",
     "op1f_chain_view",
-    "op1f_fx_train_page_ready",
-    "op1f_fx_train_presets_ready",
     "op1f_lfofx_extra",
-    "op1f_lfofx_extra_counts",
-    "op1f_presets_view",
-    "op1f_train_page_now"
+    "op1f_lfofx_extra_counts"
   ],
   "pictures": [
     {
@@ -123,8 +117,16 @@
             ]
           }
         ]
+      },
+      {
+        "kind": "effect",
+        "name": "train",
+        "layer": true,
+        "process": null,
+        "shown": "fx_train_shown"
       }
-    ]
+    ],
+    "input": "fx_train_input"
   },
   "marks": [],
   "named": true,
