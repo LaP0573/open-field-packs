@@ -17,7 +17,7 @@ typedef int (*FileSizeFn)(const char* path);
 
 **The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says "ours", it names the threads our code calls the function on today; that it is safe on another thread has not been shown.
 
-There are 129 functions bound in the sources. 33 are described below, by subject. The other 96 are listed at the end with their type and the files that bind them: their words are still to be written.
+There are 127 functions bound in the sources. 38 are described below, by subject. The other 89 are listed at the end with their type and the files that bind them: their words are still to be written.
 
 ## The log
 
@@ -92,6 +92,18 @@ A screen of the firmware is an object with a picture: an SVG text, parsed into a
 | `0x8c0b2554` | `void request_screen(void)` | Asks the firmware to show the screen the present mode wants now. The firmware does this itself after every key; our code calls it after a change that no key press follows, such as a timer running out. It takes no argument. From the display thread, call it with interrupts masked for the length of the call: the firmware stops when two threads are inside it at once. | Ours: the key thread, and the display thread with interrupts masked. |
 | `0x8fc24ca4` | `int shift(void)` | Not 0 while the shift key is held. | Ours: the key thread, the display thread. |
 
+## Sounds and their LFOs
+
+The unit has eight synth sounds and eight drum sounds, in slots 0 to 7 each. Each slot has a record, an object of the firmware's at a fixed address, which holds the sound's document: what the unit saves with the sound. A sound's LFO has a kind (a row of the list under shift and T4), eight words of settings and a switch. Our code changes them through the calls below, the way the unit's own keys do, so that what the unit shows, plays and saves agrees.
+
+| Address | The call | What the caller hands over and gets back | Called from |
+| --- | --- | --- | --- |
+| `0x8d4f3c84` | `void lfo_words_doc(void* record, const u32* words)` | Writes eight words of LFO settings into the document of the sound whose record is `record`. Follow it with the record's LFO apply (`lfo_apply_synth` or `lfo_apply_drum`), so that the sound plays them. | Ours: the key thread. |
+| `0x8d4f3d0c` | `void lfo_active_doc(void* record, int value)` | Writes the LFO's switch, `on` 1 or 0, into the document of the sound whose record is `record`. Our code calls it right after `lfo_on_synth` or `lfo_on_drum`, so that the switch the sound plays with is the one it is saved with. | Ours: the display thread. |
+| `0x8d504308` | `void lfo_on_synth(u32 slot, int value)` | Switches the LFO of synth slot `slot` (0 to 7) on (`on` 1) or off (0), as the unit's own key does. It changes the switch the sound plays with; `lfo_active_doc` writes it into the document. | Ours: the key thread, the display thread. |
+| `0x8d5042d8` | `void lfo_on_drum(u32 slot, int value)` | The same for drum slot `slot` (0 to 7). | As `lfo_on_synth`. |
+| `0x8d50441a` | `void reset_drum(u32 voice)` | Restarts the LFO of drum voice `voice` (0 to 7) for a new note, as the unit does at each drum hit while the slot's LFO is on. Our code calls it from its own function in its place at its two calls, and restarts its own LFOs for the same voice after it. | The audio thread, where the firmware calls it. |
+
 ## Bound in the sources, not described yet
 
 Each of these is called by the files named. The type is what our code hands over and takes back; the name is the sources' own. Read the file's comments at the binding before you use one, and add its words to `firmware-interfaces.json` when you have.
@@ -117,10 +129,6 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8c0bce20` | `void mode_switch(int mode)` | `build_r4b_duck.cpp` |
 | `0x8c0c1dd0` | `void* tape_model(void)` | `build_b_mix.cpp`, `build_b_record.cpp`, `build_r4b_duck.cpp` |
 | `0x8c0c2158` | `int tape_key_up(void* self, int key)` | `build_r6g_solo.cpp` |
-| `0x8c0cf364` | `int synth_key_up(void* self, int key)` | `build_r4c_lfo_alone.cpp` |
-| `0x8c0cf904` | `int synth_key_shift(void* self, const int* event)` | `build_r4c_lfo_alone.cpp` |
-| `0x8c0cfe7c` | `int synth_key_down(void* self, const int* event)` | `build_i_lfo4.cpp`, `build_r4c_lfo_alone.cpp` |
-| `0x8c0d5c10` | `int synth_encoder(void* self, int index, int delta)` | `build_r4c_lfo_alone.cpp` |
 | `0x8d4e4324` | `void* alloc_aligned(u32 alignment, u32 bytes)` | `build_k_copy.cpp` |
 | `0x8d4e43a4` | `void free_aligned(void* block)` | `build_k_copy.cpp` |
 | `0x8d4e63cc` | `void free(void* block)` | `build_k_clip.cpp`, `build_k_clips.cpp`, `build_r6c_chain.cpp`, `build_r2_lfopresets.cpp` and 1 more |
@@ -141,8 +149,6 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8d4f3a54` | `void lfo_pick(void* record, int id)` | `build_i_lfo4.cpp` |
 | `0x8d4f3b9c` | `void set_params_doc(void* record, const u32* words)` | `build_r6c_chain.cpp` |
 | `0x8d4f3c24` | `void set_active_doc(void* record, int value)` | `build_r6c_chain.cpp` |
-| `0x8d4f3c84` | `void set_lfo_words_doc(void* record, const u32* words)` | `build_i_lfo4.cpp` |
-| `0x8d4f3d0c` | `void set_lfo_active_doc(void* record, int value)` | `build_i_lfo4.cpp` |
 | `0x8d4f4e2c` | `void apply_drum(void* descriptor)` | `build_r6c_chain.cpp` |
 | `0x8d4f635c` | `void apply_synth(void* descriptor)` | `build_r6c_chain.cpp` |
 | `0x8d4fb908` | `void clone(int source, int destination, ProgressFn progress, u32 fourth)` | `build_k_copy.cpp` |
@@ -151,7 +157,6 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8d500b88` | `i32 partition_write(i32 handle, u32 byte_offset, u32 length, void* buffer)` | `build_b_edit.cpp`, `build_b_storage.cpp`, `build_k_copy.cpp` |
 | `0x8d500f94` | `void partition_sync(void)` | `build_b_edit.cpp` |
 | `0x8d501008` | `i32 open_partition(const char* name)` | `build_b_edit.cpp`, `build_k_copy.cpp` |
-| `0x8d504308` | `void lfo_on_set(u32 slot, int value)` | `build_i_lfo4.cpp` |
 | `0x8d504496` | `void reset_synth(u32 voice)` | `build_i_lfo4.cpp` |
 | `0x8d504854` | `void page_copy(u32 slot, u32 type, int cls)` | `build_i_lfo4.cpp` |
 | `0x8d505390` | `void build_producer(int index, int type)` | `build_r6c_chain.cpp` |

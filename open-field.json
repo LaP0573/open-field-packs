@@ -1,12 +1,13 @@
 {
   "about": "What of open-field the packs here are built with, and nothing else of it: its tools, its linker scripts and the headers named below, at this commit. build.py takes them from a checkout's history. The headers are the base's: what a pack by anyone includes to use a card's levels, and the small gate for log lines.",
   "repository": "https://github.com/LaP0573/open-field",
-  "commit": "8c9d21cac4389356186f99df894805cbdcd8306c",
+  "commit": "3895c78a083e1f7f48cce6b26b915375844084c2",
   "headers": [
     "module/build_q_quiet.h",
     "module/build_r1_card.h",
     "module/build_r4b_card.h",
-    "module/build_r5_card.h"
+    "module/build_r5_card.h",
+    "module/build_r6e_card.h"
   ],
   "packs": ["8 tracks", "fx train", "lfo", "sidechain"],
   "shared": "shared"

@@ -1,87 +1,40 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
-// Step R4c (base 27), the pack lfo version 11: the LFOs' own file unit of J5i (which
-// stays as it was for the packs before) with one change and nothing else: the sign that the chain unit wrote its file
-// is that unit's own word, op1f_lfo_file_chain_saved, which its save calls once the file is written (fx train 13), in
-// the place of a run of the synth's slots 0 to 7 collected in a row. The run held only while every unit of fx train
-// asked for slots in an order that never made one, and a save at a start that left out a slot the chain did not know
-// yet gave none, after which an ask of that slot gave a false one. Now a slot collected says only what the chain's copy
-// holds, in any order, and the sign comes from the save alone, whatever slots it holds. fx train and lfo are of
-// interface 3 from these versions on, so that neither runs beside the other's version of before.
+// The pack lfo version 12 (step R15): the LFOs' own files, and the frame call
+// and clock where the pack fx train is away. lfo 11's unit (step R4c) with the drum's file added and the synth
+// controller's four handlers gone: lfo 12 takes its keys and knobs through the base's input (lfo_input).
 //
-// What follows is J5i's description, which holds but where it names the run through the slots as the sign: read the
-// chain unit's word there.
+// Where fx train is away:
+//   the fx side          op1f_lfo_alone_fx (build_j5h_lfo_alone.s) before stock's effect call, marked in the pack's
+//                        table "only when the pack fx train is away".
+//   the frame and clock  op1f_lfo_alone_frame, which the base's frame hook calls where no chain unit is.
 //
-// Build J packs J5i: J5h's unit for the LFOs without the effect train (kept as that step's) with the two mends its
-// read-out asked for:
-//   * the own file is written when the chain unit has written its file, not after a time on the clock: the chain
-//     unit's save waits thirty frames, and a frame at a start lasts seconds, so two seconds on the clock were over
-//     first. The chain unit collects the eight slots in order when it writes its file (op1f_lfo_file_to_chain, slot
-//     0 to 7): that run is the sign, and the own file follows in the same frame. Where no file of the chain unit's
-//     is to come (that unit away, or nothing of its own to write) the own file is written half a second after the
-//     last change, as before without the chain unit.
-//   * the start's line is two lines, the verdict first: the logger cuts a line at 260 characters with its prefix.
-// What follows is J5h's text with those two changes.
-//
-// Build J packs J5h: the LFOs without the pack `fx train` (OS 1.7.0+0).
-//
-// Until J5h the effect train's units did five things for the four LFOs of a sound (build_i_lfo4.cpp,
-// Build I's LFO presets unit): their handlers on the synth controller's slots asked the LFO unit first; their frame
-// call ran the LFO units' frame work and kept the millisecond clock; their run on the audio thread called the fx
-// side of the LFOs; their file carried the LFOs' settings; and their two screen units showed the LFO page and the
-// presets' screens. Since J5h the two screen units are `kit`'s, and this unit holds the rest for a unit that runs
-// the pack `lfo` without the pack `fx train`:
-//
-//   the keys and knobs   the synth controller's four handlers (its vtable 0x8401364c: key-down +0xc, shifted
-//                        key-down +0x10, key-up +0x14, the encoders +0x18), as table entries marked "only when the
-//                        pack fx train is away". Each asks the LFO unit as the chain's handlers do and hands every
-//                        other key to stock's own handler.
-//   the fx side          op1f_lfo_alone_fx (build_j5h_lfo_alone.s) before stock's effect call, marked the same way.
-//   the frame and clock  op1f_lfo_alone_frame, which `kit`'s frame hook calls where no chain unit is there.
-//
-// And, whatever runs, the LFOs' own settings file.
-//
-// The settings. A synth sound's four LFOs are fifty integers (build_i_lfo4.h), which the chain unit keeps in its
-// file user/op1f.json after the tag 98 of each synth slot's element, and which it hands to the LFO unit at its load
-// and asks back at its save. That copy stays, so that the packs before J5h find current values. Since J5h the same
-// integers stand in a file of the LFOs' own, user/lfo4.json, with one number more: the sum of the chain file's copy
-// as it was last known when the own file was written. At a start the unit has the chain's copy (handed over by the
-// chain unit, or read from the chain's file here when that unit is away: reading only) and its own file:
-//
+// The synth's file, user/lfo4.json, keeps lfo 11's form (lfo 11 refuses any other: it is the way back). A synth slot's
+// four LFOs are fifty integers (build_i_lfo4.h; lfo 12's order integer may carry 256 more, "kept, not riding", which
+// passes here untouched). fx train keeps the same integers in user/op1f.json after each synth slot's tag 98; the own
+// file names that copy's sum as last known. At the start (the first frame call after the chain unit read its file):
 //   the chain's copy still has the sum the own file names   the own file is the newer, or the same: it is taken
-//   the sums differ, or there is no own file                something wrote the chain's copy since (a pack of
-//                                                           before J5h, or the unit went off between the two
-//                                                           writes): the chain's copy is taken, and the own file
-//                                                           written from it
+//   the sums differ, or there is no own file                the chain's copy is taken, the own file written from it
+// The own file is written after the chain's: at the chain unit's word that it wrote its file
+// (op1f_lfo_file_chain_saved), at the countdown, or 90 frame calls after a change without the word; half a second
+// after the last change where no chain file is to come. A unit that goes off between the two writes leaves a chain
+// copy the own file does not name, and that copy, the newer, wins (K1's rule for the tape's map files).
+// The LFO under the lamp is stock's own; the effect wagon it turns is fx train's to keep (tags 96 and 97), and while
+// that unit is away the LFO unit's record of the lamp's wagon keeps it, which the own file carries (-1 while the chain
+// unit is there). At the start, away: the record gets the own file's choice where the own file won and holds one,
+// else the chain file's; there: where the own file won and holds one, the chain unit is handed it.
 //
-// With the chain unit away only the own file is written, and the sum it names stays the chain copy's, which nothing
-// changes then: when the chain unit is back, its copy is the one the own file names, the own file wins, and the
-// chain's file is written anew. The own file is written after the chain's (J5i: in the frame in which the chain
-// unit has collected all eight slots for its file, right after that unit's part of the frame; at the shutdown
-// countdown the chain's frame call saves before it calls the LFO unit's), so a unit that goes off between the two
-// leaves a chain copy the own file does not name: the chain's copy wins, and it is the newer. The rule is K1's for
-// the tape's two map files. The choice is made at the LFO unit's first
-// frame call after the chain unit has read its file (op1f_chain_file_loaded), which on the unit is the first.
+// The drum's file, user/lfo4d.json: the drum slots' places of the LFO unit's store (8 + slot). fx train keeps no copy
+// of a drum sound's LFOs, so nothing is chosen against: read at the start into the store (missing or refused: the drum
+// sounds as stock has them); written half a second after a change of the store, by a mark of its own that waits for
+// no word of fx train's, and only when what it would hold differs from what it holds. The drum lamp LFO's effect
+// wagon rides in it as in the synth's file (fx train keeps it in its drum slots' elements); a choice the file hands
+// to the chain unit at the start is dropped from the file only after that unit's word (or 90 frame calls).
 //
-// The LFO under the lamp. That one is stock's own LFO, and which effect wagon it turns is not among the fifty
-// integers: the chain unit keeps it (its tags 96 and 97 in each slot's element), and when the lamp moves the two
-// units pass the choices between them. While the chain unit is away nothing passes: every LFO keeps its choice in
-// its own wagon's record (build_i_lfo4.cpp, picks), the lamp's too. So that this holds across a restart and across
-// the chain unit's return, the own file carries the lamp LFO's choice for each sound while it is written without
-// the chain unit (-1 when that unit is there and keeps it), and at a start:
-//
-//   the chain unit away    the lamp's record gets the own file's choice where the own file won and holds one,
-//                          else the chain file's (its tags 96 and 97, read here)
-//   the chain unit there   where the own file won and holds one, the chain unit is handed it: it is the choice of
-//                          the LFO that is under the lamp now, wherever the lamp was when the chain unit last saved
-//
-// user/lfo4.json: a json array of integers: 7401, the sum's high and low halves, then for each of the eight synth
-// slots a 1 or a 0 (the slot has more than stock's one LFO), its fifty integers, the lamp LFO's effect wagon (0 the
-// one under the effect lamp, 1 to 4 a knob's, -1 kept by the chain unit) and its midi kind's four (four bits each).
-// The path has 14 characters: short enough to live inside a stock string object.
-//
-// GUI thread only: the handlers, the frame call, the file. The audio thread's part is the stub's call of
-// op1f_lfo4_block, which is the LFO unit's.
-// Freestanding like the other units.
+// user/lfo4.json: a json array of 427 integers: 7401, the sum's high and low halves, then for each synth slot a 1 or a
+// 0 (more than stock's one LFO), its fifty integers, the lamp LFO's effect wagon (0 the one under the effect lamp, 1 to
+// 4 a knob's, -1 kept by the chain unit) and its midi kind's four (four bits each).
+// user/lfo4d.json: 425 integers: 7402, then the same 53 for each drum slot.
+// Both paths fit inside a stock string object (15 characters at most). GUI thread only; freestanding.
 
 #include "build_i_lfo4.h"
 
@@ -89,9 +42,6 @@ typedef unsigned int u32;
 typedef unsigned char u8;
 
 typedef void (*LogFn)(int level, const char* file, int line, const char* format, ...);
-typedef int (*KeyEventFn)(void* self, const int* event);
-typedef int (*KeyUpFn)(void* self, int key);
-typedef int (*EncoderFn)(void* self, int index, int delta);
 typedef int (*JsonSizeFn)(void* json);                              // 0x8c084c22
 typedef void* (*JsonAtFn)(void* json, int index);                   // 0x8c084ee0
 typedef int (*JsonIntFn)(void* json);                               // 0x8c084840
@@ -105,10 +55,6 @@ typedef void (*StringCtorFn)(void* out, const char* text);          // 0x8c03e43
 typedef int (*FileSizeFn)(const char* path);                        // 0x8c051f9c: the file's size, -1 when it is not there (and no line written)
 
 #define STOCK_LOG ((LogFn)0x8c053a20u)
-#define STOCK_SYNTH_KEY_DOWN ((KeyEventFn)0x8c0cfe7cu)
-#define STOCK_SYNTH_KEY_SHIFT ((KeyEventFn)0x8c0cf904u)
-#define STOCK_SYNTH_KEY_UP ((KeyUpFn)0x8c0cf364u)
-#define STOCK_SYNTH_ENCODER ((EncoderFn)0x8c0d5c10u)
 #define STOCK_JSON_SIZE ((JsonSizeFn)0x8c084c22u)
 #define STOCK_JSON_AT ((JsonAtFn)0x8c084ee0u)
 #define STOCK_JSON_INT ((JsonIntFn)0x8c084840u)
@@ -131,21 +77,28 @@ extern int mock_chain_there;
 
 static const char LOG_FILE[] = "../src/main/op1f_lfo_alone.cpp";
 static const char OWN_PATH[] = "user/lfo4.json";                    // 14 characters
+static const char DRUM_PATH[] = "user/lfo4d.json";                  // 15 characters: the most a stock string object holds inside itself
 static const char CHAIN_PATH[] = "user/op1f.json";                  // the chain unit's file (Build H's chain unit, FILE_PATH)
 
 enum {
     SLOTS = 8,
+    DRUM_AT = OP1F_LFO4_DRUM_PLACE,                                 // a drum slot's place in the LFO unit's store: 8 + the slot
+    HOST_DRUM = 1,                                                  // the chain unit's host of the drum sounds
     INTS = OP1F_LFO4_STORE_INTS,                                    // fifty
     MIN = OP1F_LFO4_STORE_MIN,                                      // forty-nine: what a file of I6's has
     WAGONS = 4,
     MIDI_DESTS = 4,
     FILE_TAG = 7401,
     FILE_HEAD = 3,                                                  // the tag, the sum's two halves
+    DRUM_TAG = 7402,
+    DRUM_HEAD = 1,                                                  // the tag alone
     FILE_SLOT = 1 + INTS + 2,                                       // the flag, the fifty integers, the lamp LFO's effect wagon and its midi four
-    FILE_INTS = FILE_HEAD + SLOTS * FILE_SLOT,
+    FILE_INTS = FILE_HEAD + SLOTS * FILE_SLOT,                      // 427
+    DRUM_INTS = DRUM_HEAD + SLOTS * FILE_SLOT,                      // 425
     JSON_ARRAY_KIND = 6,                                            // the kind byte (json + 4) of an array
     // the chain unit's file as its reader takes it (Build H's chain unit, load_file): the root's tag, its seventeen
-    // elements at the least, a synth slot's element with its tag, its 48 integers, the pairs 96 and 97, the tag 98
+    // elements at the least (the eight synth slots', then the eight drum slots'), a slot's element with its tag, its
+    // 48 integers, the pairs 96 and 97, and on a synth slot's the tag 98
     CHAIN_ROOT_TAG_A = 91, CHAIN_ROOT_TAG_B = 93, CHAIN_ROOT_MIN = 1 + 2 * SLOTS,
     CHAIN_SLOT_TAG = 92, CHAIN_SLOT_INTS = 48, CHAIN_FX_TAG = 96, CHAIN_MIDI_TAG = 97, CHAIN_LFO4_TAG = 98, CHAIN_LFO4_AT = CHAIN_SLOT_INTS + 4,
     OWN_DELAY_MS = 500,                                             // J5i: where no file of the chain unit's is to come first, the own file is written this long after the last change
@@ -155,13 +108,10 @@ enum {
 };
 
 struct Json { u32 words[4]; };                                      // a stock json value is 12 bytes; 16 for alignment
-struct Copy { int values[SLOTS][INTS]; u8 has[SLOTS]; };            // the eight synth slots' integers; has: the slot has more than stock's one LFO
+struct Copy { int values[SLOTS][INTS]; u8 has[SLOTS]; };            // eight slots' integers; has: the slot has more than stock's one LFO
 struct Lamp { int pick[SLOTS]; int midi[SLOTS]; };                  // the effect wagon the LFO under the lamp turns (0 the effect lamp's, 1 to 4 a knob's; -1: not kept here) and its midi kind's four, four bits each
 
-// build_i_lfo4.cpp, Build I's LFO presets unit: the same pack
-extern "C" int op1f_lfotrain_key_down(void* self, const int* event, int shifted) asm("op1f_lfotrain_key_down");
-extern "C" void op1f_lfotrain_key_up(int key) asm("op1f_lfotrain_key_up");
-extern "C" int op1f_lfotrain_encoder(void* self, int index, int delta) asm("op1f_lfotrain_encoder");
+// build_i_lfo4.cpp, Build I's LFO presets unit: the same pack. The store's places: 0 to 7 the synth slots, 8 to 15 the drum's.
 extern "C" void op1f_lfo4_frame() asm("op1f_lfo4_frame");
 extern "C" void op1f_lfo4_store_set(int slot, const int* values) asm("op1f_lfo4_store_set");
 extern "C" int op1f_lfo4_store_get(int slot, int* values) asm("op1f_lfo4_store_get");
@@ -186,12 +136,20 @@ static int own_early;                   // the wait was given up: the own file i
 static u32 own_ms, own_cycle_acc, own_last_cycles, own_frames;      // the clock where the chain unit's is away
 static u32 handed, write_lines;
 static const char* took = "nothing yet";
+static Copy drum_held;                  // R15: what the drum's file holds (read at the start, or as last written); a write only when the store's differs
+static Lamp drum_held_lamp;
+static int drum_dirty;                  // R15: the drum's file is to be written (if its content changed)
+static u32 drum_dirty_ms;
+static int drum_waits;                  // R15: lamp choices handed to the chain unit at the start: the file keeps them until that unit's word
+static int drum_wait_frames;
+static u32 drum_lines;
 
 extern "C" u32 op1f_lfo_file_writes asm("op1f_lfo_file_writes");    // the own file written
 extern "C" u32 op1f_lfo_file_failed asm("op1f_lfo_file_failed");    // of those, writes that did not land
-extern "C" u32 op1f_lfo_alone_keys asm("op1f_lfo_alone_keys");      // keys and turns the stand-in handlers saw
 extern "C" u32 op1f_lfo_file_gave_up asm("op1f_lfo_file_gave_up");  // J5i: waits for the chain unit's file that were given up (expected at 0)
-u32 op1f_lfo_file_writes, op1f_lfo_file_failed, op1f_lfo_alone_keys, op1f_lfo_file_gave_up;
+extern "C" u32 op1f_lfo_drum_writes asm("op1f_lfo_drum_writes");    // R15: the drum's file written
+extern "C" u32 op1f_lfo_drum_failed asm("op1f_lfo_drum_failed");    // R15: of those, writes that did not land
+u32 op1f_lfo_file_writes, op1f_lfo_file_failed, op1f_lfo_file_gave_up, op1f_lfo_drum_writes, op1f_lfo_drum_failed;
 
 // The effect train's units are there: the pack fx train runs, and the base has filled the chain unit's names in.
 static int chain_there() {
@@ -250,6 +208,21 @@ static void clear_copy(Copy* c) {
 }
 // lfo-file-end
 
+static int same_lamp(const Lamp* a, const Lamp* b) {
+    for (int s = 0; s < SLOTS; ++s) if (a->pick[s] != b->pick[s] || a->midi[s] != b->midi[s]) return 0;
+    return 1;
+}
+
+// Loops, not a struct's copy: nothing here calls memcpy.
+static void copy_into(Copy* to, Lamp* to_lamp, const Copy* from, const Lamp* from_lamp) {
+    for (int s = 0; s < SLOTS; ++s) {
+        to->has[s] = from->has[s];
+        for (int i = 0; i < INTS; ++i) to->values[s][i] = from->values[s][i];
+        to_lamp->pick[s] = from_lamp->pick[s];
+        to_lamp->midi[s] = from_lamp->midi[s];
+    }
+}
+
 static int is_array(void* j) { return j != 0 && *((u8*)j + 4) == JSON_ARRAY_KIND; }
 static int int_at(void* array, int i) { void* e = STOCK_JSON_AT(array, i); return e ? STOCK_JSON_INT(e) : 0; }
 
@@ -270,12 +243,24 @@ static void apply(const Copy* c, const Copy* over) {
     }
 }
 
+// A slot's element of the chain unit's file: the effect wagon of the LFO under the lamp (after the tag 96) and its midi
+// kind's four (after the tag 97). The element's size where it has both, else 0 (the wagon may be read without the four).
+static int chain_slot(void* e, int* pick, int* midi) {
+    if (!is_array(e)) return 0;
+    int size = STOCK_JSON_SIZE(e);
+    if (size < CHAIN_SLOT_INTS + 2 || int_at(e, 0) != CHAIN_SLOT_TAG || int_at(e, CHAIN_SLOT_INTS) != CHAIN_FX_TAG) return 0;
+    *pick = int_at(e, CHAIN_SLOT_INTS + 1);
+    if (size < CHAIN_SLOT_INTS + 4 || int_at(e, CHAIN_SLOT_INTS + 2) != CHAIN_MIDI_TAG) return 0;
+    *midi = int_at(e, CHAIN_SLOT_INTS + 3);
+    return size;
+}
+
 // The chain unit's file, read here when that unit is away, by the tests of that unit's own reader (load_file): for
-// each synth slot the effect wagon of the LFO under the lamp (after the tag 96) and its midi kind's four (after the
-// tag 97), and the fifty integers after the tag 98. Reading only.
-static void read_chain_file(Copy* out, Lamp* lamp) {
+// each synth slot the lamp LFO's effect wagon and midi four, and the fifty integers after the tag 98; for each drum
+// slot (R15) the lamp LFO's effect wagon and midi four. Reading only.
+static void read_chain_file(Copy* out, Lamp* lamp, Lamp* drums) {
     clear_copy(out);
-    for (int s = 0; s < SLOTS; ++s) { lamp->pick[s] = 0; lamp->midi[s] = 0; }
+    for (int s = 0; s < SLOTS; ++s) { lamp->pick[s] = 0; lamp->midi[s] = 0; drums->pick[s] = 0; drums->midi[s] = 0; }
     if (STOCK_FILE_SIZE(CHAIN_PATH) <= 0) return;
     Json root;
     STOCK_JSON_CTOR(&root, 0);
@@ -284,33 +269,30 @@ static void read_chain_file(Copy* out, Lamp* lamp) {
     if (read && is_array(&root) && STOCK_JSON_SIZE(&root) >= CHAIN_ROOT_MIN && (tag == CHAIN_ROOT_TAG_A || tag == CHAIN_ROOT_TAG_B)) {
         for (int s = 0; s < SLOTS; ++s) {
             void* e = STOCK_JSON_AT(&root, 1 + s);
-            if (!is_array(e)) continue;
-            int size = STOCK_JSON_SIZE(e);
-            if (size < CHAIN_SLOT_INTS + 2 || int_at(e, 0) != CHAIN_SLOT_TAG || int_at(e, CHAIN_SLOT_INTS) != CHAIN_FX_TAG) continue;
-            lamp->pick[s] = int_at(e, CHAIN_SLOT_INTS + 1);
-            if (size < CHAIN_SLOT_INTS + 4 || int_at(e, CHAIN_SLOT_INTS + 2) != CHAIN_MIDI_TAG) continue;
-            lamp->midi[s] = int_at(e, CHAIN_SLOT_INTS + 3);
+            int size = chain_slot(e, &lamp->pick[s], &lamp->midi[s]);
             if (size < CHAIN_LFO4_AT + 1 + MIN || int_at(e, CHAIN_LFO4_AT) != CHAIN_LFO4_TAG) continue;
             int have = size - (CHAIN_LFO4_AT + 1);
             for (int i = 0; i < INTS; ++i) out->values[s][i] = i < have ? int_at(e, CHAIN_LFO4_AT + 1 + i) : -1;   // what a file of I6's does not have reads as -1
             out->has[s] = 1;
         }
+        for (int s = 0; s < SLOTS; ++s) chain_slot(STOCK_JSON_AT(&root, 1 + SLOTS + s), &drums->pick[s], &drums->midi[s]);
     }
     STOCK_JSON_DTOR(&root);
 }
 
-// The own file. Non-zero when it is there and whole.
-static int read_own(Copy* out, Lamp* lamp, u32* seen) {
+// An own file (the synth's, head FILE_HEAD with the sum, or the drum's, head DRUM_HEAD): 1 when it is there and whole,
+// 0 when it is not there, -1 when it is refused (another size or tag). The integers are taken as they stand.
+static int read_own(const char* path, int tag, int head, Copy* out, Lamp* lamp, u32* seen) {
     clear_copy(out);
     for (int s = 0; s < SLOTS; ++s) { lamp->pick[s] = -1; lamp->midi[s] = 0; }
-    if (STOCK_FILE_SIZE(OWN_PATH) <= 0) return 0;
+    if (STOCK_FILE_SIZE(path) <= 0) return 0;
     Json root;
     STOCK_JSON_CTOR(&root, 0);
-    int ok = STOCK_JSON_READ_FILE(OWN_PATH, &root) && is_array(&root) && STOCK_JSON_SIZE(&root) == FILE_INTS && int_at(&root, 0) == FILE_TAG;
+    int ok = STOCK_JSON_READ_FILE(path, &root) && is_array(&root) && STOCK_JSON_SIZE(&root) == head + SLOTS * FILE_SLOT && int_at(&root, 0) == tag;
     if (ok) {
-        *seen = (((u32)int_at(&root, 1) & 0xffffu) << 16) | ((u32)int_at(&root, 2) & 0xffffu);
+        if (head == FILE_HEAD && seen != 0) *seen = (((u32)int_at(&root, 1) & 0xffffu) << 16) | ((u32)int_at(&root, 2) & 0xffffu);
         for (int s = 0; s < SLOTS; ++s) {
-            int at = FILE_HEAD + s * FILE_SLOT;
+            int at = head + s * FILE_SLOT;
             out->has[s] = (u8)(int_at(&root, at) != 0);
             for (int i = 0; i < INTS; ++i) out->values[s][i] = out->has[s] ? int_at(&root, at + 1 + i) : 0;
             int pick = int_at(&root, at + 1 + INTS);
@@ -319,7 +301,7 @@ static int read_own(Copy* out, Lamp* lamp, u32* seen) {
         }
     }
     STOCK_JSON_DTOR(&root);
-    return ok;
+    return ok ? 1 : -1;
 }
 
 // A choice of effect wagon and the midi kind's four as the two units pass them: a byte and four, each held to 0..4.
@@ -338,6 +320,50 @@ static void push_int(Json* array, int value) {
     STOCK_JSON_DTOR(&item);
 }
 
+// What an own file holds of the eight places from `first` on: the store's integers and, while the chain unit, which
+// keeps it otherwise, is away, the lamp LFO's choice of effect wagon (-1 where the record gave none). Answers how many
+// places have more than stock's one LFO.
+static int collect(int first, Copy* c, Lamp* l) {
+    int away = !chain_there(), slots = 0;
+    for (int s = 0; s < SLOTS; ++s) {
+        int values[INTS];
+        int have = op1f_lfo4_store_get(first + s, values);
+        c->has[s] = (u8)(have ? 1 : 0);
+        for (int i = 0; i < INTS; ++i) c->values[s][i] = have ? values[i] : 0;
+        if (have) ++slots;
+        u8 pick = 0xff, midi[MIDI_DESTS] = { 0, 0, 0, 0 };
+        if (away) op1f_lfo4_lamp_picks(first + s, 0, &pick, midi);
+        int packed = 0;
+        for (int i = 0; i < MIDI_DESTS; ++i) packed |= (int)midi[i] << (4 * i);
+        l->pick[s] = (away && pick <= WAGONS) ? (int)pick : -1;
+        l->midi[s] = l->pick[s] >= 0 ? packed : 0;
+    }
+    return slots;
+}
+
+// An own file written: the tag, the sum's two halves where the head has them, then each place's 53 integers.
+static int write_file(const char* path, int tag, int head, u32 seen, const Copy* c, const Lamp* l) {
+    Json root;
+    STOCK_JSON_CTOR(&root, 0);
+    push_int(&root, tag);
+    if (head == FILE_HEAD) {
+        push_int(&root, (int)(seen >> 16));
+        push_int(&root, (int)(seen & 0xffffu));
+    }
+    for (int s = 0; s < SLOTS; ++s) {
+        push_int(&root, c->has[s] ? 1 : 0);
+        for (int i = 0; i < INTS; ++i) push_int(&root, c->has[s] ? c->values[s][i] : 0);
+        push_int(&root, l->pick[s]);
+        push_int(&root, l->pick[s] >= 0 ? l->midi[s] : 0);
+    }
+    u32 path_string[12];
+    for (int i = 0; i < 12; ++i) path_string[i] = 0;
+    STOCK_STRING_CTOR(path_string, path);
+    int written = STOCK_JSON_WRITE_FILE(path_string, &root);
+    STOCK_JSON_DTOR(&root);
+    return written;
+}
+
 // The own file from the store, naming the sum of the chain's copy as it is known now. The lamp LFO's choice of
 // effect wagon rides in it while the chain unit, which keeps it otherwise, is away.
 static void write_own() {
@@ -346,37 +372,36 @@ static void write_own() {
     own_now = 0;
     own_wait_frames = 0;
     u32 seen = sum_of(&chain_copy);
-    int away = !chain_there();
-    Json root;
-    STOCK_JSON_CTOR(&root, 0);
-    push_int(&root, FILE_TAG);
-    push_int(&root, (int)(seen >> 16));
-    push_int(&root, (int)(seen & 0xffffu));
-    int slots = 0;
-    for (int s = 0; s < SLOTS; ++s) {
-        int values[INTS];
-        int have = op1f_lfo4_store_get(s, values);
-        push_int(&root, have ? 1 : 0);
-        for (int i = 0; i < INTS; ++i) push_int(&root, have ? values[i] : 0);
-        if (have) ++slots;
-        u8 pick = 0, midi[MIDI_DESTS] = { 0, 0, 0, 0 };
-        if (away) op1f_lfo4_lamp_picks(s, 0, &pick, midi);
-        int packed = 0;
-        for (int i = 0; i < MIDI_DESTS; ++i) packed |= (int)midi[i] << (4 * i);
-        push_int(&root, away ? (int)pick : -1);
-        push_int(&root, away ? packed : 0);
-    }
-    u32 path[12];
-    for (int i = 0; i < 12; ++i) path[i] = 0;
-    STOCK_STRING_CTOR(path, OWN_PATH);
-    int written = STOCK_JSON_WRITE_FILE(path, &root);
-    STOCK_JSON_DTOR(&root);
+    static Copy c;                                                  // not on the stack: 1,600 bytes
+    static Lamp l;
+    int slots = collect(0, &c, &l);
+    int written = write_file(OWN_PATH, FILE_TAG, FILE_HEAD, seen, &c, &l);
     ++op1f_lfo_file_writes;
     if (!written) ++op1f_lfo_file_failed;
     if (write_lines < (u32)WRITE_LINES || !written) {
         ++write_lines;
         STOCK_LOG(written ? 3 : 1, LOG_FILE, 2, "lfo file: %s %s, %d sound(s) with more than stock's LFO, the chain file's copy named by its sum %08x (%u writes, %u failed)",
                   OWN_PATH, written ? "written" : "NOT written", slots, seen, op1f_lfo_file_writes, op1f_lfo_file_failed);
+    }
+}
+
+// R15: the drum's file from the store, where what it would hold differs from what it holds.
+static void write_drum() {
+    drum_dirty = 0;
+    static Copy c;
+    static Lamp l;
+    int slots = collect(DRUM_AT, &c, &l);
+    if (same_copy(&c, &drum_held) && same_lamp(&l, &drum_held_lamp)) return;
+    int kept = 0;
+    for (int s = 0; s < SLOTS; ++s) if (l.pick[s] >= 0) ++kept;
+    int written = write_file(DRUM_PATH, DRUM_TAG, DRUM_HEAD, 0, &c, &l);
+    ++op1f_lfo_drum_writes;
+    if (written) copy_into(&drum_held, &drum_held_lamp, &c, &l);    // a write that did not land is made again at the next change
+    else ++op1f_lfo_drum_failed;
+    if (drum_lines < (u32)WRITE_LINES || !written) {
+        ++drum_lines;
+        STOCK_LOG(written ? 3 : 1, LOG_FILE, 6, "lfo file: %s %s, %d drum sound(s) with more than stock's LFO, %d lamp choice(s) in it (%u writes, %u failed)",
+                  DRUM_PATH, written ? "written" : "NOT written", slots, kept, op1f_lfo_drum_writes, op1f_lfo_drum_failed);
     }
 }
 
@@ -393,19 +418,70 @@ static void own_touch(int after_chain) {
     }
 }
 
+// R15: the drum's file is to be written, half a second after the last change, whatever the chain unit does.
+static void drum_touch() {
+    drum_dirty = 1;
+    drum_dirty_ms = now_ms();
+}
+
+// R15: the drum's file at the start, with the synth's choice: into the store as it stands, nothing to choose against.
+// The drum lamp LFO's effect wagon: away, into the lamp's record (the file's, else the chain file's); there, the
+// file's handed to the chain unit, and the file drops it after that unit's word.
+static void drum_start(int chain, const Lamp* chain_drums) {
+    static Copy file;
+    static Lamp file_lamp;
+    int got = read_own(DRUM_PATH, DRUM_TAG, DRUM_HEAD, &file, &file_lamp, 0);
+    int sounds = 0, kept = 0, given = 0;
+    for (int s = 0; s < SLOTS; ++s) {
+        if (got > 0 && file.has[s]) { op1f_lfo4_store_set(DRUM_AT + s, file.values[s]); ++sounds; }
+        int mine = got > 0 && file_lamp.pick[s] >= 0;
+        if (mine) ++kept;
+        u8 pick, midi[MIDI_DESTS];
+        if (!chain) {
+            unpack(mine ? file_lamp.pick[s] : chain_drums->pick[s], mine ? file_lamp.midi[s] : chain_drums->midi[s], &pick, midi);
+            op1f_lfo4_lamp_picks(DRUM_AT + s, 1, &pick, midi);
+        } else if (mine && &op1f_chain_lfo_picks != 0) {
+            unpack(file_lamp.pick[s], file_lamp.midi[s], &pick, midi);
+            op1f_chain_lfo_picks(HOST_DRUM, (u32)s, 1, &pick, midi);
+            ++given;
+        }
+    }
+    if (given) {
+        op1f_chain_touch(HOST_DRUM);                                // the chain's file takes them first
+        drum_waits = 1;
+        drum_wait_frames = 0;
+    }
+    static Copy now;
+    static Lamp now_lamp;
+    collect(DRUM_AT, &now, &now_lamp);
+    if (got > 0) {
+        copy_into(&drum_held, &drum_held_lamp, &file, &file_lamp);
+        if (!same_copy(&now, &file) || !same_lamp(&now_lamp, &file_lamp)) drum_touch();   // what the start changed (a choice handed over, an integer held to its range)
+    } else {
+        copy_into(&drum_held, &drum_held_lamp, &now, &now_lamp);    // nothing on the disk to mend: a write at the first change
+    }
+    if (got > 0)
+        STOCK_LOG(3, LOG_FILE, 7, "lfo file: at the start: %s read: %d drum sound(s) with more than stock's LFO, %d lamp choice(s) in it, %d handed to the chain unit",
+                  DRUM_PATH, sounds, kept, given);
+    else
+        STOCK_LOG(got < 0 ? 2 : 3, LOG_FILE, 7, "lfo file: at the start: %s %s (a json array of %d integers, %d first): the drum sounds are as stock has them",
+                  DRUM_PATH, got < 0 ? "refused: it is not" : "is not there", (int)DRUM_INTS, (int)DRUM_TAG);
+}
+
 // The start's choice between the chain file's copy and the own file (the unit's head has the rule).
 static void decide() {
     decided = 1;
     int chain = chain_there();
     static Lamp file_lamp;                                          // the chain file's word on the LFO under the lamp, read here when that unit is away
-    if (!chain) read_chain_file(&chain_copy, &file_lamp);           // nobody handed it over
+    static Lamp file_drums;                                         // R15: the same for the drum slots
+    if (!chain) read_chain_file(&chain_copy, &file_lamp, &file_drums);   // nobody handed it over
     u32 chain_sum = sum_of(&chain_copy);
     int chain_slots = 0;
     for (int s = 0; s < SLOTS; ++s) if (chain_copy.has[s]) ++chain_slots;
     static Copy own;                                                // not on the stack: 1,600 bytes
     static Lamp own_lamp;
     u32 own_seen = 0;
-    int have_own = read_own(&own, &own_lamp, &own_seen);
+    int have_own = read_own(OWN_PATH, FILE_TAG, FILE_HEAD, &own, &own_lamp, &own_seen) > 0;
     int own_wins = have_own && own_seen == chain_sum;
     int kept = 0;                                                   // sounds whose lamp LFO's effect wagon the own file holds: it was written while the chain unit was away
     for (int s = 0; s < SLOTS; ++s) if (own_wins && own_lamp.pick[s] >= 0) ++kept;
@@ -440,14 +516,16 @@ static void decide() {
     if (early) {                                                    // a change made before this: the own file follows it (the LFO unit touched the chain unit for it too)
         early = 0;
         own_touch(1);
+        drum_touch();
     }
     STOCK_LOG(3, LOG_FILE, 1, "lfo file: at the start: taken: %s", took);   // J5i: two lines, the verdict first (the logger cuts a line at 260 characters with its prefix)
     STOCK_LOG(3, LOG_FILE, 5, "lfo file: at the start the chain unit is %s; its file's copy has %d sound(s) (sum %08x, %u handed over); the own file %s (it names %08x, %d lamp choice(s) in it)",
               chain ? "there" : "away", chain_slots, chain_sum, handed, have_own ? "is there" : "is not there", own_seen, kept);
+    drum_start(chain, &file_drums);
 }
 
 // The LFO unit: the chain unit handed a slot's integers over. At the start that is the chain file's copy; later an
-// instrument's, and the own file follows.
+// instrument's, and the own file follows. Synth slots only (fx train carries no drum LFOs).
 extern "C" void op1f_lfo_file_from_chain(int slot, const int* values) asm("op1f_lfo_file_from_chain");
 extern "C" void op1f_lfo_file_from_chain(int slot, const int* values) {
     if (slot < 0 || slot >= SLOTS) return;
@@ -467,27 +545,40 @@ extern "C" void op1f_lfo_file_to_chain(int slot, const int* values, int have) {
 
 // R4c: the chain unit's save wrote its file now (fx train 13's save_file, right after the write, in that unit's frame
 // work before it calls the LFO unit's frame): the own file is written at this frame call, after it, and once more
-// where a wait was given up. Whatever slots the save held.
+// where a wait was given up. Whatever slots the save held. R15: the drum lamp choices handed over are in it now.
 extern "C" void op1f_lfo_file_chain_saved() asm("op1f_lfo_file_chain_saved");
 extern "C" void op1f_lfo_file_chain_saved() {
     if (own_waits) { own_waits = 0; own_now = 1; }
     if (own_early) { own_early = 0; own_dirty = 1; own_now = 1; }
+    drum_waits = 0;
 }
 
-// The LFO unit: the store changed.
+// The LFO unit: the store changed (any place: the synth's file follows as in lfo 11, the drum's by its own mark).
 extern "C" void op1f_lfo_file_touch() asm("op1f_lfo_file_touch");
 extern "C" void op1f_lfo_file_touch() {
-    if (decided) own_touch(1);                                      // the LFO unit's touch() touches the chain unit first, where there is one
+    if (decided) { own_touch(1); drum_touch(); }                    // the LFO unit's touch() touches the chain unit first, where there is one
     else early = 1;
 }
 
-// The LFO unit's frame call, first thing: the start's choice once, then the own file's write when it is due.
+// R15: the drum's file when it is due: half a second after the last change, at the countdown at once; while lamp
+// choices handed to the chain unit wait for its word, not before it (or OWN_WAIT_FRAMES frame calls).
+static void drum_frame() {
+    if (!drum_dirty) return;
+    if (drum_waits && POWER_POPUP == 0) {
+        if (++drum_wait_frames < (int)OWN_WAIT_FRAMES) return;
+        drum_waits = 0;
+    }
+    if (POWER_POPUP != 0 || now_ms() - drum_dirty_ms >= (u32)OWN_DELAY_MS) write_drum();
+}
+
+// The LFO unit's frame call, first thing: the start's choice once, then the own files' writes when they are due.
 extern "C" void op1f_lfo_file_frame() asm("op1f_lfo_file_frame");
 extern "C" void op1f_lfo_file_frame() {
     if (!decided) {
         if (chain_there() && &op1f_chain_file_loaded != 0 && !op1f_chain_file_loaded()) return;   // the chain unit has not read its file: its copy is not handed over yet
         decide();
     }
+    drum_frame();
     if (!own_dirty) return;
     if (POWER_POPUP != 0 || own_now) {                              // the countdown (the chain unit's save came first in this frame), or that unit has just written its file
         write_own();
@@ -506,7 +597,7 @@ extern "C" void op1f_lfo_file_frame() {
 
 // ---------------------------------------------------------------- the frame call where the chain unit is away
 
-// From `kit`'s frame hook, which calls the chain unit's frame function when there is one and this otherwise: the
+// From the base's frame hook, which calls the chain unit's frame function when there is one and this otherwise: the
 // clock as the chain unit keeps it (the core's cycles, whatever the frame rate), the LFO presets' folder and files
 // once, then the two frame functions the chain unit's calls at its end.
 extern "C" void op1f_lfo_alone_frame() asm("op1f_lfo_alone_frame");
@@ -518,45 +609,10 @@ extern "C" void op1f_lfo_alone_frame() {
     }
     own_last_cycles = now;
     if (own_frames == 0) {
-        STOCK_LOG(3, LOG_FILE, 3, "lfo alone: the pack fx train is away: the LFOs' own keys, fx side, frame call and clock are in");
+        STOCK_LOG(3, LOG_FILE, 3, "lfo alone: the pack fx train is away: the LFOs' fx side, frame call and clock are in");
         op1f_lfopresets_scan();
     }
     ++own_frames;
     op1f_lfo4_frame();
     op1f_lfopresets_frame();
-}
-
-// ---------------------------------------------------------------- the synth controller's handlers where the chain unit is away
-
-// Each as the chain unit's handler of the same slot does for the LFOs (Build H's chain unit, op1f_fx_key_down and its
-// three fellows): the LFO unit is asked first and answers -1 for what is not the LFO page's; stock's handler has
-// the rest.
-extern "C" int op1f_lfo_alone_key_down(void* self, const int* event) asm("op1f_lfo_alone_key_down");
-extern "C" int op1f_lfo_alone_key_down(void* self, const int* event) {
-    ++op1f_lfo_alone_keys;
-    int taken = op1f_lfotrain_key_down(self, event, 0);
-    if (taken >= 0) return taken;
-    return STOCK_SYNTH_KEY_DOWN(self, event);
-}
-
-extern "C" int op1f_lfo_alone_key_shift(void* self, const int* event) asm("op1f_lfo_alone_key_shift");
-extern "C" int op1f_lfo_alone_key_shift(void* self, const int* event) {
-    ++op1f_lfo_alone_keys;
-    int taken = op1f_lfotrain_key_down(self, event, 1);
-    if (taken >= 0) return taken;
-    return STOCK_SYNTH_KEY_SHIFT(self, event);
-}
-
-extern "C" int op1f_lfo_alone_key_up(void* self, int key) asm("op1f_lfo_alone_key_up");
-extern "C" int op1f_lfo_alone_key_up(void* self, int key) {
-    op1f_lfotrain_key_up(key);                                      // the LFO page sees its knobs released; stock's bookkeeping runs as ever
-    return STOCK_SYNTH_KEY_UP(self, key);
-}
-
-extern "C" int op1f_lfo_alone_encoder(void* self, int index, int delta) asm("op1f_lfo_alone_encoder");
-extern "C" int op1f_lfo_alone_encoder(void* self, int index, int delta) {
-    ++op1f_lfo_alone_keys;
-    int taken = op1f_lfotrain_encoder(self, index, delta);
-    if (taken >= 0) return taken;
-    return STOCK_SYNTH_ENCODER(self, index, delta);
 }

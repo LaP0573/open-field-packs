@@ -1,5 +1,5 @@
 {
-  "about": "Up to four effects on an instrument, shown as a train of four wagons; presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there.",
+  "about": "Up to four effects on an instrument, shown as a train of four wagons; presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. The fifteen names in exports are the ones fx train 17 offers, in the order its file holds them: it was made beside lfo 11, which asked for all fifteen. lfo 12 asks for eight of them, so they are named here and the file is made again byte for byte beside either lfo.",
   "name": "fx train",
   "version": 17,
   "interface": 3,
@@ -31,7 +31,23 @@
   "serves": [
     "lfo"
   ],
-  "exports": [],
+  "exports": [
+    "op1f_chain_close_train",
+    "op1f_chain_file_loaded",
+    "op1f_chain_lfo_knob",
+    "op1f_chain_lfo_picks",
+    "op1f_chain_ms",
+    "op1f_chain_screen_wanted",
+    "op1f_chain_touch",
+    "op1f_chain_train_open",
+    "op1f_chain_view",
+    "op1f_fx_train_page_ready",
+    "op1f_fx_train_presets_ready",
+    "op1f_lfofx_extra",
+    "op1f_lfofx_extra_counts",
+    "op1f_presets_view",
+    "op1f_train_page_now"
+  ],
   "pictures": [
     {
       "name": "fxtrain.svg",

@@ -40,6 +40,10 @@
   "keys": {
    "title": "Keys and the screen that is shown",
    "about": ""
+  },
+  "sounds": {
+   "title": "Sounds and their LFOs",
+   "about": "The unit has eight synth sounds and eight drum sounds, in slots 0 to 7 each. Each slot has a record, an object of the firmware's at a fixed address, which holds the sound's document: what the unit saves with the sound. A sound's LFO has a kind (a row of the list under shift and T4), eight words of settings and a switch. Our code changes them through the calls below, the way the unit's own keys do, so that what the unit shows, plays and saves agrees."
   }
  },
  "functions": {
@@ -240,6 +244,36 @@
    "group": "keys",
    "what": "Not 0 while the shift key is held.",
    "thread": "Ours: the key thread, the display thread."
+  },
+  "0x8d4f3c84": {
+   "name": "lfo_words_doc",
+   "group": "sounds",
+   "what": "Writes eight words of LFO settings into the document of the sound whose record is `record`. Follow it with the record's LFO apply (`lfo_apply_synth` or `lfo_apply_drum`), so that the sound plays them.",
+   "thread": "Ours: the key thread."
+  },
+  "0x8d4f3d0c": {
+   "name": "lfo_active_doc",
+   "group": "sounds",
+   "what": "Writes the LFO's switch, `on` 1 or 0, into the document of the sound whose record is `record`. Our code calls it right after `lfo_on_synth` or `lfo_on_drum`, so that the switch the sound plays with is the one it is saved with.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8d504308": {
+   "name": "lfo_on_synth",
+   "group": "sounds",
+   "what": "Switches the LFO of synth slot `slot` (0 to 7) on (`on` 1) or off (0), as the unit's own key does. It changes the switch the sound plays with; `lfo_active_doc` writes it into the document.",
+   "thread": "Ours: the key thread, the display thread."
+  },
+  "0x8d5042d8": {
+   "name": "lfo_on_drum",
+   "group": "sounds",
+   "what": "The same for drum slot `slot` (0 to 7).",
+   "thread": "As `lfo_on_synth`."
+  },
+  "0x8d50441a": {
+   "name": "reset_drum",
+   "group": "sounds",
+   "what": "Restarts the LFO of drum voice `voice` (0 to 7) for a new note, as the unit does at each drum hit while the slot's LFO is on. Our code calls it from its own function in its place at its two calls, and restarts its own LFOs for the same voice after it.",
+   "thread": "The audio thread, where the firmware calls it."
   }
  }
 }

@@ -11,15 +11,18 @@
 .type op1f_boot_table, STT_OBJECT
 op1f_boot_table:
     .long 0x00000011, 0x11a052b4, op1f_lfo_alone_fx, 0xef3ea86f, 0    /* Only when the pack `fx train` is away: a call to our stub, which runs our LFOs on the sound's effect and then does the load. */
-    .long 0x00000010, 0x84013834, op1f_lfo_alone_key_down, 0xf74c1ee5, 0    /* Only when the pack `fx train` is away: ours deals with the keys of the LFO page and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x84013838, op1f_lfo_alone_key_shift, 0x5c888013, 0    /* Only when the pack `fx train` is away: ours deals with the keys of the LFO page and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x8401383c, op1f_lfo_alone_key_up, 0x6a39f2c6, 0    /* Only when the pack `fx train` is away: ours deals with the keys of the LFO page and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x84013840, op1f_lfo_alone_encoder, 0x455bee11, 0    /* Only when the pack `fx train` is away: ours deals with the knobs of the LFO page and hands every other turn to the firmware's handler. */
+    .long 0x00000011, 0x11a03e34, op1f_lfo4_drum_f5_stub, 0xf625992e, 0    /* Only when the pack `fx train` is away: a call to our stub, which runs our LFOs on the drum sound once a block and then does the load. */
     .long 0x00000011, 0x11a04334, op1f_lfo4_env_stub, 0x1e2c99c6, 0    /* A call to our stub, which runs our LFOs for the voice (their part at the envelope) and then does the load. */
     .long 0x00000011, 0x11a045c0, op1f_lfo4_eng_stub, 0xef535c8c, 0    /* A call to our stub, which runs our LFOs for the voice (their part at the sound engine) and then does the load. */
     .long 0x00000011, 0x11a04d16, op1f_lfo4_reset_synth, 0x349e40c1, 0    /* A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice. */
     .long 0x00000012, 0x8f007a08, op1f_lfo4_reset_synth, 0x349e40c1, 0    /* A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice. */
     .long 0x00000012, 0x8f007bd6, op1f_lfo4_reset_synth, 0x349e40c1, 0    /* A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice. */
+    .long 0x00000011, 0x11a037c8, op1f_lfo4_drum_s1_stub, 0x954908cb, 0    /* A call to our stub, which runs our LFOs for the voice (their first part) and then does the load. */
+    .long 0x00000011, 0x11a03858, op1f_lfo4_drum_s2_stub, 0x972bbb9b, 0    /* A call to our stub, which runs our LFOs for the voice (their part at the velocity) and then does the load. */
+    .long 0x00000011, 0x11a0387a, op1f_lfo4_drum_s3_stub, 0xad7ff9db, 0    /* A call to our stub, which runs our LFOs for the voice (their part at the level) and then does the load. */
+    .long 0x00000011, 0x11a03a48, op1f_lfo4_drum_c4_stub, 0x7dad539c, 0    /* A call to our stub, which runs our LFOs' part that comes once a block and then does the load. */
+    .long 0x00000012, 0x8f0075fc, op1f_lfo4_reset_drum, 0x93114942, 0    /* A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice. */
+    .long 0x00000012, 0x8f008338, op1f_lfo4_reset_drum, 0x93114942, 0    /* A call to ours, which makes the firmware's call and then starts our LFOs anew for the same voice. */
 .size op1f_boot_table, .-op1f_boot_table
 .global op1f_boot_table_end
 .type op1f_boot_table_end, STT_OBJECT
