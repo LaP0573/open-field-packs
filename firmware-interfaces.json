@@ -42,8 +42,24 @@
    "about": ""
   },
   "sounds": {
-   "title": "Sounds and their LFOs",
+   "title": "Sounds: their engines, effects and LFOs",
    "about": "The unit has eight synth sounds and eight drum sounds, in slots 0 to 7 each. Each slot has a record, an object of the firmware's at a fixed address, which holds the sound's document: what the unit saves with the sound. A sound's LFO has a kind (a row of the list under shift and T4), eight words of settings and a switch. Our code changes them through the calls below, the way the unit's own keys do, so that what the unit shows, plays and saves agrees."
+  },
+  "notes": {
+   "title": "Notes and sequencers",
+   "about": "These play on the instrument the unit is on: the synth or the drum, by the firmware's play mode. A note is a MIDI note number, 0 to 127."
+  },
+  "tape": {
+   "title": "The tape's document and its save",
+   "about": "The firmware keeps the tape's settings as one JSON document, read from the tape's file at a load and written into it at a save. The save runs on the firmware's background worker."
+  },
+  "disk": {
+   "title": "The disk mode",
+   "about": "When the unit is a disk on a computer, the firmware builds a tree of folders and files to show. A folder has a behaviour: an object whose first word is a table of functions. The word at +0x10 makes the behaviour of a folder inside it by its name, and the word at +0x14 gives a file object for a file of it by its name; each answers 0 for a name it does not take."
+  },
+  "unit": {
+   "title": "The keyboard controller, MIDI out and the restart",
+   "about": "Calls that reach beyond the firmware's own memory: the keyboard controller, the USB MIDI output, and the restart of the unit."
   }
  },
  "functions": {
@@ -268,6 +284,60 @@
    "group": "sounds",
    "what": "Restarts the LFO of drum voice `voice` (0 to 7) for a new note, as the unit does at each drum hit while the slot's LFO is on. Our code calls it from its own function in its place at its two calls, and restarts its own LFOs for the same voice after it.",
    "thread": "The audio thread, where the firmware calls it."
+  },
+  "0x8d4e63cc": {
+   "name": "free",
+   "group": "memory",
+   "what": "Gives back a block of the firmware's heap: one from `new`, or the text of a firmware text object that holds sixteen characters or more.",
+   "thread": "Ours: the disk mode's thread."
+  },
+  "0x8fc261fc": {
+   "name": "screens",
+   "group": "screens",
+   "what": "The table of the firmware's screens by their numbers: a word a number, the screen object or 0 for a number no screen has. A screen's document is the word at its +4, 0 until the firmware has loaded it. Our code reads only the numbers 1 to 85.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8d4f3b9c": {
+   "name": "set_params",
+   "group": "sounds",
+   "what": "Writes an effect's eight knob words into a slot's document, as the member `fx_params`: each word is a value shifted left by sixteen, and the value is what goes in. Then the record is marked to be written. `record` is the slot's record.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8d4f3c24": {
+   "name": "set_active",
+   "group": "sounds",
+   "what": "Writes whether a slot's effect is on into the slot's document, as the member `fx_active`, and marks the record to be written. `record` is the slot's record.",
+   "thread": "Ours: the key thread, the display thread."
+  },
+  "0x8d505390": {
+   "name": "build",
+   "group": "sounds",
+   "what": "Makes the effect object of `index` anew for a type and puts it in the index's word. A type `factory` refuses stops the unit.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8d4f2b80": {
+   "name": "tape_root",
+   "group": "tape",
+   "what": "The tape's document: a JSON value at a fixed place, the same every call. The unit stops when the document is null.",
+   "thread": "Not the audio thread. Ours: the firmware's background worker, the key thread, the main task."
+  },
+  "0x8d4f24dc": {
+   "name": "tape_set",
+   "group": "tape",
+   "what": "Sets a member of one of the firmware's documents to a copy of `value`, under the documents' lock, and marks that document changed. `db` picks the document: 2 is the tape's, the one `tape_root` gives. `key` is the member's name. It waits for the lock as long as it takes, so it waits while a tape's file is read or written. Gives back 1.",
+   "thread": "Not the audio thread. Ours: the firmware's background worker, in the tape's save."
+  },
+  "0x8c0c1dd0": {
+   "name": "tape_saver",
+   "group": "tape",
+   "what": "The tape's saver: an object of the firmware's, made at the first call and the same at every call after. Hand it to `notify` to have the tape saved.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8fca1ed2": {
+   "name": "notify",
+   "group": "tape",
+   "what": "Marks a saver to save and wakes the background worker, which then saves. It does not wait.",
+   "thread": "Ours: the display thread."
   }
  }
 }

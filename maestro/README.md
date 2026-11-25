@@ -12,6 +12,7 @@ A chord sequencer for synth sounds. One key plays a whole chord, in the key you 
 - The top row, in the knob colours: the key (C MAJ), the set, HUMANIZE, and FIELD or MELODY in the red pill. BASS or ARP shows in red under it.
 - Left: wind chimes, one per key, a tube per note. Blue for a chord of the key, ochre for one from outside it. The chord you played last is lit.
 - Middle: the maestro on his podium, and a board naming the chord that sounds.
+- Keys, chords and the dolls' notes are spelled the way chord charts spell them, with flats where music uses them: Bb major rather than A# major, and Ab and Bb major chords in C major rather than G# and A#. Maestro draws the flat and sharp signs itself, beside the letter: the unit's font has no flat, and its sharp fills in to a dot on the small plates.
 - Right, in field mode: twelve kites, one suggestion per key. The colour is the mood, dark indigo to bright yellow; the height is how far the move goes. White keys stay in the key, black keys step outside it.
 - Right, in melody mode: the choir of dolls. The front row sings the chord's own notes from its root up, the back row the key's other notes.
 
@@ -72,8 +73,10 @@ MAESTRO leaves the list. It changes nothing in the firmware. Your saves stay on 
 
 open-field 0.14 or later. From 0.19 melody mode redraws only what moved and runs at full frame rate. On 0.14 to 0.18 the page is slower but the same. The start screen shows the release: `1.7.3 - open-field 0.19`.
 
-## Version 8
+## Version 10
 
-Version 8 is the first one shared here. It plays and looks exactly like version 7, which has run on a unit: the keys, a suggestion stored on a key, the set reloaded, a save, the set browser, bass with two chords held at once, the arp and its settings, the span 1 to 3 among them, both octaves (shift + arrows, and the arrows alone), picking it from the list, the folder in disk mode, and a power cycle. Version 8 itself has run on a unit too: it started, picked up where version 7 left off, and drew its melody page, a struck chord and the set browser.
+Version 10 spells keys, chords and the dolls' notes the way chord charts do, with drawn flat and sharp signs. Otherwise it plays and looks like version 8, the first one shared here.
+
+How it plays has run on a unit since version 7: the keys, a suggestion stored on a key, the set reloaded, a save, the set browser, bass with two chords held at once, the arp and its settings, the span 1 to 3 among them, both octaves (shift + arrows, and the arrows alone), picking it from the list, the folder in disk mode, and a power cycle. Version 10 itself has run on a unit too: it started and drew its page in C major, E major and F# major, with the chords, the suggestions and the dolls' notes named.
 
 Not tried on a unit yet: a synth sound saved and loaded again while maestro is chosen.
