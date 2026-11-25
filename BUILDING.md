@@ -9,8 +9,8 @@ This page is for people who write packs. If you just want to play them, the [REA
 | [8 tracks.pack](8%20tracks.pack) | Eight tape tracks instead of four, on the tape and in the mixer. | tape | 11 | base.pack, level 7 | [`8 tracks/`](8%20tracks) | 108,948 bytes | `20fdc8534e03a27f4f8b0dcea2504d9a32734dfc81b5863623d4f1cca496d8d2` |
 | [fx train.pack](fx%20train.pack) | A chain of effects on every sound, with its presets kept as files. | effects | 18 | base.pack, level 8 | [`fx train/`](fx%20train) | 502,048 bytes | `c34d4d29776a602e6cae8d0d03a8f80339c48f1f8a87792ac46d7accc56bb2ea` |
 | [lfo.pack](lfo.pack) | Four LFOs on every sound, with their page and their presets. | modulation | 12 | base.pack, level 8 | [`lfo/`](lfo) | 429,278 bytes | `72d167e802ffd671d523c41f1324d01978e21df44c48549d21e5a1a33e9ed2c7` |
+| [maestro.pack](maestro.pack) | Chords from one key, with the next chords or a melody on the right half of the keyboard. | sequencing | 10 | base.pack, level 5 | none: the file only | 337,672 bytes | `fb4d05964d1195d04b36e6b85a886da95008a11cbf2446cf93eff3f8b7fb56fb` |
 | [sidechain.pack](sidechain.pack) | One tape track ducks another, set on a page under shift and the mixer key. | mixer | 10 | base.pack, level 7 | [`sidechain/`](sidechain) | 107,850 bytes | `2268639259142f81e703c24d6446e3be74406a6d5ce708b21b964cd8232f723e` |
-| [maestro.pack](maestro.pack) | Chords from one key, with the next chords or a melody on the right half of the keyboard. | sequencing | 8 | base.pack, level 5 | none: the file only | 310,024 bytes | `9d49fe818e1f568a5b9eb547e4d6713d527df87845411ef0d376e70f771f0e4b` |
 
 `maestro` is here as its finished file only. Its sources are not published, so `build.py` does not build it.
 

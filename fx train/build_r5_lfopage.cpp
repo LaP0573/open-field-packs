@@ -40,7 +40,7 @@ typedef const char* (*ParamNameFn)(int kind, int index);
 
 #define STOCK_LOG ((LogFn)0x8c053a20u)
 #define STOCK_FIND_NODE ((FindNodeFn)0x8fc25cc0u)
-#define STOCK_SCREENS ((ScreensFn)0x8fc261fcu)                 // the registry: 86 screen pointers by id (0x84c960f4)
+#define STOCK_SCREENS ((ScreensFn)0x8fc261fcu)                 // the registry: 86 screen pointers by id (0x84c96580)
 #define STOCK_PARAM_NAME ((ParamNameFn)0x8d51750cu)            // (kind, index): R0 the kind, R1 the index (the pages' calls; the prologue R7 = R0, R6 = R1)
 #define RD32(a) (*(volatile u32*)(a))
 

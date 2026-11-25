@@ -17,7 +17,7 @@ typedef int (*FileSizeFn)(const char* path);
 
 **The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says "ours", it names the threads our code calls the function on today; that it is safe on another thread has not been shown.
 
-There are 126 functions bound in the sources. 37 are described below, by subject. The other 89 are listed at the end with their type and the files that bind them: their words are still to be written.
+There are 126 functions bound in the sources. 46 are described below, by subject. The other 80 are listed at the end with their type and the files that bind them: their words are still to be written.
 
 ## The log
 
@@ -72,6 +72,7 @@ Our code has no library of its own: no `malloc`, no `memcpy`, no division by a v
 | --- | --- | --- | --- |
 | `0x8c03e434` | `void string_ctor(void* out, const char* text)` | Makes a text object of the firmware from a C text, in memory the caller provides (our code keeps 48 zeroed bytes for it). A text of up to fifteen characters lives inside the object, and nothing has to be freed afterwards. Our code keeps its paths that short for this reason: `user/op1f.json` fits, `user/lfo/01.json` does not. | Not the audio thread. Ours: the main thread at the start, the display thread, the key thread, the disk mode's thread. |
 | `0x8fcc5a68` | `void* heap_malloc(int heap_index, u32 size)` | A block of one of two large heaps that the firmware itself hardly uses, by the heap's number, 0 or 1. Our code takes large blocks there once and keeps them: the tape's cache for tracks 5 to 8 from heap 1, the effect train's private regions from heap 0. Gives back 0 when the heap has no room. | Not the audio thread. Ours: the tape's set-up at the start, and the display thread. |
+| `0x8d4e63cc` | `void free(void* block)` | Gives back a block of the firmware's heap: one from `new`, or the text of a firmware text object that holds sixteen characters or more. | Ours: the disk mode's thread. |
 
 ## Screens, pictures and texts
 
@@ -84,6 +85,7 @@ A screen of the firmware is an object with a picture: an SVG text, parsed into a
 | `0x8fc25abc` | `void* label_from_node(void* screen, void* node, int kind)` | Turns a part of a picture into a label, an object whose text can be set while the unit runs. The part is a placeholder: it gives the label its place and its colour. The label takes the part's place in the document and comes back; keep it, since the id finds it no more. Our code passes 0 for `kind`: the text then starts at the placeholder's left edge. | Ours: the display thread, once for each label. |
 | `0x8fc3aa3c` | `void label_text(void* label, const char* text, int max_width)` | Sets a label's text from a C text. A text wider than `max_width` pixels is shortened and gets a mark at its end. An empty text hides the label. Send small letters and digits: the firmware's font has the letters at the small letters' codes and its own signs at the capitals'. Each call asks the heap for memory, so set a text only when it changes; setting the text a label already has changes nothing. | Ours: the display thread. |
 | `0x8fc3820c` | `LabelBox label_bounds(void* label)` | The box of a label's text as it was last laid out: left, right, top and bottom, each a number with ten bits behind the point. It is the box of the shapes without their stroke, so an upright stroke is 0 wide. The box comes back as a structure, by value: bind the function as one that returns the structure, and the compiler hands over the address for it in P0. | Ours: the display thread. |
+| `0x8fc261fc` | `u32* screens(void)` | The table of the firmware's screens by their numbers: a word a number, the screen object or 0 for a number no screen has. A screen's document is the word at its +4, 0 until the firmware has loaded it. Our code reads only the numbers 1 to 85. | Ours: the display thread. |
 
 ## Keys and the screen that is shown
 
@@ -91,7 +93,7 @@ A screen of the firmware is an object with a picture: an SVG text, parsed into a
 | --- | --- | --- | --- |
 | `0x8fc24ca4` | `int shift(void)` | Not 0 while the shift key is held. | Ours: the key thread, the display thread. |
 
-## Sounds and their LFOs
+## Sounds: their engines, effects and LFOs
 
 The unit has eight synth sounds and eight drum sounds, in slots 0 to 7 each. Each slot has a record, an object of the firmware's at a fixed address, which holds the sound's document: what the unit saves with the sound. A sound's LFO has a kind (a row of the list under shift and T4), eight words of settings and a switch. Our code changes them through the calls below, the way the unit's own keys do, so that what the unit shows, plays and saves agrees.
 
@@ -102,6 +104,20 @@ The unit has eight synth sounds and eight drum sounds, in slots 0 to 7 each. Eac
 | `0x8d504308` | `void lfo_on_synth(u32 slot, int value)` | Switches the LFO of synth slot `slot` (0 to 7) on (`on` 1) or off (0), as the unit's own key does. It changes the switch the sound plays with; `lfo_active_doc` writes it into the document. | Ours: the key thread, the display thread. |
 | `0x8d5042d8` | `void lfo_on_drum(u32 slot, int value)` | The same for drum slot `slot` (0 to 7). | As `lfo_on_synth`. |
 | `0x8d50441a` | `void reset_drum(u32 voice)` | Restarts the LFO of drum voice `voice` (0 to 7) for a new note, as the unit does at each drum hit while the slot's LFO is on. Our code calls it from its own function in its place at its two calls, and restarts its own LFOs for the same voice after it. | The audio thread, where the firmware calls it. |
+| `0x8d4f3b9c` | `void set_params(void* record, const u32* words)` | Writes an effect's eight knob words into a slot's document, as the member `fx_params`: each word is a value shifted left by sixteen, and the value is what goes in. Then the record is marked to be written. `record` is the slot's record. | Ours: the display thread. |
+| `0x8d4f3c24` | `void set_active(void* record, int value)` | Writes whether a slot's effect is on into the slot's document, as the member `fx_active`, and marks the record to be written. `record` is the slot's record. | Ours: the key thread, the display thread. |
+| `0x8d505390` | `void build(int index, int type)` | Makes the effect object of `index` anew for a type and puts it in the index's word. A type `factory` refuses stops the unit. | Ours: the display thread. |
+
+## The tape's document and its save
+
+The firmware keeps the tape's settings as one JSON document, read from the tape's file at a load and written into it at a save. The save runs on the firmware's background worker.
+
+| Address | The call | What the caller hands over and gets back | Called from |
+| --- | --- | --- | --- |
+| `0x8d4f2b80` | `void* tape_root(void)` | The tape's document: a JSON value at a fixed place, the same every call. The unit stops when the document is null. | Not the audio thread. Ours: the firmware's background worker, the key thread, the main task. |
+| `0x8d4f24dc` | `void tape_set(int db, const char* key, void* value)` | Sets a member of one of the firmware's documents to a copy of `value`, under the documents' lock, and marks that document changed. `db` picks the document: 2 is the tape's, the one `tape_root` gives. `key` is the member's name. It waits for the lock as long as it takes, so it waits while a tape's file is read or written. Gives back 1. | Not the audio thread. Ours: the firmware's background worker, in the tape's save. |
+| `0x8c0c1dd0` | `void* tape_saver(void)` | The tape's saver: an object of the firmware's, made at the first call and the same at every call after. Hand it to `notify` to have the tape saved. | Ours: the display thread. |
+| `0x8fca1ed2` | `void notify(void* object)` | Marks a saver to save and wakes the background worker, which then saves. It does not wait. | Ours: the display thread. |
 
 ## Bound in the sources, not described yet
 
@@ -126,11 +142,9 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8c08448c` | `void json_from_string(void* json, const void* string)` | `build_k_clip.cpp` |
 | `0x8c084782` | `void json_to_string(void* out_string, void* json)` | `build_r6c_chain.cpp`, `build_r2_lfopresets.cpp` |
 | `0x8c0bce20` | `void mode_switch(int mode)` | `build_r4b_duck.cpp` |
-| `0x8c0c1dd0` | `void* tape_model(void)` | `build_b_mix.cpp`, `build_b_record.cpp`, `build_r4b_duck.cpp` |
 | `0x8c0c2158` | `int tape_key_up(void* self, int key)` | `build_r6g_solo.cpp` |
 | `0x8d4e4324` | `void* alloc_aligned(u32 alignment, u32 bytes)` | `build_k_copy.cpp` |
 | `0x8d4e43a4` | `void free_aligned(void* block)` | `build_k_copy.cpp` |
-| `0x8d4e63cc` | `void free(void* block)` | `build_k_clip.cpp`, `build_k_clips.cpp`, `build_r6c_chain.cpp`, `build_r2_lfopresets.cpp` and 1 more |
 | `0x8d4e9724` | `void patch_apply(void* descriptor)` | `build_r6c_chain.cpp` |
 | `0x8d4ed6e4` | `i32 clips_idle(void)` | `build_b_record.cpp`, `build_r4b_duck.cpp` |
 | `0x8d4ed7e8` | `void clip_fill(i32* record, i32 track, i32 start, i32 stop, const i32* paddings)` | `build_k_clips.cpp` |
@@ -142,12 +156,8 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8d4eea84` | `void clips_load(void* store)` | `build_k_clips.cpp` |
 | `0x8d4eef00` | `void clip_remove(void* store, i32 id)` | `build_k_clips.cpp` |
 | `0x8d4f23f8` | `int db_clear(int db, const char* key)` | `build_k_clips.cpp` |
-| `0x8d4f24dc` | `void db_set(int db, const char* key, void* value)` | `build_k_clips.cpp`, `build_l3_maps.cpp`, `build_r4b_mixer.cpp`, `build_r4b_duck.cpp` |
-| `0x8d4f2b80` | `void* tape_doc(void)` | `build_k_clips.cpp`, `build_r4b_mixer.cpp`, `build_r4b_duck.cpp` |
 | `0x8d4f398c` | `void pick(void* record, int id)` | `build_r6c_chain.cpp` |
 | `0x8d4f3a54` | `void lfo_pick(void* record, int id)` | `build_i_lfo4.cpp` |
-| `0x8d4f3b9c` | `void set_params_doc(void* record, const u32* words)` | `build_r6c_chain.cpp` |
-| `0x8d4f3c24` | `void set_active_doc(void* record, int value)` | `build_r6c_chain.cpp` |
 | `0x8d4f4e2c` | `void apply_drum(void* descriptor)` | `build_r6c_chain.cpp` |
 | `0x8d4f635c` | `void apply_synth(void* descriptor)` | `build_r6c_chain.cpp` |
 | `0x8d4fb908` | `void clone(int source, int destination, ProgressFn progress, u32 fourth)` | `build_k_copy.cpp` |
@@ -158,7 +168,6 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8d501008` | `i32 open_partition(const char* name)` | `build_b_edit.cpp`, `build_k_copy.cpp` |
 | `0x8d504496` | `void reset_synth(u32 voice)` | `build_i_lfo4.cpp` |
 | `0x8d504854` | `void page_copy(u32 slot, u32 type, int cls)` | `build_i_lfo4.cpp` |
-| `0x8d505390` | `void build_producer(int index, int type)` | `build_r6c_chain.cpp` |
 | `0x8d51233c` | `int random_param(int type, int index, int bias)` | `build_r6c_chain.cpp` |
 | `0x8d5168f4` | `void* mixer_values(void)` | `build_r4b_mixer.cpp` |
 | `0x8d516c90` | `void* vu_values(void)` | `build_e_screens.cpp`, `build_r4b_mixer.cpp`, `build_r4b_duck_alone.cpp` |
@@ -190,11 +199,9 @@ Each of these is called by the files named. The type is what our code hands over
 | `0x8fc22a14` | `i32 drop_oldest(void)` | `build_b_storage.cpp` |
 | `0x8fc22af0` | `i32 take_snapshot(void)` | `build_b_storage.cpp` |
 | `0x8fc25ebc` | `u8* colour_pointer(void* screen, const char* id, int optional)` | `build_e_screens.cpp` |
-| `0x8fc261fc` | `u32* screens(void)` | `build_r5_lfopage.cpp` |
 | `0x8fc356a0` | `i32 meter_fixed(u32 amp)` | `build_e_screens.cpp`, `build_r4b_duck.cpp` |
 | `0x8fc809b8` | `void flash_track(int track)` | `build_b_mix.cpp` |
 | `0x8fc809cc` | `void clear_region(void)` | `build_d_clip.cpp` |
 | `0x8fc809fc` | `void lift_region(i32 track, i32 start, i32 end, i32 flag)` | `build_d_clip.cpp` |
-| `0x8fca1ed2` | `void notify(void* object)` | `build_b_mix.cpp`, `build_b_record.cpp`, `build_r4b_mixer.cpp`, `build_r4b_duck.cpp` |
 | `0x8fca7b08` | `int fx_type_of(void* string)` | `build_r6c_chain.cpp` |
 | `0x8fcc76bc` | `void array_ctor(void* storage, int count, int size, void* ctor, void* dtor)` | `build_r6c_chain.cpp` |
