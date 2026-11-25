@@ -11,6 +11,7 @@ I want them to feel stock. Each one should look and play like something Teenage 
 | 8 tracks | Eight tape tracks instead of four. | [manual](8%20tracks/README.md) |
 | fx train | Up to four effects in a row on each synth and drum sound, picked as "train" in the sound's own list of effects, with presets. | [manual](fx%20train/README.md) |
 | lfo | Four LFOs on each synth and drum sound, picked as "ufo" in the sound's own LFO list, with presets. | [manual](lfo/README.md) |
+| maestro | A sequencer that plays a whole chord from one key, with the next chords or a melody on the right half of the keyboard. | [manual](maestro/README.md) |
 | sidechain | One tape track ducks another, or ducks to the beat. | [manual](sidechain/README.md) |
 
 Each one works on its own or with the others.
@@ -35,6 +36,6 @@ Soloing tracks 5 to 8 in `8 tracks` 11 answers [open-field's issue 6](https://gi
 
 ## For developers
 
-The sources of every pack are here. [BUILDING.md](BUILDING.md) says how to build them, change them and send a change.
+The sources of every pack but maestro are here: maestro is shared as its file only. [BUILDING.md](BUILDING.md) says how to build them, change them and send a change.
 
 MIT licence: [LICENSE](LICENSE).
