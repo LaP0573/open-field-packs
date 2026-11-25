@@ -16,7 +16,7 @@ It works the same on drum sounds.
 - **T4**: the stock page of the LFO under the searchlight. T4 there brings you back to the UFOs.
 - **Hold T4** (about half a second): your saved sets (below).
 - **Shift + T4**: the LFO list, as on any sound.
-- T1 to T3 leave the page (T3 goes to the train, if you have fx train).
+- T1 to T3 leave the page. T3 shows the sound's effect page, or the train when the sound is on fx train's **train**.
 
 The knobs:
 
@@ -29,7 +29,7 @@ The knobs:
 
 It's the stock page, knobs and all. On value, for example: blue sets the speed, ochre the amount, grey the destination, red the parameter.
 
-With fx train on the unit and at least two wagons carrying an effect, the FX destination steps through the wagons, one per click. A small wagon in that knob's colour shows which one it moves, and the effect's parameter name shows over the knob.
+With fx train on the unit, on a sound that's on **train** with at least two wagons carrying an effect, the FX destination steps through the wagons, one per click. On a sound that isn't on train, it's stock. A small wagon in that knob's colour shows which one it moves, and the effect's parameter name shows over the knob.
 
 ## Saved sets
 

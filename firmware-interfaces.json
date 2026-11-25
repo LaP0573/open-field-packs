@@ -233,12 +233,6 @@
    "what": "The box of a label's text as it was last laid out: left, right, top and bottom, each a number with ten bits behind the point. It is the box of the shapes without their stroke, so an upright stroke is 0 wide. The box comes back as a structure, by value: bind the function as one that returns the structure, and the compiler hands over the address for it in P0.",
    "thread": "Ours: the display thread."
   },
-  "0x8c0b2554": {
-   "name": "request_screen",
-   "group": "keys",
-   "what": "Asks the firmware to show the screen the present mode wants now. The firmware does this itself after every key; our code calls it after a change that no key press follows, such as a timer running out. It takes no argument. From the display thread, call it with interrupts masked for the length of the call: the firmware stops when two threads are inside it at once.",
-   "thread": "Ours: the key thread, and the display thread with interrupts masked."
-  },
   "0x8fc24ca4": {
    "name": "shift",
    "group": "keys",

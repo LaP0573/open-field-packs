@@ -14,14 +14,8 @@ op1f_boot_table:
     .long 0x00000011, 0x11a052e6, op1f_fx_synth_t1, 0xba8c6605, 0    /* A call to our stub, which runs the effects of the synth's train and then does the load. */
     .long 0x00000011, 0x11a03e34, op1f_fx_drum_t0, 0xf625992e, 0    /* A call to our stub, which has the firmware leave its own effect out here: the train runs the effects. */
     .long 0x00000011, 0x11a03e68, op1f_fx_drum_t1, 0x4aa79ea4, 0    /* A call to our stub, which runs the effects of the drum's train and then does the load. */
-    .long 0x00000010, 0x84013834, op1f_fx_key_down, 0xf74c1ee5, 0    /* Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x84013838, op1f_fx_key_shift, 0x5c888013, 0    /* Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x8401383c, op1f_fx_key_up, 0x6a39f2c6, 0    /* Ours deals with the keys of the effect train and of the LFO page and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x84013840, op1f_fx_encoder, 0x455bee11, 0    /* Ours deals with the knobs of the effect train and of the LFO page and hands every other turn to the firmware's handler. */
-    .long 0x00000010, 0x8400ea3c, op1f_fx_key_down, 0xf74c1ee5, 0    /* Ours deals with the keys of the effect train and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x8400ea40, op1f_fx_key_shift, 0xd4310f5a, 0    /* Ours deals with the keys of the effect train and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x8400ea44, op1f_fx_key_up, 0x6a39f2c6, 0    /* Ours deals with the keys of the effect train and hands every other key to the firmware's handler. */
-    .long 0x00000010, 0x8400ea48, op1f_fx_encoder, 0x098bb2c8, 0    /* Ours deals with the knobs of the effect train and hands every other turn to the firmware's handler. */
+    .long 0x00000010, 0x84013840, op1f_fx_encoder, 0x455bee11, 0    /* Ours lets the LFO page's destination knob walk the effect wagons while the sound rides the train, and hands every other turn to the firmware's handler. */
+    .long 0x00000010, 0x8400ea48, op1f_fx_encoder, 0x098bb2c8, 0    /* Ours lets the LFO page's destination knob walk the effect wagons while the sound rides the train, and hands every other turn to the firmware's handler. */
     .long 0x00000010, 0x8401e90c, op1f_fx_patch_apply, 0x0bbbd416, 0    /* Ours makes the firmware's call and then brings the effect train up to date. */
     .long 0x00000010, 0x8401f894, op1f_fx_apply_synth, 0x0ee6b628, 0    /* Ours makes the firmware's call and then brings the slot's effect train up to date. */
     .long 0x00000010, 0x8401f870, op1f_fx_apply_drum, 0x554cc307, 0    /* Ours makes the firmware's call and then brings the slot's effect train up to date. */

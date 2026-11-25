@@ -1,4 +1,18 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// Step R14, fx train 18: the train page is the page of the pack's effect
+// layer "train" (ask 2 of the card), shown by the base on T3 for a place that rides it, edited in place. At the end of
+// this file:
+//   op1f_train_frame: the document given once to the base as the layer's page (op1f_page_stand_in, ask 2, asked again
+//     at each frame until taken, one line), and the train dressed each frame for the place
+//     fx train/build_r14_train_input.cpp names (op1f_train14_place; the chain's view dresses its host's slot on the
+//     screen); the page shows no UFOs (lfo 12 shows its own: dress_ufo is no longer called);
+//   op1f_train_page_frame: the presets' list or save screen (the chain's op1f_chain_screen_wanted for the host of the
+//     place whose train page is up) shown over the page with op1f_page_show while wanted, closed with op1f_page_close
+//     when not, as lfo 12's op1f_lfo_page_frame does.
+// The page step of fx train 16 and 17 is gone: page_wanted, page_ask, page_step, page_heal, op1f_train_page_now,
+// op1f_train_show_again and op1f_train_seen (M5 below); the chain no longer calls them, nor the LFO train's weak names.
+// What is said below of them, of the UFOs on this page and of lfo's copy holds for fx train 17 and before.
+//
 // Base 29's mends (2026-11-21, after base 28's try on a unit), the effect train's page in fx train version 15: fx train 14's
 // unit (which stays as it was) with two changes.
 //
@@ -173,19 +187,14 @@ extern "C" const Op1fCard op1f_card_lfo OP1F_NAMED("op1f_card_lfo");
 extern "C" const Op1fCard op1f_card_fx_train OP1F_NAMED("op1f_card_fx_train");
 #endif
 
-// I6: the LFO train on T4 is this page with other cargo; build_i_lfo4.cpp says what its wagons carry
-extern "C" void __attribute__((weak)) op1f_lfotrain_view(Op1fLfoTrainView* out) OP1F_NAMED("op1f_lfotrain_view");
-extern "C" int __attribute__((weak)) op1f_lfotrain_open() OP1F_NAMED("op1f_lfotrain_open");
 extern "C" int __attribute__((weak)) op1f_presets_available() OP1F_NAMED("op1f_presets_available");   // build_r2_presets.cpp: the presets' list and save documents exist
-extern "C" int __attribute__((weak)) op1f_lfopresets_screen_wanted() OP1F_NAMED("op1f_lfopresets_screen_wanted");   // the LFO presets (I8): the save screen's id, the list's id, or 0 for the LFO page or stock
-// J5h: the LFOs stand without the pack `fx train`, and the chain unit's three names are optional here: with that unit
-// away the page shows the UFOs alone, from the LFO unit's view, and where neither unit is there no document is made.
+// J5h: the chain unit's names are optional here: where it is away no document is made (R14: the LFO train's weak
+// names, op1f_lfotrain_view and op1f_lfotrain_open, and the LFO presets' screen are no longer asked).
 extern "C" void __attribute__((weak)) op1f_chain_view(int host, Op1fChainView* out) OP1F_NAMED("op1f_chain_view");
 // R5: the packs' effects on the wagons of the slot on the screen (fx train 14's chain unit, which holds the same
 // structure): per knob the effect's name or 0, whether its pack is away; the pack's effect a refused pick named, or 0.
 struct Op1fChainRacks { const char* name[4]; int away[4]; const char* refused; };
 extern "C" void __attribute__((weak)) op1f_chain_racks(int host, Op1fChainRacks* out) OP1F_NAMED("op1f_chain_racks");
-extern "C" int __attribute__((weak)) op1f_chain_train_open(int host) OP1F_NAMED("op1f_chain_train_open");
 extern "C" int __attribute__((weak)) op1f_chain_screen_wanted(int host) OP1F_NAMED("op1f_chain_screen_wanted");
 // R2: what the presets unit of the same pack has made: the list's document for its id, the save screen's for its,
 // 0 for anything else and while they are not made (build_r2_presets.cpp). Named by copy.
@@ -839,7 +848,7 @@ static void ufo_flight(int kind, int k, i32* dy, int* tilt) {
     }
 }
 
-static void dress_ufo(const Op1fLfoTrainView& v) {
+static __attribute__((unused)) void dress_ufo(const Op1fLfoTrainView& v) {   // R14: no longer called (lfo 12 dresses its own UFOs)
     int shift = STOCK_SHIFT() != 0;
     int d08 = phase_deg(ph08), d1 = phase_deg(ph1), d2 = phase_deg(ph2), d4 = phase_deg(ph4);
     ++ufo_frames;
@@ -1151,203 +1160,6 @@ extern "C" int op1f_fx_train_page_ready() OP1F_NAMED("op1f_fx_train_page_ready")
 extern "C" int op1f_fx_train_page_ready() { return screen_built; }
 #endif
 
-// R2: the document the page shows for the host now, 0 for none (the mode's own screen), in the order the
-// controllers' screen answers had (H5, H5b, I6, I8): the presets' save screen or list over the train, the LFO
-// presets' over the UFOs, the UFOs, the train.
-static void* page_wanted(int host) {
-    if (host == 0) {
-        if (&op1f_presets_available != 0 && op1f_presets_available() && &op1f_chain_screen_wanted != 0) { int id = op1f_chain_screen_wanted(0); if (id) return PRESETS_DOCUMENT(id); }   // H5: the list over the train; H5b: the save screen over both
-        if (&op1f_presets_available != 0 && op1f_presets_available() && &op1f_lfopresets_screen_wanted != 0) { int id = op1f_lfopresets_screen_wanted(); if (id) return PRESETS_DOCUMENT(id); }   // I8: the same two for the LFO presets, over the LFO page
-        if (screen_built && &op1f_lfotrain_open != 0 && op1f_lfotrain_open()) return (void*)screen_object[1];   // I6: the LFO train on T4 is the same page with other cargo
-        if (screen_built && &op1f_chain_train_open != 0 && op1f_chain_train_open(0)) return (void*)screen_object[1];
-        return 0;
-    }
-    if (host == 1) {
-        if (&op1f_presets_available != 0 && op1f_presets_available() && &op1f_chain_screen_wanted != 0) { int id = op1f_chain_screen_wanted(1); if (id) return PRESETS_DOCUMENT(id); }
-        if (screen_built && &op1f_chain_train_open != 0 && op1f_chain_train_open(1)) return (void*)screen_object[1];
-        return 0;
-    }
-    return 0;
-}
-
-// R2: which of the two is open for the host: 2 the UFOs, 1 the train, 0 neither. A change to one of them is a page
-// opened by a key (T3, T4), which comes over another pack's page as it always did.
-static u32 page_view(int host) {
-    if (host == 0 && &op1f_lfotrain_open != 0 && op1f_lfotrain_open()) return 2u;
-    if ((host == 0 || host == 1) && &op1f_chain_train_open != 0 && op1f_chain_train_open(host)) return 1u;
-    return 0u;
-}
-
-// R2: the page step's words, shared by the display thread and the key thread: single words, each written whole.
-static void* volatile page_asked;                  // the document last asked of the base, 0 for none (or closed)
-static volatile u32 page_view_was;                 // page_view at the last step
-static volatile u32 page_other;                    // the frame's word: another pack's page lies on top
-static volatile u32 page_steps, page_shows, page_closes, page_waits, page_refused;   // since the start, for the frame's line
-static void* volatile page_refused_doc;            // the document the base last refused, 0 once another was taken
-static volatile u32 page_flags = OP1F_PAGE_STAYS;  // R4b: the flag the page is asked with, 0 once a base answered 0 to it
-static volatile u32 page_unflagged, page_away;     // R4b: asks a base took only without the flag; frames the step waited out of its mode
-static u32 page_said[7], page_countdown;
-// The heals (the display thread's alone): what the frame's `page` says against what the step asked.
-static u32 heal_closes, heal_shows;                // since the start, for the frame's line
-static u32 heal_stale_shown, heal_stale_missing;   // frames in a row a heal's state was seen
-static u32 heal_round;                             // heals made for the page shown or the document wanted now
-static void* heal_for;                             // the document wanted when heal_round counted
-enum { HEAL_SHOWN_FRAMES = 2, HEAL_MISSING_FRAMES = 4, HEAL_MOST = 3 };
-
-// The PC's tests run the other thread's step between the word and the call here; nothing on the unit.
-#ifndef PAGE_SEAM
-#define PAGE_SEAM() ((void)0)
-#endif
-
-// R4b: the page asked of the base with the flag OP1F_PAGE_STAYS, and asked again at once with none when a base
-// answers 0 to it (a base before 26 knows no flag); from then on with none. 1 when the base took the request.
-static int page_ask(void* want) {
-    u32 flags = page_flags;
-    if (op1f_page_show(&OWN_CARD, want, flags)) return 1;
-    if (flags == 0 || !op1f_page_show(&OWN_CARD, want, 0)) return 0;
-    page_flags = 0;
-    ++page_unflagged;
-    return 1;
-}
-
-// R2: the page asked of the base or closed, only when what is wanted changed. From the frame and from a key.
-static __attribute__((noinline)) void page_step(int host) {
-    ++page_steps;
-    void* want = page_wanted(host);
-    u32 view = page_view(host), was = page_view_was;
-    page_view_was = view;
-    void* asked = page_asked;
-    if (want == 0) {
-        if (asked == 0) return;
-        page_asked = 0;
-        PAGE_SEAM();
-        ++page_closes;
-        op1f_page_close(&OWN_CARD);                                                // closed also from under another pack's page
-        return;
-    }
-    int over = view != 0 && view != was && page_other != 0;                        // the train or the UFOs opened: over the other pack's page
-    if (want == asked && !over) return;
-    if (page_other != 0 && !over) { ++page_waits; return; }                         // another pack's page on top: shown when it closes
-    page_asked = want;
-    PAGE_SEAM();
-    if (page_ask(want)) { ++page_shows; page_refused_doc = 0; }                  // R4b: with the flag, or without
-    else { ++page_refused; page_refused_doc = want; }                              // not asked again for the same document
-}
-
-// R2: the frame's step after the page step (the display thread). The two threads' steps each write the word before
-// they call the base, so where one runs between the other's word and its call, the base can be left showing a page
-// nothing wants, or not showing one the word says was asked. The frame's `page` says what the GUI shows, so:
-//   shown, not wanted: nothing is wanted for the mode and the frame names this pack's page HEAL_SHOWN_FRAMES frames
-//     in a row (a close, from a key or the frame, is taken at the base's next frame, before the page is named): the
-//     page closed again;
-//   wanted, not shown: the word holds what is wanted, the frame names no page of any pack and the screen is not the
-//     base's (its own top page names none) HEAL_MISSING_FRAMES frames in a row (a request is taken at the base's next
-//     frame and named from the frame after, two frames at most): asked again, unless the base refused that document.
-//     Only while the disk mode is closed and the frame's mode is the host the step works for: a page the base closed
-//     for a mode change is not asked again in the new mode.
-// At most HEAL_MOST heals for one page shown or one document wanted, so a base that will not is not asked for ever.
-static void page_heal(const Op1fFrame* now, int host) {
-    void* want = page_wanted(host);
-    void* asked = page_asked;
-    if (want != heal_for) { heal_for = want; heal_round = 0; }
-    if (want == 0 && asked == 0 && now->page == &OWN_CARD) {
-        if (++heal_stale_shown >= (u32)HEAL_SHOWN_FRAMES && heal_round < (u32)HEAL_MOST) {
-            heal_stale_shown = 0;
-            ++heal_round;
-            ++heal_closes;
-            op1f_page_close(&OWN_CARD);
-        }
-    } else {
-        heal_stale_shown = 0;
-    }
-    u32 disk = now->bytes >= 36u ? now->disk : 0u;                                // the disk mode open: the computer's screen, no page of ours asked
-    int same_mode = host >= 0 && now->mode == (u32)host;                           // the base's mode word and the one the step works from agree
-    if (want != 0 && want == asked && now->page == 0 && now->screen != (u32)TRAIN_SCREEN_ID && page_other == 0 && want != page_refused_doc &&
-        disk == 0 && same_mode) {
-        if (++heal_stale_missing >= (u32)HEAL_MISSING_FRAMES && heal_round < (u32)HEAL_MOST) {
-            heal_stale_missing = 0;
-            ++heal_round;
-            ++heal_shows;
-            if (!page_ask(want)) page_refused_doc = want;                       // R4b: with the flag, or without
-        }
-    } else {
-        heal_stale_missing = 0;
-        if (now->page == &OWN_CARD && want != 0) heal_round = 0;                    // shown: a later stuck page has its heals again
-    }
-}
-
-#ifdef OP1F_R2_LFO_COPY
-#define PAGE_FRAME op1f_lfo_page_frame
-extern "C" void op1f_lfo_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_lfo_page_frame");
-#else
-#define PAGE_FRAME op1f_train_page_frame
-extern "C" void op1f_train_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_train_page_frame");
-
-// R6b (M5): what the last frame showed of this pack's pages, for the chain unit's T3 and its record of the train:
-// SEEN_TRAIN the train itself in the instrument's own mode; SEEN_OURS another page of this pack there (the presets' list
-// or save screen over the train, the UFOs); SEEN_NONE no page of this pack there; SEEN_AWAY the unit in another mode or
-// view (the base's mode word is not the instrument's: the sequencer's view, the mixer). Single words, written by the
-// display thread, read by the key thread and the chain's frame.
-enum { SEEN_AWAY = -1, SEEN_NONE = 0, SEEN_OURS = 1, SEEN_TRAIN = 2 };
-static volatile int seen_host = -1, seen_state = SEEN_AWAY;
-static void seen_frame(const Op1fFrame* now, int host) {
-    int seen = SEEN_AWAY;
-    if (host >= 0 && now->mode == (u32)host) {
-        if (now->page != &OWN_CARD) seen = SEEN_NONE;
-        else seen = screen_built && page_asked == (void*)screen_object[1] && page_view(host) == 1u ? SEEN_TRAIN : SEEN_OURS;
-    }
-    seen_state = seen;
-    seen_host = host;
-}
-
-extern "C" int op1f_train_seen(int host) OP1F_NAMED("op1f_train_seen");
-extern "C" int op1f_train_seen(int host) { return seen_host == host ? (int)seen_state : (int)SEEN_AWAY; }
-
-// R6b (M5): the page asked again as the pack's own request (the key thread, T3): the words of the last request cleared,
-// so that the step asks it whatever was asked before, over another pack's page as a T3 that opens the train does.
-extern "C" void op1f_train_show_again(int host) OP1F_NAMED("op1f_train_show_again");
-extern "C" void op1f_train_show_again(int host) {
-    page_view_was = 0;
-    page_asked = 0;
-    page_step(host);
-}
-
-// R2: the page step after a key, from the chain's key handlers and the LFO presets' (the firmware's key thread).
-// Writes no line.
-extern "C" void op1f_train_page_now(int host) OP1F_NAMED("op1f_train_page_now");
-extern "C" void op1f_train_page_now(int host) { page_step(host); }
-#endif
-
-// R2: once a frame from the pack's frame function, after the page is dressed: whether another pack's page is on top,
-// the page step, and a line when its counts moved (at most every PRINT_FRAMES frames).
-extern "C" void PAGE_FRAME(const Op1fFrame* now) {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_chain_view != 0) return;                                             // fx train runs: the page is its
-#endif
-    page_other = now->page != 0 && now->page != &OWN_CARD ? 1u : 0u;
-    int mode = (int)RD32(MODE_GUI);
-    int host = mode == 0 || mode == 1 ? mode : -1;
-#ifndef OP1F_R2_LFO_COPY
-    seen_frame(now, host);                                                         // R6b (M5): before the step, what this frame showed
-#endif
-    if (host >= 0 && now->mode != (u32)host) {                                     // R4c: another mode: the step waits for the instrument's
-        if (page_flags == 0) page_asked = 0;                                       // R4b: a base that refused the flag closed the page: asked again at the first frame back
-        ++page_away;
-    } else {
-        page_step(host);
-    }
-    page_heal(now, host);
-    if (++page_countdown < (u32)PRINT_FRAMES) return;
-    page_countdown = 0;
-    u32 now_counts[7] = { page_steps, page_shows, page_closes, page_waits, page_refused, heal_shows, heal_closes };
-    int moved = 0;
-    for (int i = 1; i < 7; ++i) if (now_counts[i] != page_said[i]) moved = 1;
-    if (!moved) return;
-    for (int i = 0; i < 7; ++i) page_said[i] = now_counts[i];
-    STOCK_LOG(3, LOG_FILE, 7, "train page: '%s' %u shown, %u closed, %u waited under another pack's page, %u refused by the base, %u asked again and %u closed again out of step; %u steps since the start",
-              OWN_CARD.name, now_counts[1], now_counts[2], now_counts[3], now_counts[4], now_counts[5], now_counts[6], now_counts[0]);
-}
-
 #ifndef OP1F_R2_LFO_COPY
 // R5's paint of the names, from the pack's frame function: R6b sets them as texts of the picture (names_apply), so
 // nothing is painted; the frame function still calls it first.
@@ -1355,20 +1167,48 @@ extern "C" void op1f_train_paint(const Op1fFrame* now) OP1F_NAMED("op1f_train_pa
 extern "C" void op1f_train_paint(const Op1fFrame* now) { (void)now; }
 #endif
 
-extern "C" void op1f_train_frame() OP1F_NAMED("op1f_train_frame");
-extern "C" void op1f_train_frame() {
-#ifdef OP1F_R2_LFO_COPY
-    if (&op1f_chain_view != 0) return;                                             // R2: fx train runs: its copy makes and dresses the page
-#endif
-    int chain = &op1f_chain_view != 0;                                             // J5h: the effect train's unit is there (the pack fx train runs)
-    if (!chain && &op1f_lfotrain_view == 0) return;                                // neither the train nor the LFOs: no screen is made, nothing is said
+// ---------------------------------------------------------------- R14: fx train 18, the train page as the layer's page
+
+enum { ASK_TRAIN = 2, PLACES = 16, PLACE_DRUM = 8, STAND_LINES = 4 };
+extern "C" int op1f_train14_place(const Op1fFrame* now) OP1F_NAMED("op1f_train14_place");   // build_r14_train_input.cpp: the place to dress, or -1
+extern "C" int op1f_train14_up() OP1F_NAMED("op1f_train14_up");                             // build_r14_train_input.cpp: the place whose train page is up, or -1
+
+static int stand_given;                             // the base took the document as the page of the layer "train"
+static u32 stand_refusals, stand_lines;
+static int dressed_place = -1;                      // the place dressed at the last frame, -1 for none
+static void* presets_asked;                         // the presets' document shown over the train page, 0 for none
+static void* presets_refused_doc;                   // the document the base last refused, 0 once another is wanted
+static u32 presets_shows, presets_closes, presets_refused, presets_said[3], presets_countdown;
+
+// Once a frame from fx_train_frame, after the rides: the document made once, given to the base as the page of the
+// layer "train" (ask 2) until it takes it, the train's world shown, and the train dressed for the place
+// op1f_train14_place names, from the chain's view of that place's host (its slot on the screen); with no place, or
+// another, the next dressing places the wagons where they stand. The chain's view is read every frame for the mode's
+// host besides, for the train's run on the sound (its peak since the last read). A line when frames were dressed in
+// the period.
+extern "C" void op1f_train_frame(const Op1fFrame* now) OP1F_NAMED("op1f_train_frame");
+extern "C" void op1f_train_frame(const Op1fFrame* now) {
+    if (&op1f_chain_view == 0) return;                                             // no chain unit: no train
     build_screen();
+    if (!screen_built) return;
+    if (!stand_given) {
+        stand_given = op1f_page_stand_in(&OWN_CARD, ASK_TRAIN, (void*)screen_object[1]);
+        if (!stand_given) ++stand_refusals;
+        if (stand_lines < (u32)STAND_LINES && (stand_given || stand_refusals == 1u)) {
+            ++stand_lines;
+            STOCK_LOG(3, LOG_FILE, 10, "train page: the document %08x %s by the base as the page of the layer train at frame %u", screen_object[1], stand_given ? "taken" : "refused", now->frame);
+        }
+    }
+    if (scene_is_ufo != 0) { show_scene(0); scene_is_ufo = 0; }                    // the train's world, the UFOs' nodes out
+    lfo_mode = 0;
+    int place = op1f_train14_place(now);
+    if (place >= PLACES) place = -1;
     int mode = (int)RD32(MODE_GUI);
-    int host = (mode == 0 || mode == 1) ? mode : -1;
+    int host = place >= 0 ? (place >= PLACE_DRUM ? 1 : 0) : (mode == 0 || mode == 1 ? mode : -1);
     Op1fChainView view;
-    view.known = 0; view.open = 0; view.bypassed = 0; view.peak = 0; view.cost_percent = 0;   // what is read of it below when no unit fills it
+    view.known = 0; view.open = 0; view.bypassed = 0; view.peak = 0; view.cost_percent = 0;   // what is read of it below when no host is read
     int have_view = 0;
-    if (host >= 0 && chain) {
+    if (host >= 0) {
         op1f_chain_view(host, &view);
         have_view = view.known;
         if (view.peak > last_peak) last_peak = view.peak;
@@ -1378,20 +1218,15 @@ extern "C" void op1f_train_frame() {
         --run_hold;
     }
     int running = run_hold > 0;
-    lfo_mode = 0;
-    Op1fLfoTrainView lv;
-    lv.open = 0;
-    if (&op1f_lfotrain_view != 0) op1f_lfotrain_view(&lv);                         // I7: the LFO page, the UFOs (I6 dressed the train's wagons from this view)
-    lfo_mode = host == 0 && (have_view || !chain) && lv.open != 0;                 // J5h: without the train's unit the LFO unit's view alone says so
-    if (screen_built && host >= 0 && ((have_view && view.open) || lfo_mode)) {     // with the train's unit there: have_view && (view.open || lfo_mode), as before
-        if (scene_is_ufo != lfo_mode) {                                            // the other scene: its world shown, the first one's nodes out
-            show_scene(lfo_mode);
-            scene_is_ufo = lfo_mode;
+    if (place >= 0 && have_view) {
+        if (place != dressed_place) {                                              // another place: its wagons where they stand
+            positions_seeded = 0;
+            for (int k = 0; k < WAGONS; ++k) hop[k] = 0;
         }
+        dressed_place = place;
         advance_phases(running);
-        if (lfo_mode) { dress_ufo(lv); ++lfo_frames; paint_host = -1; names_hide(); }   // R6b: no name of the train's over the UFOs
-        else dress(host, view, running);
-        if (!matrices_logged && !lfo_mode) {                                                    // H3b: the needle's matrix as applied, once, for the read-out (its tip from the words: x2 = 4 pixels)
+        dress(host, view, running);
+        if (!matrices_logged) {                                                    // H3b: the needle's matrix as applied, once, for the read-out (its tip from the words: x2 = 4 pixels)
             matrices_logged = 1;
             const u32* m = needle_matrix;
             i32 tip_x = (((i32)m[0] * 4 + (i32)m[6]) * 100) >> 10, tip_y = (((i32)m[1] * 4 + (i32)m[7]) * 100) >> 10;
@@ -1402,22 +1237,53 @@ extern "C" void op1f_train_frame() {
         ++frames_period;
         if (running) ++frames_running;
         if (view.bypassed) ++bypass_frames;
-        last_shown_host = host;
+        last_shown_host = place;
     } else {
+        dressed_place = -1;
         paint_host = -1;                                                           // R5: no train dressed: nothing to paint
-        if (screen_built) names_hide();                                            // R6b
-        positions_seeded = 0;                                                      // the next opening places the wagons where they stand
-        ufo_seeded = 0;
+        names_hide();                                                              // R6b
+        positions_seeded = 0;                                                      // the next dressing places the wagons where they stand
         for (int k = 0; k < WAGONS; ++k) hop[k] = 0;
     }
     if (++print_countdown >= (u32)PRINT_FRAMES) {
         print_countdown = 0;
         if (frames_period) {
-            STOCK_LOG(3, LOG_FILE, 4, "train: %u frames shown this period (%u in all, %u running, %u as the lfo page), host %d, cost %d%%, peak %u, %u card shows, %u hops, %u ufo moves, %u landings and take-offs",
-                      frames_period, frames_shown, frames_running, lfo_frames, last_shown_host, have_view ? view.cost_percent : -1, last_peak, card_shows, hops, ufo_moves, ufo_landings);
+            STOCK_LOG(3, LOG_FILE, 4, "train: %u frames dressed this period (%u in all, %u running), place %d, cost %d%%, peak %u, %u card shows, %u hops; the stand-in %s",
+                      frames_period, frames_shown, frames_running, last_shown_host, have_view ? view.cost_percent : -1, last_peak, card_shows, hops, stand_given ? "taken" : "not taken");
             if (paints) STOCK_LOG(3, LOG_FILE, 8, "train: the names of packs' effects set %u times, shown in %u frames since the start", paints, paint_frames);   // R5, R6b
             frames_period = 0;
             last_peak = 0;
         }
     }
+}
+
+// Once a frame from fx_train_frame, after the presets' two documents are dressed: the list or the save screen shown over
+// the train page while the chain wants one for the host of the place whose train page is up (the card's one page in
+// the base's stack: the other document comes to the top in its place), closed when it wants neither or no train page
+// is up (the train page shows again; no list over another mode's screen, R4c's lesson). A document the base refused is
+// not asked again until another is wanted. A line when the counts moved.
+extern "C" void op1f_train_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_train_page_frame");
+extern "C" void op1f_train_page_frame(const Op1fFrame* now) {
+    int up = op1f_train14_up();
+    int host = up < 0 || up >= PLACES ? -1 : (up >= PLACE_DRUM ? 1 : 0);
+    int id = host >= 0 && &op1f_chain_screen_wanted != 0 ? op1f_chain_screen_wanted(host) : 0;
+    void* want = id != 0 && &op1f_presets_available != 0 && op1f_presets_available() ? PRESETS_DOCUMENT(id) : 0;
+    if (want == 0) {
+        presets_refused_doc = 0;
+        if (presets_asked != 0) {
+            presets_asked = 0;
+            ++presets_closes;
+            op1f_page_close(&OWN_CARD);
+        }
+    } else if (want != presets_asked && want != presets_refused_doc) {
+        if (op1f_page_show(&OWN_CARD, want, 0)) { presets_asked = want; presets_refused_doc = 0; ++presets_shows; }
+        else { presets_refused_doc = want; ++presets_refused; }
+    }
+    if (++presets_countdown < (u32)PRINT_FRAMES) return;
+    presets_countdown = 0;
+    if (presets_said[0] == presets_shows && presets_said[1] == presets_closes && presets_said[2] == presets_refused) return;
+    presets_said[0] = presets_shows;
+    presets_said[1] = presets_closes;
+    presets_said[2] = presets_refused;
+    STOCK_LOG(3, LOG_FILE, 7, "train page: the effect presets shown over it %u times, closed %u, refused by the base %u; at frame %u", presets_shows, presets_closes, presets_refused, now->frame);
 }
