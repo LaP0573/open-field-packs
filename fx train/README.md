@@ -12,6 +12,8 @@ Up to four effects in a row on every synth and drum sound. It's one more effect 
 
 It works the same on drum sounds.
 
+And on amp sounds: a synth sound of the unit's amp engine, the live input played as a sound. Pick **train** in its list the same way, and the wagons play after the amp, in their order, on what comes in at the input: spring, then beignet, after your guitar. The amp's own page and knobs are the unit's, as always. An amp sound's train has a sound's budget.
+
 The master isn't there yet. **train** shows in the master effect's list on the mixer too, but picking it there does nothing: the master keeps its own effect. The train on the master comes in a later version.
 
 ## On the train
@@ -81,6 +83,7 @@ Version 19 has been tried in the emulator only, not yet on a unit. What it adds 
 - **[E] A lighter picture.** The train page's picture still carried the UFO page of fx train 17, which this page no longer shows (lfo 12 shows its own UFOs, from its own picture). Version 19 leaves those parts out: the unit puts the picture together faster at the start and keeps about half a megabyte less of its own memory for it, for the whole session. The page looks and works as in version 18.
 - **[D] Names whole, and the train page kept under fast turns.** On a wagon a name of another pack's effect may now be as wide as the wagon's place on the rails, where 18 cut beignet short. On the card after a turn, a name the card's letters can't hold is written in smaller ones, as the unit's own card writes terminal; a name too long for both shows no card, and the wagon's label names it. While the card is up it hides the last wagon's label whole. The number on the save screen shows both its digits. And the train's page no longer goes away under fast turns: turning several knobs fast could leave the sound's own effect page on the screen in place of the train, for good, with T3 there switching the effect off; version 19 notices it within a few frames and brings the train back, and T3 in that state brings it back too.
 - **[B] The budget shown.** A turn onto an effect that won't fit stops on it, in grey, with FULL and what it needs, instead of skipping it. Versions 17 and 18 went past such an effect to the next one that fits, so effects seemed to be missing from the list.
+- **[C] Amp sounds.** The whole train plays on an amp sound. Up to 18 only the wagon under the lamp played there: the unit plays an amp sound's effect on a path of its own, which fx train didn't reach. Version 19 takes three more places of the firmware, on that path (21 in all). Everything else is 18's.
 
 ## Version 18
 

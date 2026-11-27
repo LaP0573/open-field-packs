@@ -44,6 +44,20 @@
    "name": "In the drum's audio stage: the first load behind the place where the sound's effect is run."
   },
   {
+   "address": "0x8d504c7c",
+   "length": 8,
+   "sum": "0xa07f3ea8",
+   "group": "fx train",
+   "name": "In the synth's AMP path, where TE's amp engine plays the live input: the load of the effect's object, once the block is on the two buses, right before the firmware runs the sound's effect."
+  },
+  {
+   "address": "0x8d504cba",
+   "length": 8,
+   "sum": "0x11219c6a",
+   "group": "fx train",
+   "name": "In the synth's AMP path: the first load behind the place where the sound's effect is run."
+  },
+  {
    "address": "0x84013840",
    "length": 4,
    "sum": "0x455bee11",
@@ -114,6 +128,13 @@
    "name": "In the drum's audio stage, where the sound's LFO is applied to its effect: the load of the address of the LFO's settings."
   },
   {
+   "address": "0x8d504d90",
+   "length": 8,
+   "sum": "0xea8dbe58",
+   "group": "fx train",
+   "name": "In the synth's AMP path, where the sound's LFO is applied to its effect: the sum that makes the address of the LFO's settings, and the load of the LFO object's table."
+  },
+  {
    "address": "0x8fc5bbf6",
    "length": 8,
    "sum": "0x08961d03",
@@ -174,6 +195,18 @@
      "does": "A call to our stub, which runs the effects of the drum's train and then does the load."
     },
     {
+     "address": "0x8d504c7c",
+     "form": "call",
+     "target": "op1f_fx_amp_t0",
+     "does": "A call to our stub, which has the firmware leave its own effect out of the amp engine's block here: the train runs the effects."
+    },
+    {
+     "address": "0x8d504cba",
+     "form": "call",
+     "target": "op1f_fx_amp_t1",
+     "does": "A call to our stub, which runs the effects of the synth's train after the amp engine and then does the load."
+    },
+    {
      "address": "0x84013840",
      "form": "word",
      "target": "op1f_fx_encoder",
@@ -232,6 +265,12 @@
      "form": "call",
      "target": "op1f_lfofx_pre_drum",
      "does": "A call to our stub, which does the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train."
+    },
+    {
+     "address": "0x8d504d90",
+     "form": "call",
+     "target": "op1f_lfofx_pre_amp",
+     "does": "A call to our stub, which does the sum and the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train after the amp engine."
     },
     {
      "address": "0x8fc5bbf6",
