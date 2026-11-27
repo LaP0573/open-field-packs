@@ -13,7 +13,7 @@ On the tape:
 
 In the mixer, on the levels page:
 
-- **Hold the mixer key** to see tracks 5 to 8. While you hold it, the knobs set their levels, shift + a knob their pan, and shift + T1 to T4 mutes them. Let go and you're back on 1 to 4.
+- **Hold the mixer key** to see tracks 5 to 8. While you hold it, the knobs set their levels, shift + a knob their pan, and a click of a knob or shift + T1 to T4 mutes or unmutes that track. Let go and you're back on 1 to 4.
 
 ## What's saved
 

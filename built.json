@@ -2,8 +2,8 @@
  "about": "What a build of this repository gives: the size and the SHA-256 of each pack file. build.py holds its results and the files at the top to these, and its option --update writes them anew after a change that is meant to change a pack.",
  "files": {
   "8 tracks.pack": {
-   "bytes": 108948,
-   "sha256": "20fdc8534e03a27f4f8b0dcea2504d9a32734dfc81b5863623d4f1cca496d8d2"
+   "bytes": 109084,
+   "sha256": "b4048ba43aeff15a0a283a3fe845c0e731774cee66177644ef5875c6b9f866be"
   },
   "fx train.pack": {
    "bytes": 502048,

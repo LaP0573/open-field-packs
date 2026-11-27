@@ -34,6 +34,8 @@ The fix of the cost ceiling in `fx train` 17 is from [open-field's pull request 
 
 Soloing tracks 5 to 8 in `8 tracks` 11 answers [open-field's issue 6](https://github.com/LaP0573/open-field/issues/6), found and worked out by [hasis](https://github.com/hasis).
 
+Muting tracks 5 to 8 with a click of a knob in `8 tracks` 12 is from [pull request 13](https://github.com/LaP0573/open-field-packs/pull/13), by [atticusmas](https://github.com/atticusmas).
+
 ## For developers
 
 The sources of every pack but maestro are here: maestro is shared as its file only. [BUILDING.md](BUILDING.md) says how to build them, change them and send a change.

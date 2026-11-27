@@ -19,7 +19,7 @@
 //     set it writes the defaults instead (1.0 and centre) and never reads them. Unknown keys are ignored. The
 //     mutes are not saved by stock.
 //   * The MixerController (vtable 0x8400f100, mode 3): in mixer mode the mixer key and track key 1 select the
-//     levels page (at 0x8c0bb61a the page word 0x849a856c is cleared), track keys 2-4 the EQ, drive and master pages; shift + track
+//     levels page (at 0x8c0bbf52 the page word 0x849a89b4 is cleared), track keys 2-4 the EQ, drive and master pages; shift + track
 //     key on the levels page toggles the track's mute byte 0x11902e34 + k (0x8c0bb04e); the knobs (on_encoder
 //     0x8c0bb294, index 0-3, 4-7 with shift) adjust the Q31 word 0x11b01eb0 + 4 x index through 0x8d510b64 and
 //     notify the screen (0x8fca1ed2(this + 8)). The mixer key's release reaches nothing (the MixerController's
@@ -52,6 +52,12 @@
 //     artwork (Build B's picture loader): the faint column numbers 1 and 2 give way to 5 and 6,
 //     the groups col3 and col4 (everything of the columns of tracks 7-8, their level numbers included) are hidden
 //     while the key is held. Without those ids (another artwork) the toggles are no-ops with one line.
+//   * 8 tracks 12, edited in place: while the page is held, a knob's click (keys 54-57) on the levels page toggles
+//     the mute of track 5-8 through op1f_ext_mix_click_mute. The filter reads the mixer's page word 0x849a89b4
+//     (0 the levels page, 1 the EQ page) and takes the click only on the levels page, answering 1 so that the
+//     firmware's own click, which mutes track 1-4 there, does not run; on any other page the click goes on to the
+//     firmware as before. Until 12 the filter took no click, so a click on the page of tracks 5-8 muted track 1-4,
+//     out of sight.
 // Freestanding like the other units: no library, no float types (the ROM and stock conversions are called by
 // address with their bit patterns). Everything here runs on the GUI thread.
 
@@ -96,6 +102,7 @@ typedef void* (*FindNodeFn)(void* screen, const char* id, int optional);   // 0x
 #define STOCK_NOTIFY ((NotifyFn)0x8fca1ed2u)
 #define STOCK_FIND_NODE ((FindNodeFn)0x8fc25cc0u)
 #define SELECTED_TRACK (*(volatile i32*)0x11905a08u)
+#define MIXER_PAGE (*(volatile i32*)0x849a89b4u)   // 12: the mixer's page, 0 the levels page (the mixer key and track key 1 put it there)
 
 enum {
     STOCK_TRACKS = 4,
@@ -105,6 +112,9 @@ enum {
     KEY_MIXER = 5,
     KEY_TRACK_1 = 6,
     KEY_TRACK_4 = 9,
+    KEY_KNOB_1 = 54,                    // 12: the knobs' clicks, 54 (the first knob, blue) to 57 (the fourth)
+    KEY_KNOB_4 = 57,
+    LEVELS_PAGE = 0,
     TAPE_DB = 2,
     JSON_BYTES = 16,                    // a stock json value is 12 bytes; 16 for alignment
     UNIT = 0x7fffffff,
@@ -123,6 +133,7 @@ extern "C" u16 op1f_ext_vu[EXT_TRACKS] asm("op1f_ext_vu");
 extern "C" volatile unsigned char op1f_mixer_page asm("op1f_mixer_page");    // build_b_mix.cpp: the mixer key is held
 extern "C" int op1f_ext_mix_adjust(int track, int knob, int delta) asm("op1f_ext_mix_adjust");
 extern "C" int op1f_ext_mix_toggle_mute(int track) asm("op1f_ext_mix_toggle_mute");
+extern "C" int op1f_ext_mix_click_mute(int track) asm("op1f_ext_mix_click_mute");      // 12: the same, with no track number shown
 extern "C" void op1f_ext_mix_set_defaults() asm("op1f_ext_mix_set_defaults");
 extern "C" int op1f_track_unmuted(int track) asm("op1f_track_unmuted");
 extern "C" u32 op1f_cache_tracks asm("op1f_cache_tracks");                  // build_b_cache.cpp: 6 with the heap-1 cache
@@ -173,9 +184,14 @@ static void refuse_track(const char* what, int track) {   // unreachable since F
 
 extern "C" int op1f_mixer_key_filter(void* self, const int* event) asm("op1f_mixer_key_filter");
 extern "C" int op1f_mixer_key_filter(void*, const int* event) {
-    if (event[0] == KEY_MIXER && !op1f_mixer_page) {
+    int key = event[0];
+    if (key == KEY_MIXER && !op1f_mixer_page) {
         op1f_mixer_page = 1;                                    // stock selects the levels page as before
         ++op1f_ext_page_holds;
+    }
+    if (op1f_mixer_page && key >= KEY_KNOB_1 && key <= KEY_KNOB_4 && MIXER_PAGE == LEVELS_PAGE) {
+        op1f_ext_mix_click_mute(STOCK_TRACKS + key - KEY_KNOB_1);   // 12: track 5-8, as stock's click mutes 1-4
+        return 1;                                               // stock's click would toggle track 1-4
     }
     return 0;
 }
