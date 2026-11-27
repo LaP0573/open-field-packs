@@ -73,6 +73,7 @@ fx train 19 needs open-field 0.17 or later. Older releases leave it out (the sta
 Version 19 has been tried in the emulator only, not yet on a unit. What it adds to 18, each with the label of the commit that brought it:
 
 - **[E] A lighter picture.** The train page's picture still carried the UFO page of fx train 17, which this page no longer shows (lfo 12 shows its own UFOs, from its own picture). Version 19 leaves those parts out: the unit puts the picture together faster at the start and keeps about half a megabyte less of its own memory for it, for the whole session. The page looks and works as in version 18.
+- **[D] Names whole, and the train page kept under fast turns.** On a wagon a name of another pack's effect may now be as wide as the wagon's place on the rails, where 18 cut beignet short. On the card after a turn, a name the card's letters can't hold is written in smaller ones, as the unit's own card writes terminal; a name too long for both shows no card, and the wagon's label names it. While the card is up it hides the last wagon's label whole. The number on the save screen shows both its digits. And the train's page no longer goes away under fast turns: turning several knobs fast could leave the sound's own effect page on the screen in place of the train, for good, with T3 there switching the effect off; version 19 notices it within a few frames and brings the train back, and T3 in that state brings it back too.
 
 ## Version 18
 

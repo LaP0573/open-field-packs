@@ -17,7 +17,7 @@ typedef int (*FileSizeFn)(const char* path);
 
 **The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says "ours", it names the threads our code calls the function on today; that it is safe on another thread has not been shown.
 
-There are 126 functions bound in the sources. 46 are described below, by subject. The other 80 are listed at the end with their type and the files that bind them: their words are still to be written.
+There are 128 functions bound in the sources. 48 are described below, by subject. The other 80 are listed at the end with their type and the files that bind them: their words are still to be written.
 
 ## The log
 
@@ -86,6 +86,8 @@ A screen of the firmware is an object with a picture: an SVG text, parsed into a
 | `0x8fc3aa3c` | `void label_text(void* label, const char* text, int max_width)` | Sets a label's text from a C text. A text wider than `max_width` pixels is shortened and gets a mark at its end. An empty text hides the label. Send small letters and digits: the firmware's font has the letters at the small letters' codes and its own signs at the capitals'. Each call asks the heap for memory, so set a text only when it changes; setting the text a label already has changes nothing. | Ours: the display thread. |
 | `0x8fc3820c` | `LabelBox label_bounds(void* label)` | The box of a label's text as it was last laid out: left, right, top and bottom, each a number with ten bits behind the point. It is the box of the shapes without their stroke, so an upright stroke is 0 wide. The box comes back as a structure, by value: bind the function as one that returns the structure, and the compiler hands over the address for it in P0. | Ours: the display thread. |
 | `0x8fc261fc` | `u32* screens(void)` | The table of the firmware's screens by their numbers: a word a number, the screen object or 0 for a number no screen has. A screen's document is the word at its +4, 0 until the firmware has loaded it. Our code reads only the numbers 1 to 85. | Ours: the display thread. |
+| `0x8fc273f0` | `u32 screen_of(u32 type)` | The number of the screen that shows the page of an effect's type, for the types 0 to 10. For another type it writes a line into the log and gives back a number that is no effect's page. | Ours: the display thread. |
+| `0x8c0b2554` | `void request_screen(void)` | Asks the controller of the mode shown for the number of its screen, and has that screen put up. Nothing comes back. | Ours: the display thread, inside op1f_mask. |
 
 ## Keys and the screen that is shown
 

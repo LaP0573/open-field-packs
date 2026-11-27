@@ -1,5 +1,5 @@
 op1f picture 2
-size 322068
+size 322188
 from op_font_34.svg 31151 060b80b6
 from param_popup.svg 5670 35d24d08
 from undo_popup.svg 1570 0bc49e37
@@ -7278,8 +7278,8 @@ m 0 23233 127 550 385138 70750
 a 6
 CDD0C2
 m 0 23366 99 550 385138 70750
-a 1168
+a 1288
 </g></g>
-<g id="fxname_1"><path fill="none" stroke="#3C6087" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_2"><path fill="none" stroke="#8A653C" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_3"><path fill="none" stroke="#A2A4A6" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_4"><path fill="none" stroke="#CC1F00" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d1"><path fill="none" stroke="#2B4261" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d2"><path fill="none" stroke="#5E554B" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d3"><path fill="none" stroke="#5B6670" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d4"><path fill="none" stroke="#BF0020" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_red"><path fill="none" stroke="#E52817" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_card"><path fill="none" stroke="#CDD0C2" stroke-width="1.3" stroke-linecap="square" d="M440,101V90"/></g>
+<g id="fxname_1"><path fill="none" stroke="#3C6087" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_2"><path fill="none" stroke="#8A653C" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_3"><path fill="none" stroke="#A2A4A6" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_4"><path fill="none" stroke="#CC1F00" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d1"><path fill="none" stroke="#2B4261" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d2"><path fill="none" stroke="#5E554B" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d3"><path fill="none" stroke="#5B6670" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_d4"><path fill="none" stroke="#BF0020" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_red"><path fill="none" stroke="#E52817" stroke-width="1.3" stroke-linecap="square" d="M35,88V78"/></g><g id="fxname_card"><path fill="none" stroke="#CDD0C2" stroke-width="1.3" stroke-linecap="square" d="M440,101V90"/></g><g id="fxname_cards"><path fill="none" stroke="#CDD0C2" stroke-width="1.3" stroke-linecap="square" d="M440,100V91"/></g>
 </svg>
 

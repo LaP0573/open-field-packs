@@ -315,6 +315,18 @@
    "what": "Makes the effect object of `index` anew for a type and puts it in the index's word. A type `factory` refuses stops the unit.",
    "thread": "Ours: the display thread."
   },
+  "0x8fc273f0": {
+   "name": "screen_of",
+   "group": "screens",
+   "what": "The number of the screen that shows the page of an effect's type, for the types 0 to 10. For another type it writes a line into the log and gives back a number that is no effect's page.",
+   "thread": "Ours: the display thread."
+  },
+  "0x8c0b2554": {
+   "name": "request_screen",
+   "group": "screens",
+   "what": "Asks the controller of the mode shown for the number of its screen, and has that screen put up. Nothing comes back.",
+   "thread": "Ours: the display thread, inside op1f_mask."
+  },
   "0x8d4f2b80": {
    "name": "tape_root",
    "group": "tape",

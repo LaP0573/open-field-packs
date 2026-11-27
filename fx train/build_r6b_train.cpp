@@ -6,6 +6,13 @@
 // part that is not there writes a line into the unit's log), and their nodes stay 0, as a part not found did before.
 // Nothing else of [E] changes in this unit.
 //
+// 2026-11-27: fx train 19 [D]: the names of other packs' effects whole. A wagon's name
+// may take the wagon's pitch (78 pixels), where 18's 66 cut "beignet" with a mark. The card after a turn names such an
+// effect in its own letters where they hold it within the card (68 pixels), else in smaller ones (the placeholder
+// fxname_cards, as the unit's card names TERMINAL smaller than DELAY), else shows no card and leaves the name to the
+// wagon's label (18 cut it at 60 pixels). While the card is up it covers the last wagon's label, which is then hidden
+// whole, never left half under the card. What follows holds.
+//
 // Step R14, fx train 18: the train page is the page of the pack's effect
 // layer "train" (ask 2 of the card), shown by the base on T3 for a place that rides it, edited in place. At the end of
 // this file:
@@ -301,10 +308,13 @@ static int lfo_mode;                              // this frame dresses the LFO 
 // R6b (M2): the names of the packs' effects as texts of the picture's placeholders, in the unit's own letters: for each
 // knob its colour and its dark step, one red (moved to the refused wagon), one on the card. The wagons' stand where a
 // wagon's own label stands, in the wagon's place (moved with it); the card's at the card's value.
-enum { NAME_LABELS = 2 * WAGONS + 2, NAME_DARK_AT = WAGONS, NAME_RED_AT = 2 * WAGONS, NAME_CARD_AT = 2 * WAGONS + 1, NAME_CHARS = 15,
-       NAME_WIDTH = WAGON_W - 4, CARD_WIDTH = 60 };
+// 19: one more, the card's name in smaller letters (fxname_cards), for a name the card's own size cannot hold whole, as the
+// unit's card names TERMINAL smaller than DELAY; a wagon's name as wide as the wagon's pitch leaves (18 had WAGON_W - 4,
+// 66 pixels, which cut "beignet"), the card's as wide as the card (CARD_WIDTH, measured by card_part; 18 cut it at 60).
+enum { NAME_LABELS = 2 * WAGONS + 3, NAME_DARK_AT = WAGONS, NAME_RED_AT = 2 * WAGONS, NAME_CARD_AT = 2 * WAGONS + 1, NAME_CARDS_AT = 2 * WAGONS + 2, NAME_CHARS = 15,
+       NAME_WIDTH = PITCH - 2, CARD_WIDTH = 68 };
 static const char NAME_PART[NAME_LABELS][16] = { "fxname_1", "fxname_2", "fxname_3", "fxname_4", "fxname_d1", "fxname_d2", "fxname_d3", "fxname_d4",
-                                                 "fxname_red", "fxname_card" };
+                                                 "fxname_red", "fxname_card", "fxname_cards" };
 struct NameLabel {
     int want;                                     // this dressing names a wagon (or the card) in it
     i32 x_q, y_q;                                 // where: the wagon's translation, as its own label's (the card's: none)
@@ -397,8 +407,11 @@ static void show_part(const Part& p, int on) { for (int c = 0; c < COPIES; ++c) 
 static void apply(u8* n, const u32* m) { if (n) STOCK_APPLY_MATRIX(n, m); }
 
 static void place(u8* n, i32 tx_q, i32 ty_q) {                                     // a translation, Q10 pixels
-    u32 m[MATRIX_WORDS] = { Q, 0, 0, 0, Q, 0, (u32)tx_q, (u32)ty_q, Q };
-    apply(n, m);
+    // 19: the words one by one, volatile: inlined into the names' dressing, the aggregate's zeros became a call of
+    // memset, which a pack cannot link (the loader leaves the pack out: "nobody offers the name it needs, _memset")
+    volatile u32 m[MATRIX_WORDS];
+    m[0] = Q; m[1] = 0; m[2] = 0; m[3] = 0; m[4] = Q; m[5] = 0; m[6] = (u32)tx_q; m[7] = (u32)ty_q; m[8] = Q;
+    apply(n, (const u32*)m);
 }
 
 static void place_part(const Part& p, i32 tx_q, i32 ty_q) { for (int c = 0; c < COPIES; ++c) { place(p.n[c][0], tx_q, ty_q); place(p.n[c][1], tx_q, ty_q); } }
@@ -998,7 +1011,8 @@ static void names_apply() {
     for (int i = 0; i < NAME_LABELS; ++i) {
         NameLabel* l = &name_labels[i];
         if (l->want && !l->refused && !same_name(l->text, l->want_text)) {
-            if (op1f_text_set(document, NAME_PART[i], l->want_text, i == NAME_CARD_AT ? (int)CARD_WIDTH : (int)NAME_WIDTH, OP1F_CENTRE)) {
+            int card = i == NAME_CARD_AT || i == NAME_CARDS_AT;                    // 19: the card's two, whole (card_part measured them)
+            if (op1f_text_set(document, NAME_PART[i], l->want_text, card ? 0 : (int)NAME_WIDTH, OP1F_CENTRE)) {
                 for (int c = 0; c <= NAME_CHARS; ++c) l->text[c] = l->want_text[c];
                 ++paints;
             } else {
@@ -1009,7 +1023,7 @@ static void names_apply() {
         if (l->want && !l->refused && l->node == 0) l->node = (u8*)op1f_text_node(document, NAME_PART[i]);
         if (l->node == 0) continue;
         if (l->want && !l->refused) {
-            if (i != NAME_CARD_AT) place(l->node, l->x_q, l->y_q);
+            if (i != NAME_CARD_AT && i != NAME_CARDS_AT) place(l->node, l->x_q, l->y_q);
             show(l->node, 1);
             any = 1;
         } else {
@@ -1017,6 +1031,30 @@ static void names_apply() {
         }
     }
     if (any) ++paint_frames;
+}
+
+// 19: which of the card's two placeholders names `name` whole (the card's size, else the smaller), or -1 for neither
+// (the turn then shows no card, and the wagon's own label names it). The texts are set here at once, so that the
+// dressing knows before it places anything; names_apply finds them set. A text op1f_text_set makes shows at once: its
+// node is kept, so that names_apply hides the one that is not the card's. From the frame function.
+static int card_part(const char* name) {
+    void* document = (void*)screen_object[1];
+    static const int parts[2] = { NAME_CARD_AT, NAME_CARDS_AT };
+    for (int i = 0; i < 2; ++i) {
+        NameLabel* l = &name_labels[parts[i]];
+        name_want(parts[i], name, 0, 0);
+        l->want = 0;
+        if (l->refused || l->want_text[0] == 0) continue;
+        if (!same_name(l->text, l->want_text)) {
+            if (!op1f_text_set(document, NAME_PART[parts[i]], l->want_text, 0, OP1F_CENTRE)) continue;   // names_apply says so, once
+            for (int c = 0; c <= NAME_CHARS; ++c) l->text[c] = l->want_text[c];
+            ++paints;
+        }
+        if (l->node == 0) l->node = (u8*)op1f_text_node(document, NAME_PART[parts[i]]);
+        int w = op1f_text_width(document, NAME_PART[parts[i]]);
+        if (w >= 0 && w <= (int)CARD_WIDTH) return parts[i];
+    }
+    return -1;
 }
 
 static void names_hide() {
@@ -1033,6 +1071,14 @@ static void dress(int host, const Op1fChainView& v, int running) {
     racks.refused = 0;
     if (&op1f_chain_racks != 0) op1f_chain_racks(host, &racks);
     for (int i = 0; i < NAME_LABELS; ++i) name_labels[i].want = 0;
+    // 19: the card after a turn, over the last wagon's label; for a pack's effect, in the size of its letters that holds
+    // the name whole, or no card where neither does (the wagon's own label names it)
+    int card_up = v.turn_knob >= 0 && v.turn_knob < WAGONS && v.turn_age < CARD_FRAMES;
+    int card_name_at = -1;
+    if (card_up && racks.name[v.turn_knob] != 0) {
+        card_name_at = card_part(racks.name[v.turn_knob]);
+        if (card_name_at < 0) card_up = 0;
+    }
     paint_host = host;
     int shown_label[CARGOS][LABEL_VARIANTS];
     for (int t = 0; t < CARGOS; ++t) for (int c = 0; c < LABEL_VARIANTS; ++c) shown_label[t][c] = 0;
@@ -1095,7 +1141,8 @@ static void dress(int host, const Op1fChainView& v, int running) {
         // the label: the knob's colour, its dark step on the siding (H3b), the refused effect's name in red during the flash
         // (R5: a pack's effect's name in its place, the label of the effect it stands on not shown; R6b: in the unit's
         // own letters, a placeholder's text moved as the label is)
-        if (refused && racks.refused) {
+        if (p == WAGONS - 1 && card_up) {                                          // 19: the card covers the last wagon's label: hidden whole, never in part
+        } else if (refused && racks.refused) {
             name_want(NAME_RED_AT, racks.refused, x, hop_q);
         } else if (refused) {
             place(n_label[v.refused_type][LABEL_RED], x, hop_q);
@@ -1142,9 +1189,13 @@ static void dress(int host, const Op1fChainView& v, int running) {
     show(n_needle, !v.full);
     show(n_needlered, v.full);
     show(n_full, v.full);
-    int card_rack = v.turn_knob >= 0 && v.turn_knob < WAGONS && racks.name[v.turn_knob] != 0;   // R5: the card names a pack's effect over its word
-    dress_card(v.turn_knob, v.turn_age, card_rack ? -1 : (v.turn_knob >= 0 && v.turn_knob < WAGONS && v.type[v.turn_knob] >= 0 && v.type[v.turn_knob] < TYPES ? v.type[v.turn_knob] : NONE_INDEX));
-    if (card_rack && v.turn_age < CARD_FRAMES) name_want(NAME_CARD_AT, racks.name[v.turn_knob], 0, 0);
+    if (!card_up) {
+        dress_card(-1, 0x7fffffff, -1);                                            // 19: no card (none up, or a name it cannot hold)
+    } else {
+        int card_rack = card_name_at >= 0;                                         // R5: the card names a pack's effect over its word (19: in the size that holds it)
+        dress_card(v.turn_knob, v.turn_age, card_rack ? -1 : (v.type[v.turn_knob] >= 0 && v.type[v.turn_knob] < TYPES ? v.type[v.turn_knob] : NONE_INDEX));
+        if (card_rack) name_want(card_name_at, racks.name[v.turn_knob], 0, 0);
+    }
     names_apply();                                                                 // R6b (M2)
     dress_world(running);
     dress_characters();
