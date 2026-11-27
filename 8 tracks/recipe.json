@@ -3,7 +3,7 @@
   "name": "8 tracks",
   "version": 12,
   "interface": 2,
-  "build": "build_r6g_8_tracks",
+  "build": "build_r6i_8_tracks",
   "sources": [
     "8 tracks/build_b_cache.cpp",
     "8 tracks/build_b_storage.cpp",

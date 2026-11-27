@@ -19,7 +19,7 @@
 //     set it writes the defaults instead (1.0 and centre) and never reads them. Unknown keys are ignored. The
 //     mutes are not saved by stock.
 //   * The MixerController (vtable 0x8400f100, mode 3): in mixer mode the mixer key and track key 1 select the
-//     levels page (at 0x8c0bb61a the page word 0x849a856c is cleared), track keys 2-4 the EQ, drive and master pages; shift + track
+//     levels page (at 0x8c0bbf52 the page word 0x849a89b4 is cleared), track keys 2-4 the EQ, drive and master pages; shift + track
 //     key on the levels page toggles the track's mute byte 0x11902e34 + k (0x8c0bb04e); the knobs (on_encoder
 //     0x8c0bb294, index 0-3, 4-7 with shift) adjust the Q31 word 0x11b01eb0 + 4 x index through 0x8d510b64 and
 //     notify the screen (0x8fca1ed2(this + 8)). The mixer key's release reaches nothing (the MixerController's
@@ -53,12 +53,11 @@
 //     the groups col3 and col4 (everything of the columns of tracks 7-8, their level numbers included) are hidden
 //     while the key is held. Without those ids (another artwork) the toggles are no-ops with one line.
 //   * 8 tracks 12, edited in place: while the page is held, a knob's click (keys 54-57) on the levels page toggles
-//     the mute of track 5-8 through op1f_ext_mix_click_mute, where stock's click toggles tracks 1-4's. Stock's
-//     key-down handler picks by the mixer's page word 0x849a89b4: on the levels page (0) it toggles the track's
-//     mute byte 0x11902e34 + k and its gain, and answers 0; on the EQ page (1) the click is the EQ's. The filter
-//     takes the click only on the levels page and answers 1, so stock's toggle of track 1-4 does not run; on any
-//     other page the click goes to stock as before. Until 12 the filter took no click, so a click on the page of
-//     tracks 5-8 muted track 1-4, out of sight.
+//     the mute of track 5-8 through op1f_ext_mix_click_mute. The filter reads the mixer's page word 0x849a89b4
+//     (0 the levels page, 1 the EQ page) and takes the click only on the levels page, answering 1 so that the
+//     firmware's own click, which mutes track 1-4 there, does not run; on any other page the click goes on to the
+//     firmware as before. Until 12 the filter took no click, so a click on the page of tracks 5-8 muted track 1-4,
+//     out of sight.
 // Freestanding like the other units: no library, no float types (the ROM and stock conversions are called by
 // address with their bit patterns). Everything here runs on the GUI thread.
 
