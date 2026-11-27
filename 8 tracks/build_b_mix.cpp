@@ -201,20 +201,34 @@ extern "C" void op1f_ext_mix_set_defaults() {
     }
 }
 
-// Tape key held + shift + track key 1/2 toggles the mute of track 5/6. Returns 1 when the track exists.
-extern "C" int op1f_ext_mix_toggle_mute(int track) asm("op1f_ext_mix_toggle_mute");
-extern "C" int op1f_ext_mix_toggle_mute(int track) {
+// The mute of track 5-8 toggled. Returns 1 when the track exists.
+static int ext_mix_toggle(int track) {
     int j = ext_index(track);
     if (j < 0) return 0;
     ext_muted[j] = (unsigned char)!ext_muted[j];
     op1f_ext_params[2 * EXT_TRACKS + j] = ext_muted[j] ? 0 : UNIT;
     ++op1f_ext_mix_changes;
-    STOCK_FLASH_TRACK(track);                                           // as stock's shift + track key: show the number while shift is held
     if (mute_log_budget) {
         --mute_log_budget;
         STOCK_LOG(3, LOG_FILE, 2, "track %d %s", track + 1, ext_muted[j] ? "muted" : "unmuted");
     }
     return 1;
+}
+
+// Tape key held + shift + track key 1/2 toggles the mute of track 5/6. Returns 1 when the track exists.
+extern "C" int op1f_ext_mix_toggle_mute(int track) asm("op1f_ext_mix_toggle_mute");
+extern "C" int op1f_ext_mix_toggle_mute(int track) {
+    if (!ext_mix_toggle(track)) return 0;
+    STOCK_FLASH_TRACK(track);                                           // as stock's shift + track key: show the number while shift is held
+    return 1;
+}
+
+// 8 tracks 12: a knob's click on the mixer's page of tracks 5-8 (build_r4b_mixer.cpp) toggles the mute of track 5-8,
+// as stock's click on the levels page toggles tracks 1-4's. Stock's click shows no track number, so no flash here:
+// without shift held nothing would clear it, and the tape screen would show that track's number.
+extern "C" int op1f_ext_mix_click_mute(int track) asm("op1f_ext_mix_click_mute");
+extern "C" int op1f_ext_mix_click_mute(int track) {
+    return ext_mix_toggle(track);
 }
 
 // Build D: stock's MIDI mixer handler (0x8f00de30; the channel in the status byte's low nibble, type 7 volume,

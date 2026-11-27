@@ -775,7 +775,7 @@
      "target": "op1f_mixer_key_down",
      "room": "op1f_mixer_key_down_room",
      "copies": 8,
-     "does": "A jump to ours, which notes that the mixer key is held (it shows the page of tracks 5 to 8) and goes on in the firmware's handler through a trampoline."
+     "does": "A jump to ours, which notes that the mixer key is held (it shows the page of tracks 5 to 8) and, while that page shows, takes a knob's click to mute one of them; everything else goes on in the firmware's handler through a trampoline."
     },
     {
      "address": "0x8c0bbe00",
