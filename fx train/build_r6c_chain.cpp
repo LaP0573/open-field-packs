@@ -17,6 +17,13 @@
 //   * A hold that would go over the ceiling is refused as in 17. At either end of the list a turn goes no further, and
 //     a stand there stays.
 //
+// 2026-11-27: fx train 19 [F]: a wagon whose pack's effect the base will not make ready at the wagon's
+// place (`op1f_rack_ready` answers neither 0 nor OP1F_NOT_NOW: no room for its working memory, or another refusal)
+// plays nothing until a restart; the frame's rack step keeps that for each wagon of the slot on the screen
+// (rk.no_room), and op1f_chain_racks tells the page such a wagon is away, so it is drawn silent as a wagon whose pack
+// is away, where 18 drew it as if it played. The log line says when it is for want of room. Nothing else of [F] changes in
+// this unit; the audio thread's code is 18's.
+//
 // 2026-11-24: the pack `fx train` version 18: the train is the effect layer "train"
 // of base 37 (the card's ask 2), no longer a page that takes T3 over. What changes in this unit, and nothing else:
 //
@@ -583,6 +590,7 @@ static struct {
     char said[HOSTS][WAGONS][RACK_NAME];                       // the name each Live's state was last said for
     char refused_name[HOSTS][RACK_NAME];                       // the pack's effect a refused pick named, "" for one of the unit's
     int said_how[HOSTS][WAGONS];
+    u8 no_room[HOSTS][WAGONS];                                 // 19: the base would not make this wagon's pack's effect ready: silent until a restart (1 for want of room, 2 another answer); the frame's
 } rk;
 
 static Wagon wagons[HOSTS][SLOTS][WAGONS];
@@ -3936,6 +3944,7 @@ extern "C" void op1f_chain_racks(int host, Op1fChainRacks* out) {
         const char* name = cargo_name(host, slot, k);
         out->name[k] = name;
         out->away[k] = name && !rack_find(name);
+        if (name && !out->away[k] && rk.no_room[host][k]) out->away[k] = 1;   // 19: refused by the base: silent, as a pack away is
     }
     if ((int)st.frames < st.flash_until[host] && rk.refused_name[host][0]) out->refused = rk.refused_name[host];
 }
@@ -3964,6 +3973,7 @@ static void rack_frame(int host, u32 slot) {
     mirror_ride_slot[host] = slot;
     for (int k = 0; k < WAGONS; ++k) {
         Live* l = &live[host][k];
+        rk.no_room[host][k] = 0;                                            // 19
         if (k == mirror[host][slot] || !l->rack_name[0]) continue;
         const Op1fRackEntry* e = rack_find(l->rack_name);
         u32 want = RACK_SILENT;
@@ -3973,6 +3983,9 @@ static void rack_frame(int host, u32 slot) {
             if (how == 0) want = e->id;
             l->tails = (e->effect->head.flags & (u32)OP1F_EFFECT_TAILS) ? 1u : 0u;
         }
+        // 19: the base will not make it ready (its blocks of working memory for the session used up, or its runs inside
+        // packs; or another answer): the wagon plays nothing until a restart, and the page draws it so (op1f_chain_racks)
+        if (e && how != 0 && how != OP1F_NOT_NOW) rk.no_room[host][k] = (how == OP1F_FAILED || how == OP1F_TOO_LARGE) ? 1 : 2;
         if (l->rack != want) l->rack = want;
         if (how == OP1F_NOT_NOW) continue;                                  // its memory is being made ready: said by the base
         if (rk.said_how[host][k] == how && name_same(rk.said[host][k], l->rack_name)) continue;
@@ -3982,7 +3995,8 @@ static void rack_frame(int host, u32 slot) {
         ++rk.silent_lines;
         if (how == 0) STOCK_LOG(3, LOG_FILE, 43, "chain rack: %s s%u knob %d plays '%s' at the train's place %d, entry %u", host ? "drum" : "synth", slot, k, l->rack_name, host * WAGONS + k, want);
         else if (how == 1) STOCK_LOG(2, LOG_FILE, 44, "chain rack: %s s%u knob %d: the pack of '%s' is not here: the wagon is silent, kept as it is", host ? "drum" : "synth", slot, k, l->rack_name);
-        else STOCK_LOG(2, LOG_FILE, 45, "chain rack: %s s%u knob %d: the base did not make '%s' ready (answer %d): the wagon is silent", host ? "drum" : "synth", slot, k, l->rack_name, how);
+        else STOCK_LOG(2, LOG_FILE, 45, "chain rack: %s s%u knob %d: the base did not make '%s' ready (answer %d%s): the wagon is silent, and drawn so", host ? "drum" : "synth", slot, k, l->rack_name, how,
+                       how == OP1F_FAILED || how == OP1F_TOO_LARGE ? ", no room: a restart frees the base's blocks" : "");
     }
 }
 
