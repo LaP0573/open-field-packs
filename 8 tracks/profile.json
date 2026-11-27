@@ -792,7 +792,7 @@
      "target": "op1f_mixer_shift_key_down",
      "room": "op1f_mixer_shift_key_down_room",
      "copies": 8,
-     "does": "A jump to ours. While the page of tracks 5 to 8 shows, shift and a track key mutes one of them; otherwise the firmware's handler goes on through a trampoline."
+     "does": "A jump to ours. While the page of tracks 5 to 8 shows, shift and a track key mutes one of them, and shift and a knob's click puts its pan back in the centre; otherwise the firmware's handler goes on through a trampoline."
     },
     {
      "address": "0x8c0bb294",
