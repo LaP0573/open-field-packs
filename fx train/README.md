@@ -66,7 +66,13 @@ Saved trains are files, 64 slots, in the `fx` folder in disk mode. Copy them to 
 
 A sound that was on train plays the effect that was under the lamp, as it was saved. Your saved trains stay on the disk.
 
-fx train 18 needs open-field 0.17 or later. Older releases leave it out (the start screen counts it as left out), and nothing of it runs. The install page puts on 0.19, and the start screen then shows `1.7.3 - open-field 0.19`.
+fx train 19 needs open-field 0.17 or later. Older releases leave it out (the start screen counts it as left out), and nothing of it runs. The install page puts on 0.19, and the start screen then shows `1.7.3 - open-field 0.19`.
+
+## Version 19
+
+Version 19 has been tried in the emulator only, not yet on a unit. What it adds to 18, each with the label of the commit that brought it:
+
+- **[E] A lighter picture.** The train page's picture still carried the UFO page of fx train 17, which this page no longer shows (lfo 12 shows its own UFOs, from its own picture). Version 19 leaves those parts out: the unit puts the picture together faster at the start and keeps about half a megabyte less of its own memory for it, for the whole session. The page looks and works as in version 18.
 
 ## Version 18
 

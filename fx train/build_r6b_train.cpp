@@ -1,4 +1,11 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27: fx train 19 [E]: the page's picture (fxtrain.svg) without the UFO page of fx train 17
+// and the LFO kinds' labels and card values for it, which this page has not shown since 18 (lfo 12 shows its own UFOs,
+// from its own picture). Every other part of the picture is the same, byte for byte, in the same order. So the UFOs'
+// parts, the LFO kinds' labels, their card values and the card's "lfo" word are no longer looked up (a lookup of a
+// part that is not there writes a line into the unit's log), and their nodes stay 0, as a part not found did before.
+// Nothing else of [E] changes in this unit.
+//
 // Step R14, fx train 18: the train page is the page of the pack's effect
 // layer "train" (ask 2 of the card), shown by the base on T3 for a place that rides it, edited in place. At the end of
 // this file:
@@ -487,15 +494,15 @@ static void find_nodes() {
         n_cardknob[k] = find_fmt(s, "fxcardknob", 0, k + 1, 0);
         n_puff[k] = find_fmt(s, "fxpuff", 0, k + 1, 0);
     }
-    for (int t = 0; t <= CARGOS; ++t) n_cardval[t] = find_fmt(s, "fxcardval_", NAMES[t], -1, 0);
+    for (int t = 0; t <= CARGOS; ++t) n_cardval[t] = t >= TYPES && t != NONE_INDEX ? 0 : find_fmt(s, "fxcardval_", NAMES[t], -1, 0);   // 19: no LFO kind's value in the picture
     n_cardlabel = find(s, "fxcardlabel");
-    n_cardlabel_lfo = find(s, "fxcardlabel_lfo");
+    n_cardlabel_lfo = 0;                                                            // 19: not in the picture
     for (int t = 0; t < CARGOS; ++t) {
         for (int c = 0; t < TYPES && c < COPIES; ++c) {                              // H4: four copies of each character (the effects': the LFO kinds have names only)
             n_car[t][c] = find_copy(s, "fxcar_", NAMES[t], -1, 0, c);
             n_dim[t][c] = find_copy(s, "fxdim_", NAMES[t], -1, 0, c);
         }
-        for (int c = 0; c < LABEL_VARIANTS; ++c) n_label[t][c] = (c == LABEL_RED && t >= TYPES) ? 0 : find_fmt(s, "fxlabel_", NAMES[t], -1, SUFFIX[c]);   // no pick of an LFO kind is refused: no red name
+        for (int c = 0; c < LABEL_VARIANTS; ++c) n_label[t][c] = t >= TYPES ? 0 : find_fmt(s, "fxlabel_", NAMES[t], -1, SUFFIX[c]);   // 19: the LFO kinds' labels are not in the picture
     }
     for (int c = 0; c < COPIES; ++c) {
         n_car_none[c] = find_copy(s, "fxcar_none", 0, -1, 0, c);
@@ -760,6 +767,7 @@ static i32 ufo_puck;
 static void find_ufos(void* s) {
     static const char* const WORLD[UFO_WORLD] = { "fxsky", "fxclouds", "fxfar", "fxhills", "fxline", "fxloco" };
     for (int i = 0; i < UFO_WORLD; ++i) n_fxworld[i] = find(s, WORLD[i]);
+    return;                                             // 19: the picture holds no UFO: the train's world only (the rest stays 0)
     n_ufoscene = find(s, "ufoscene");
     n_ufoshoot = find(s, "ufoshoot");
     n_ufodish = find(s, "ufodish");

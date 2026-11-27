@@ -1,7 +1,7 @@
 {
   "about": "Up to four effects on an instrument, shown as a train of four wagons. The train is one more effect in a synth or drum sound's own list of effects (shift + T3), named train; on a sound that has it, T3 shows the train. Presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. exports names the eight names its file offers other packs, in the order the file holds them, so the file comes out the same whatever packs are built beside it.",
   "name": "fx train",
-  "version": 18,
+  "version": 19,
   "interface": 3,
   "build": "build_r14_fx_train",
   "sources": [
