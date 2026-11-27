@@ -8,6 +8,12 @@
 // as the pack's page under the base's screen, asked by the train's unit of the same pack (fx train 11's train unit, which
 // asks op1f_fx_presets_document, or op1f_lfo_presets_document in lfo, for the document of a screen's number).
 //
+// 2026-11-27: fx train 19 [D]: the save screen's number gets 40 pixels in fx train's copy (NUMBER_WIDTH), where 24 cut
+// "02" to "0" with a mark; lfo's copy keeps 24, so lfo 12 builds to the same file.
+//
+// 2026-11-27: fx train 19 [A] (fx train's copy alone, not lfo's): in the mixer the presets are the master's train's (host
+// 2), and a save of the master's train shows the clock and "saved!" without the synth's box or the drum's.
+//
 // This one text is compiled into fx train and, through lfo/build_r2_presets_lfo.cpp with OP1F_R2_LFO_COPY
 // defined, into lfo. R15 (lfo 12): lfo's copy makes and dresses its own two documents whether fx train runs or not,
 // from lfo's view alone (op1f_lfo12_presets_view, a name fx train does not know), and its op1f_presets_available
@@ -91,12 +97,20 @@ extern "C" void __attribute__((weak)) op1f_presets_view(int host, Op1fPresetsVie
 
 static const char LOG_FILE[] = "../src/main/op1f_presets.cpp";
 static const u32 MODE_GUI = 0x84d21088u;
+#ifndef OP1F_R2_LFO_COPY
+static const u32 BASE_MODE = 0x8400f978u;                               // 19: the base's mode word, 3 in the mixer
+#endif
 
 enum { LIST_ID = OP1F_PRESETS_SCREEN_ID, SAVE_ID = OP1F_SAVE_SCREEN_ID, HOSTS = 2, WAGONS = OP1F_CHAIN_WAGONS, ROWS = OP1F_PRESET_ROWS, CELLS = OP1F_PRESET_NAME, SPOKES = OP1F_SAVE_SPOKES };
 enum { NODE_DISPLAY = 0x5c, MATRIX_WORDS = 9, Q = 1024, LABEL_KIND = 0, PRINT_FRAMES = 232, TEXT_MAX = 24 };
 // the artwork's geometry (the artwork tool's), in Q10 pixels where marked
 enum { ROW_Y0_Q = 2 * Q, PITCH_Q = 23040, CURSOR_DY_Q = 9728 };                     // the rows' top at 2 + 22.5 r; the cursor bar drawn at y -10, its top 2.5 above the glyphs: +9.5 for the first row
-enum { ROW_WIDTH = 168, WAGON_WIDTH = 160, CELL_WIDTH = 14, NUMBER_WIDTH = 24 };     // the labels' maximum widths in pixels (304 to 472, 112 to 272, the cell pitch, the save screen's number)
+enum { ROW_WIDTH = 168, WAGON_WIDTH = 160, CELL_WIDTH = 14 };                      // the labels' maximum widths in pixels (304 to 472, 112 to 272, the cell pitch)
+#ifdef OP1F_R2_LFO_COPY
+enum { NUMBER_WIDTH = 24 };                                                          // the save screen's number, as lfo 12 has it
+#else
+enum { NUMBER_WIDTH = 40 };                                                          // 19: the save screen's number whole (24 cut "02" to "0" with a mark)
+#endif
 enum { SLIDER_TOP_Q = 2 * Q, SLIDER_LENGTH_Q = 177 * Q };                           // the slider from y 2 to 179
 enum { CELL_X0_Q = 304 * Q, CELL_PITCH_Q = 14 * Q, CARET_Y_Q = 21 * Q, CARET_LENGTH_Q = 10 * Q, CARET_INSET_Q = 2 * Q };   // H6c: the caret centred under its cell ((14 - 10) / 2)
 
@@ -345,7 +359,11 @@ static void dress_list(const Op1fPresetsView& v) {
 }
 
 static void dress_save(const Op1fPresetsView& v) {
+#ifdef OP1F_R2_LFO_COPY
     int host = v.save_host ? 1 : 0;
+#else
+    int host = v.save_host == 1 ? 1 : v.save_host == 0 ? 0 : -1;          // 19: the master's save shows neither box
+#endif
     char number[4];
     int n = v.save_number < 1 ? 1 : (v.save_number > 99 ? 99 : v.save_number);
     number[0] = (char)('0' + udiv((u32)n, 10u));
@@ -399,6 +417,9 @@ extern "C" void op1f_presets_frame() {
     if (!list_built || !save_built) return;
     int mode = (int)RD32(MODE_GUI);
     int host = (mode == 0 || mode == 1) ? mode : -1;
+#ifndef OP1F_R2_LFO_COPY
+    if (RD32(BASE_MODE) == 3u) host = 2;                                  // 19: the master's presets, in the mixer
+#endif
     if (host >= 0) {
         Op1fPresetsView v;
 #ifdef OP1F_R2_LFO_COPY

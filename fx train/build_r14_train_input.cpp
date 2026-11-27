@@ -1,4 +1,24 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27: fx train 19 [D]: the train page lost under its own feet, healed. What changes in this unit,
+// and nothing else. When the first wagon's effect changes (a turn of its knob, a preset), the unit asks for the new
+// effect's screen; where it asks before the base has its answer for that effect ready, the unit's own effect page comes
+// up although the page choice is the train's, and nothing asks again: the page stays the unit's, every turn of a knob
+// after it goes to that page, and T3 there switches the effect on or off (seen in the emulator under fast turns of
+// several knobs). So: while a riding sound's own effect page is on the screen (its effect's screen, no pack's page) with
+// the choice the train's for LOST_FRAMES frames, the frame asks the unit for its screen again (the firmware's request,
+// masked, as fx train 17 made it from its frame); where that does not bring it back, the next try sets the page choice
+// to the unit's for one frame and back to the train's, the way a tap and T3 swap the two pages; at most HEAL_TRIES
+// tries a loss. T3 in that state is taken (it would switch the effect) and tries at once.
+//
+// 2026-11-27: fx train 19 [A], the train on the master. What [A] changes in this unit:
+//   * fx_train_input offers each event to the master's part first (fx train/build_r16_master.cpp,
+//     op1f_train_master_input), which takes only the mixer's events and the ups of its own downs; the rest as in 18;
+//   * a ride of "train" at the master is kept (18 ended it: "the train there is a later piece");
+//   * while the unit is on the mixer (the base's mode 3, and the list of effects over it, 8) the layer's page choice is
+//     the unit's (OP1F_LAYER_PAGE_UNIT), so that the master effect's page under the master's train is always the
+//     unit's own: the master's train is the pack's page shown over the mixer (build_r6b_train.cpp). The choice a sound
+//     wants comes back with the synth or the drum; [D]'s heal leaves the mixer alone (!on_mixer).
+//
 // Step R14, the pack `fx train` 18: its input function, its layer's `shown`, the page choice and the rides' start.
 // The train is the effect layer "train", ask 2 of the
 // card (module/build_r6e_card.h, "Base 35: layers"); the store, the rides' bits and the grammar of the page are the
@@ -43,11 +63,20 @@ enum {
     ASK_TRAIN = 2, PLACES = 16, PLACE_DRUM = OP1F_PLACE_DRUM, PLACE_MASTER = OP1F_PLACE_MASTER, MODE_SYNTH = 0, MODE_DRUM = 1,
     KEY_T1 = 6, KEY_T3 = 8, KEY_T4 = 9, KEY_PLAY_FIRST = 13, KEY_PLAY_LAST = 53, KEY_CLICK0 = 54, KEY_PRESS0 = 61, KNOBS = 4, KEYS = 72,
     CONTROLLER_PAGE = 0x28, PAGE_EFFECT = 2,
-    OFF_FRAMES = 3, SOON_FRAMES = 8, RIDE_LINES = 64, PAGE_LINES = 64, MASTER_LINES = 16,
+    OFF_FRAMES = 3, SOON_FRAMES = 8, RIDE_LINES = 64, PAGE_LINES = 64,
+    BASE_MODE_MIXER = 3, BASE_MODE_LIST = 8,
 };
 
 static const u32 SYNTH_CONTROLLER = 0x08018804u;               // the synth's controller, a static object (its page word at +0x28)
 static const u32 DRUM_CONTROLLER = 0x080188f4u;                // the drum's
+// 19: the heal (above). The screen of each of the unit's effects, the synth's and the drum's type words a slot, and the
+// firmware's own screen request (fx train 17's).
+typedef u32 (*ScreenOfFn)(u32 type);
+#define STOCK_SCREEN_OF ((ScreenOfFn)0x8fc273f0u)
+typedef void (*RequestScreenFn)();
+#define STOCK_REQUEST_SCREEN ((RequestScreenFn)0x8c0b2554u)
+static const u32 TYPE_WORDS[2] = { 0x11904794u, 0x119047b4u };   // the synth's and the drum's effect type, a word a slot
+enum { FX_TYPES = 11, LOST_FRAMES = 4, HEAL_GAP_FRAMES = 30, HEAL_TRIES = 3, HEAL_LINES = 24 };
 
 static const char LOG_FILE[] = "op1f/train_layer.cpp";         // the log shows "train_layer"
 
@@ -64,6 +93,8 @@ extern "C" int op1f_train_ride_due() OP1F_NAMED("op1f_train_ride_due");
 extern "C" void op1f_train_ride_answer(int place, int answer) OP1F_NAMED("op1f_train_ride_answer");
 // The presets' screen the chain wants for a host: the save screen's id, the list's, or 0 (build_h_chain.h).
 extern "C" int op1f_chain_screen_wanted(int host) OP1F_NAMED("op1f_chain_screen_wanted");
+// 19: the master's part of the input (build_r16_master.cpp).
+extern "C" int op1f_train_master_input(const Op1fInput* e) OP1F_NAMED("op1f_train_master_input");
 
 // The key thread's words, written there only.
 static volatile u8 taken_at[KEYS];                  // the place + 1 of each key whose down was taken, 0 for none
@@ -75,8 +106,12 @@ static volatile u32 page_want = OP1F_LAYER_PAGE_OWN;
 static volatile int page_now = -1;                  // the choice the base took last, -1 before the first
 static volatile u32 shown_where, shown_up;          // the layer's `shown`: the place whose train page is up
 static volatile int up_place = -1;                  // the place whose train page, or the presets over it, is up (op1f_train14_see)
-static u32 rides_was, off_frames, soon_frames, ride_lines, page_lines, page_refused, master_lines;
-static int master_said = 1;                         // the last answer of the master's end that was said, 1 for none yet
+static u32 rides_was, off_frames, soon_frames, ride_lines, page_lines, page_refused;
+static int on_mixer;                                // 19: the unit is on the mixer (its mode 3, or the list over it): the layer's page is the unit's
+static volatile u32 heal_now;                       // 19: the key thread met T3 on a lost train page: try at the next frame
+static u32 fx_screens[FX_TYPES], fx_screens_read;   // 19: the display thread's
+static u32 lost_frames, heal_wait, heal_tries, heals, heal_lines;
+static u32 flip_back;                               // 19: the heal set the choice to the unit's page: back to the train's at the next frame
 
 static int riding(int place) { return place >= 0 && place < PLACES && ((op1f_train_rides >> place) & 1u) != 0; }
 static int instrument(u32 mode) { return mode == (u32)MODE_SYNTH || mode == (u32)MODE_DRUM; }
@@ -98,6 +133,7 @@ static int turn(const Op1fInput* e) {
 extern "C" int fx_train_input(const Op1fInput* e) OP1F_NAMED("fx_train_input");
 extern "C" int fx_train_input(const Op1fInput* e) {
     if (!e || e->bytes < (u32)INPUT_LEVEL_2) return 0;
+    if (op1f_train_master_input(e)) return 1;                           // 19: the master's train, on the mixer
     u32 what = e->what, key = e->key;
     if (what == (u32)OP1F_TURN) return turn(e);
     if (key >= (u32)KEY_PLAY_FIRST && key <= (u32)KEY_PLAY_LAST) return 0;   // maybe the audio thread: nothing here
@@ -129,6 +165,11 @@ extern "C" int fx_train_input(const Op1fInput* e) {
         if (key != (u32)KEY_T3 || what != (u32)OP1F_DOWN) return 0;
         if (page_now == (int)OP1F_LAYER_PAGE_UNIT && page_word(host) == (u32)PAGE_EFFECT) {   // the stock page after a tap: back to the train
             page_want = OP1F_LAYER_PAGE_OWN;
+            back_t3 = 1;
+            return 1;
+        }
+        if (page_now == (int)OP1F_LAYER_PAGE_OWN && page_word(host) == (u32)PAGE_EFFECT) {    // 19: the train page lost under its own feet: no switch, a heal now
+            heal_now = 1;
             back_t3 = 1;
             return 1;
         }
@@ -199,19 +240,12 @@ extern "C" void op1f_train14_rides(const Op1fFrame* now) {
             op1f_log(3, LOG_FILE, 2, "train layer: ride started at place %d (0-7 synth, 8-15 drum), answer %d, riding 0x%05x at %u ms", due, answer, op1f_train_rides, now->ms);
         }
     }
-    u32 rides = op1f_train_rides;
-    if ((rides >> PLACE_MASTER) & 1u) {                                 // "train" picked on the master: ended, the master keeps its effect
-        int answer = op1f_layer_end(&op1f_card_fx_train, ASK_TRAIN, (unsigned)PLACE_MASTER);
-        if (master_lines < (u32)MASTER_LINES && (answer == 0 || answer != master_said)) {
-            ++master_lines;
-            master_said = answer;
-            op1f_log(3, LOG_FILE, 3, "train layer: the master's pick of train ended (the master keeps its own effect), answer %d at %u ms", answer, now->ms);
-        }
-    }
+    u32 rides = op1f_train_rides;                                       // 19: the master rides "train" too (build_r16_master.cpp plays it)
     op1f_train_up(up_place);
     if (soon) { soon = 0; soon_frames = (u32)SOON_FRAMES; }
     else if (soon_frames) --soon_frames;
     const char* why = 0;
+    if (flip_back) { flip_back = 0; page_want = OP1F_LAYER_PAGE_OWN; why = "the heal, back to the train"; }   // 19
     u32 places = rides & ((1u << PLACES) - 1u);
     if (page_now < 0) why = "the first frame";
     if (places & ~rides_was) { page_want = OP1F_LAYER_PAGE_OWN; why = "a ride began"; }
@@ -226,6 +260,43 @@ extern "C" void op1f_train14_rides(const Op1fFrame* now) {
     } else {
         off_frames = 0;
     }
-    u32 want = page_want;
+    if (now->mode == (u32)BASE_MODE_MIXER) on_mixer = 1;                // 19: the mixer, or the list of effects over it
+    else if (now->mode != (u32)BASE_MODE_LIST) on_mixer = 0;
+    u32 want = on_mixer ? (u32)OP1F_LAYER_PAGE_UNIT : page_want;
+    if (on_mixer && (int)want != page_now) why = "the mixer";
     if ((int)want != page_now) choose(want, why ? why : "T3 on the unit's page", now);
+    // 19: the heal (above), for the place on the screen.
+    if (!fx_screens_read) {
+        for (u32 t = 0; t < (u32)FX_TYPES; ++t) fx_screens[t] = STOCK_SCREEN_OF(t);
+        fx_screens_read = 1;
+    }
+    int place = op1f_train_place();
+    int lost = 0;
+    if (page_now == (int)OP1F_LAYER_PAGE_OWN && !on_mixer && instrument(now->mode) && riding(place) && !shown_up && now->page == 0) {   // [A]: not on the mixer
+        u32 type = *(volatile const u32*)(TYPE_WORDS[host_of(place)] + 4u * ((u32)place & 7u));
+        lost = type < (u32)FX_TYPES && fx_screens[type] != 0 && now->screen == fx_screens[type];
+    }
+    if (!lost && !flip_back) { lost_frames = 0; heal_tries = 0; heal_now = 0; }
+    else ++lost_frames;
+    if (heal_wait) --heal_wait;
+    if (lost && (heal_now || (heal_tries < (u32)HEAL_TRIES && lost_frames >= (u32)LOST_FRAMES && heal_wait == 0))) {   // T3 always tries; the frame HEAL_TRIES times a loss
+        heal_now = 0;
+        ++heal_tries;
+        ++heals;
+        heal_wait = (u32)HEAL_GAP_FRAMES;
+        int flip = heal_tries > 1;                                      // the first try asks for the screen; the later ones swap the choice
+        if (flip) {
+            page_want = OP1F_LAYER_PAGE_UNIT;
+            choose(OP1F_LAYER_PAGE_UNIT, "the heal, through the unit's page", now);
+            flip_back = 1;
+        } else {
+            unsigned was = op1f_mask();                                 // the key thread cannot be inside the request's queue now
+            STOCK_REQUEST_SCREEN();
+            op1f_unmask(was);
+        }
+        if (heal_lines < (u32)HEAL_LINES) {
+            ++heal_lines;
+            op1f_log(3, LOG_FILE, 4, "train layer: the train page was lost under the unit's effect page (screen %u, place %d, %u frames): %s, %u heals in all", now->screen, place, lost_frames, flip ? "the choice swapped" : "the screen asked again", heals);
+        }
+    }
 }

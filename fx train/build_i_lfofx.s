@@ -1,5 +1,15 @@
 /* Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's. */
-/* Build I image I2: the stock LFO's effect destination on any wagon of the train. Profile group build-i2: two CALL.a
+/* 2026-11-27: fx train 19 [C]: a third stub, for the synth's AMP path (build_h_fx.s says why), and
+ * nothing else changes here. On a sound of TE's amp engine the AMP path (0x8d504a80) applies the sound's LFO to its
+ * effect itself: at 0x8d504d90 one instruction adds the slot's offset (R2) to the address of the synth's LFO blocks
+ * (R7) into R1 and fetches the object's vtable into P1 (P0 and R0 are the object); then R2 gets the class 2 and the
+ * vtable's third entry is called, as in the synth stage. op1f_lfofx_pre_amp does the sum and puts the module's table
+ * into P1 in place of the vtable, so the call goes through the synth's wrapper with the same arguments: the LFO's
+ * choice of wagon holds after the amp too. Only R1 and P1 are written, the two the instruction writes.
+ *
+ * What fx train 18's unit said follows and holds.
+ *
+ * Build I image I2: the stock LFO's effect destination on any wagon of the train. Profile group build-i2: two CALL.a
  * stubs in place of 8-byte loads in the L1 second stages.
  *
  * What stock does there, once a block, when the slot's fx-side LFO object is there and the slot's LFO is on:
@@ -42,3 +52,13 @@ op1f_lfofx_pre_drum:
     R1.L = 0x3ae0;
     RTS;
 .size op1f_lfofx_pre_drum, .-op1f_lfofx_pre_drum
+
+/* 19: replaces the sum into R1 and the load of the vtable into P1 at 0x8d504d90 (the AMP path). */
+.global op1f_lfofx_pre_amp
+.type op1f_lfofx_pre_amp, STT_FUNC
+op1f_lfofx_pre_amp:
+    R1 = R7 + R2 (NS);
+    P1.H = op1f_lfofx_table_synth;
+    P1.L = op1f_lfofx_table_synth;
+    RTS;
+.size op1f_lfofx_pre_amp, .-op1f_lfofx_pre_amp

@@ -1,7 +1,7 @@
 {
-  "about": "Up to four effects on an instrument, shown as a train of four wagons. The train is one more effect in a synth or drum sound's own list of effects (shift + T3), named train; on a sound that has it, T3 shows the train. Presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. exports names the eight names its file offers other packs, in the order the file holds them, so the file comes out the same whatever packs are built beside it.",
+  "about": "Up to four effects on an instrument or on the master, shown as a train of four wagons. The train is one more effect in a synth or drum sound's own list of effects (shift + T3) and in the master's (shift + T3 on the mixer), named train; on a sound that has it, T3 shows the train, and on the master the mixer's T3. Presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. exports names the eight names its file offers other packs, in the order the file holds them, so the file comes out the same whatever packs are built beside it.",
   "name": "fx train",
-  "version": 18,
+  "version": 19,
   "interface": 3,
   "build": "build_r14_fx_train",
   "sources": [
@@ -14,6 +14,7 @@
     "fx train/build_r4c_patch.cpp",
     "fx train/build_r14_fx_train_table.s",
     "fx train/build_r6b_train.cpp",
+    "fx train/build_r16_master.cpp",
     "shared/build_r2_presets.cpp",
     "shared/build_r2_move.cpp",
     "fx train/build_r5_fx_train_frame.cpp",
@@ -122,8 +123,20 @@
         "kind": "effect",
         "name": "train",
         "layer": true,
-        "process": null,
+        "mono": false,
+        "cycles": 84000,
+        "process": "fx_train_master_after",
+        "reset": null,
         "shown": "fx_train_shown"
+      },
+      {
+        "kind": "stage",
+        "name": "train-before",
+        "point": "master_in",
+        "cycles": 84000,
+        "listens": false,
+        "memory": null,
+        "process": "fx_train_master_before"
       }
     ],
     "input": "fx_train_input"

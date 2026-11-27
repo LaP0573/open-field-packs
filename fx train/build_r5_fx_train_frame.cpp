@@ -1,4 +1,8 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27: fx train 19 [A]: one call more, last: the master's frame step (op1f_train_master_frame,
+// build_r16_master.cpp: the effect screens read once, the first wagon's page left with the mixer). op1f_train14_rides
+// no longer ends the master's ride, and op1f_train_page_frame now runs the master's page step first.
+//
 // Step R14, fx train 18: the train page is the page of the pack's
 // effect layer "train", shown by the base on T3, and the pack's frame function runs, edited in place, in this order:
 //   the names of the packs' effects on the frame's picture (op1f_train_paint, which paints nothing since R6b);
@@ -50,6 +54,7 @@ extern "C" void op1f_train_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_tra
 extern "C" void op1f_train_paint(const Op1fFrame* now) OP1F_NAMED("op1f_train_paint");     // R5
 extern "C" void op1f_train14_see(const Op1fFrame* now) OP1F_NAMED("op1f_train14_see");     // R14
 extern "C" void op1f_train14_rides(const Op1fFrame* now) OP1F_NAMED("op1f_train14_rides"); // R14
+extern "C" void op1f_train_master_frame(const Op1fFrame* now) OP1F_NAMED("op1f_train_master_frame");   // 19
 
 extern "C" void fx_train_frame(const Op1fFrame* now) OP1F_NAMED("fx_train_frame");
 extern "C" void fx_train_frame(const Op1fFrame* now) {
@@ -62,4 +67,5 @@ extern "C" void fx_train_frame(const Op1fFrame* now) {
     op1f_train_frame(now);
     op1f_presets_frame();
     op1f_train_page_frame(now);
+    op1f_train_master_frame(now);                                           // 19: the master's frame step
 }

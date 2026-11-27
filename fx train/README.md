@@ -1,6 +1,6 @@
 # fx train
 
-Up to four effects in a row on every synth and drum sound. It's one more effect in the sound's own list, called **train**. The train has four wagons, one for each knob colour. Each wagon carries an effect, and the coupled ones play in order after the engine.
+Up to four effects in a row on every synth and drum sound, and on the master. It's one more effect in the sound's own list, and in the master's, called **train**. The train has four wagons, one for each knob colour. Each wagon carries an effect, and the coupled ones play in order after the engine.
 
 ## Turning it on
 
@@ -12,7 +12,20 @@ Up to four effects in a row on every synth and drum sound. It's one more effect 
 
 It works the same on drum sounds.
 
-The master isn't there yet. **train** shows in the master effect's list on the mixer too, but picking it there does nothing: the master keeps its own effect. The train on the master comes in a later version.
+And on amp sounds: a synth sound of the unit's amp engine, the live input played as a sound. Pick **train** in its list the same way, and the wagons play after the amp, in their order, on what comes in at the input: spring, then beignet, after your guitar. The amp's own page and knobs are the unit's, as always. An amp sound's train has a sound's budget.
+
+## On the master
+
+- On the mixer, **T3** shows the master effect's page, as always. **Shift + T3** opens the master's list of effects, and **train** is in it. Pick it.
+- The master's own effect goes onto the wagon under the lamp, and the train shows, with **master** at the top. The other wagons are empty.
+- Turn the **tan** knob to put a second effect on, for example beignet: the master now plays its own effect, then beignet. To play beignet first, move its wagon with **shift + turn**.
+- From any page of the mixer, **T3** brings you back to the train. **Tap** the wagon under the lamp, or press T3 on the train, for the master effect's own page; T3 there brings you back.
+- The keys and knobs on the train are a sound's (below). T1, T2 and T4 go to the mixer's other pages.
+- Pick any other effect in the master's list and the master goes back to one effect. Its wagons are kept: pick train again and they come back.
+
+The master has one train for the whole unit, as it has one master effect. It's kept in fx train's own file, and the master's pick of train is kept by open-field.
+
+The master's train has a budget of its own, a bit smaller than a sound's: spring then beignet fits, spring, mother and beignet doesn't. Its wagons run in two parts, before the master effect and after it, so any order works. It plays at the same time as the train of the sound you're playing.
 
 ## On the train
 
@@ -23,7 +36,7 @@ The master isn't there yet. **train** shows in the master effect's list on the m
 
 The knobs:
 
-- **Turn**: choose the wagon's effect. The sound follows a moment after you stop turning.
+- **Turn**: choose the wagon's effect. The sound follows a moment after you stop turning. A name in grey is an effect that doesn't fit the budget (below).
 - **Tap**: open that wagon's effect page, with all its knobs. The lamp moves to that wagon, and T3 brings you back. On an empty wagon, or one carrying another pack's effect, nothing happens.
 - **Hold**: uncouple the wagon (it goes quiet and costs nothing) or couple it back.
 - **Shift + turn**: move the wagon one step along the train.
@@ -32,9 +45,15 @@ The knobs:
 
 ## Which effects
 
-All the unit's own effects except the vocoder (fazer only if you've unlocked it), plus the effects other packs add. The same effect can sit on two wagons. On the wagon under the lamp, other packs' effects are skipped: they can sit on the other three.
+All the unit's own effects except the vocoder (fazer only if you've unlocked it), plus the effects other packs add. The same effect can sit on two wagons, on a sound and on the master. On the wagon under the lamp, other packs' effects are skipped: they can sit on the other three.
 
-The train has a processing budget. Turning onto an effect that won't fit skips it and lands on the next one that does. If nothing fits, the screen shows FULL in red for a second.
+The train has a processing budget. When you turn onto an effect that won't fit, the knob stops on it anyway:
+
+- its name shows in grey under the wagon, FULL and the red needle show on the engine, and a line under the rails says what it needs and what the rest of the train leaves free, as a share of the budget: for example "needs 42%, 37% free";
+- the wagon keeps the effect it had, and keeps playing it;
+- turn on to reach one that fits: it's picked as usual. Another that won't fit stops the knob again.
+
+A press of any knob, a turn of another knob, moving a wagon, the saved trains' list or leaving the page ends it. Coupling a wagon with a hold is held to the budget too: if it won't fit, the wagon stays uncoupled and FULL shows for a second.
 
 If a wagon carries another pack's effect and you remove that pack, the wagon stays, silent and drawn empty, with its settings kept. Put the pack back and it plays again.
 
@@ -64,9 +83,20 @@ Saved trains are files, 64 slots, in the `fx` folder in disk mode. Copy them to 
 
 ## Without the pack, or on an older open-field
 
-A sound that was on train plays the effect that was under the lamp, as it was saved. Your saved trains stay on the disk.
+A sound that was on train plays the effect that was under the lamp, as it was saved, and so does the master. Your saved trains stay on the disk.
 
-fx train 18 needs open-field 0.17 or later. Older releases leave it out (the start screen counts it as left out), and nothing of it runs. The install page puts on 0.19, and the start screen then shows `1.7.3 - open-field 0.19`.
+fx train 19 needs open-field 0.17 or later. Older releases leave it out (the start screen counts it as left out), and nothing of it runs. The install page puts on 0.19, and the start screen then shows `1.7.3 - open-field 0.19`.
+
+## Version 19
+
+Version 19 has been tried in the emulator only, not yet on a unit. What it adds to 18, each with the label of the commit that brought it:
+
+- **[E] A lighter picture.** The train page's picture still carried the UFO page of fx train 17, which this page no longer shows (lfo 12 shows its own UFOs, from its own picture). Version 19 leaves those parts out: the unit puts the picture together faster at the start and keeps about half a megabyte less of its own memory for it, for the whole session. The page looks and works as in version 18.
+- **[D] Names whole, and the train page kept under fast turns.** On a wagon a name of another pack's effect may now be as wide as the wagon's place on the rails, where 18 cut beignet short. On the card after a turn, a name the card's letters can't hold is written in smaller ones, as the unit's own card writes terminal; a name too long for both shows no card, and the wagon's label names it. While the card is up it hides the last wagon's label whole. The number on the save screen shows both its digits. And the train's page no longer goes away under fast turns: turning several knobs fast could leave the sound's own effect page on the screen in place of the train, for good, with T3 there switching the effect off; version 19 notices it within a few frames and brings the train back, and T3 in that state brings it back too.
+- **[B] The budget shown.** A turn onto an effect that won't fit stops on it, in grey, with FULL and what it needs, instead of skipping it. Versions 17 and 18 went past such an effect to the next one that fits, so effects seemed to be missing from the list.
+- **[C] Amp sounds.** The whole train plays on an amp sound. Up to 18 only the wagon under the lamp played there: the unit plays an amp sound's effect on a path of its own, which fx train didn't reach. Version 19 takes three more places of the firmware, on that path (21 in all). Everything else is 18's.
+- **[F] No room, drawn silent.** A wagon is drawn silent when open-field won't run its pack's effect, where 18 drew it as if it played. That happens when open-field's blocks of memory for the packs' effects are used up for the session (open-field issue #80: browsing the list of effects over many packs' effects takes them): the wagon then plays nothing until a restart, and now it looks it.
+- **[A] The master.** The train on the master (above, "On the master"). Saved trains are shared: a train saved on the master loads onto a sound, and the other way round. A save on the master shows the clock and "saved!" without the synth's or the drum's box. The wagons of the synth and the drum now share four of the eight places a pack has for other packs' effects (only the sound you play runs its train), and the master has the other four.
 
 ## Version 18
 

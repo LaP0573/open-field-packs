@@ -14,6 +14,8 @@ op1f_boot_table:
     .long 0x00000011, 0x11a052e6, op1f_fx_synth_t1, 0xba8c6605, 0    /* A call to our stub, which runs the effects of the synth's train and then does the load. */
     .long 0x00000011, 0x11a03e34, op1f_fx_drum_t0, 0xf625992e, 0    /* A call to our stub, which has the firmware leave its own effect out here: the train runs the effects. */
     .long 0x00000011, 0x11a03e68, op1f_fx_drum_t1, 0x4aa79ea4, 0    /* A call to our stub, which runs the effects of the drum's train and then does the load. */
+    .long 0x00000012, 0x8d504c7c, op1f_fx_amp_t0, 0xa07f3ea8, 0    /* A call to our stub, which has the firmware leave its own effect out of the amp engine's block here: the train runs the effects. */
+    .long 0x00000012, 0x8d504cba, op1f_fx_amp_t1, 0x11219c6a, 0    /* A call to our stub, which runs the effects of the synth's train after the amp engine and then does the load. */
     .long 0x00000010, 0x84013840, op1f_fx_encoder, 0x455bee11, 0    /* Ours lets the LFO page's destination knob walk the effect wagons while the sound rides the train, and hands every other turn to the firmware's handler. */
     .long 0x00000010, 0x8400ea48, op1f_fx_encoder, 0x098bb2c8, 0    /* Ours lets the LFO page's destination knob walk the effect wagons while the sound rides the train, and hands every other turn to the firmware's handler. */
     .long 0x00000010, 0x8401e90c, op1f_fx_patch_apply, 0x0bbbd416, 0    /* Ours makes the firmware's call and then brings the effect train up to date. */
@@ -24,6 +26,7 @@ op1f_boot_table:
     .long 0x00000011, 0x11a066ee, op1f_mother_base_p4, 0x87d85a8e, 0    /* A call to our stub, which takes the address from a word of ours, so that each mother on the train has working memory of its own. */
     .long 0x00000011, 0x11a05500, op1f_lfofx_pre_synth, 0x118699a0, 0    /* A call to our stub, which does the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train. */
     .long 0x00000011, 0x11a0404e, op1f_lfofx_pre_drum, 0x195e0af3, 0    /* A call to our stub, which does the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train. */
+    .long 0x00000012, 0x8d504d90, op1f_lfofx_pre_amp, 0xea8dbe58, 0    /* A call to our stub, which does the sum and the load and has the call that follows go through a wrapper of ours, so that the sound's LFO can turn any effect of the train after the amp engine. */
     .long 0x00000012, 0x8fc5bbf6, op1f_lfo_param_name, 0x08961d03, 0    /* A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else. */
     .long 0x00000012, 0x8fc59468, op1f_lfo_param_name, 0x08961d03, 0    /* A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else. */
     .long 0x00000012, 0x8fc5a6e8, op1f_lfo_param_name, 0x08961d03, 0    /* A call to ours, which answers with the names of the effect the LFO turns and makes the firmware's call for everything else. */

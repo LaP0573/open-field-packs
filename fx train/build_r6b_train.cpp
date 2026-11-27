@@ -1,4 +1,35 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27: fx train 19 [E]: the page's picture (fxtrain.svg) without the UFO page of fx train 17
+// and the LFO kinds' labels and card values for it, which this page has not shown since 18 (lfo 12 shows its own UFOs,
+// from its own picture). Every other part of the picture is the same, byte for byte, in the same order. So the UFOs'
+// parts, the LFO kinds' labels, their card values and the card's "lfo" word are no longer looked up (a lookup of a
+// part that is not there writes a line into the unit's log), and their nodes stay 0, as a part not found did before.
+// Nothing else of [E] changes in this unit.
+//
+// 2026-11-27: fx train 19 [D]: the names of other packs' effects whole. A wagon's name
+// may take the wagon's pitch (78 pixels), where 18's 66 cut "beignet" with a mark. The card after a turn names such an
+// effect in its own letters where they hold it within the card (68 pixels), else in smaller ones (the placeholder
+// fxname_cards, as the unit's card names TERMINAL smaller than DELAY), else shows no card and leaves the name to the
+// wagon's label (18 cut it at 60 pixels). While the card is up it covers the last wagon's label, which is then hidden
+// whole, never left half under the card. What follows holds.
+//
+// 2026-11-27: fx train 19 [B]: a turn that stands on an effect over the ceiling (the chain unit's
+// op1f_train_stand) is shown. The effect's name in grey under its wagon, where the wagon's own
+// label stands (the placeholder fxname_dim, in the palette's dark grey); under the rails below it, the words why
+// (fxname_why, in the grey knob's colour: "needs 42%, 37% free"), centred on the wagon but whole on the screen, eight
+// pixels from either edge. FULL, the red needle and the sagging wagon are the refusal's, which lasts as long as the
+// stand. No card for the turn that stands: the grey name and the words why say it. NAME_CHARS holds the words why.
+//
+// 2026-11-27: fx train 19 [A], the train on the master. What [A] changes in this unit:
+//   * a third host, the master (MASTER_HOST, in the mixer, the base's mode 3): op1f_train_frame dresses its train while
+//     it is open, and names it at the top right ("master", the placeholder fxname_host of the picture);
+//   * the master's train is this pack's own page shown over the mixer, by the page step of fx train 16 and 17 (R2, R4b,
+//     R6b below: page_wanted, page_ask, page_step, page_heal, op1f_train_page_now, op1f_train_seen), kept for the master
+//     alone and run first in op1f_train_page_frame. The layer's page standing in for the effect page (R14's way, a
+//     sound's) was lost on the master when the first wagon's type changed under it: the unit asked for the new effect's
+//     screen and its own page came up. A sound's train page is R14's, as in 18;
+//   * the presets over a sound's train are never closed over the master's page on the mixer.
+//
 // Step R14, fx train 18: the train page is the page of the pack's effect
 // layer "train" (ask 2 of the card), shown by the base on T3 for a place that rides it, edited in place. At the end of
 // this file:
@@ -195,6 +226,10 @@ extern "C" void __attribute__((weak)) op1f_chain_view(int host, Op1fChainView* o
 // structure): per knob the effect's name or 0, whether its pack is away; the pack's effect a refused pick named, or 0.
 struct Op1fChainRacks { const char* name[4]; int away[4]; const char* refused; };
 extern "C" void __attribute__((weak)) op1f_chain_racks(int host, Op1fChainRacks* out) OP1F_NAMED("op1f_chain_racks");
+// 19: a turn that stands on an effect over the ceiling (the chain unit's op1f_train_stand): the knob or -1, the effect's
+// name, what it needs beside what the rest of the train leaves it
+struct Op1fTrainStand { int knob; const char* name; char why[32]; };
+extern "C" void __attribute__((weak)) op1f_train_stand(int host, Op1fTrainStand* out) OP1F_NAMED("op1f_train_stand");
 extern "C" int __attribute__((weak)) op1f_chain_screen_wanted(int host) OP1F_NAMED("op1f_chain_screen_wanted");
 // R2: what the presets unit of the same pack has made: the list's document for its id, the save screen's for its,
 // 0 for anything else and while they are not made (build_r2_presets.cpp). Named by copy.
@@ -212,8 +247,18 @@ extern "C" int __attribute__((weak)) op1f_fx_train_page_ready() OP1F_NAMED("op1f
 
 static const char LOG_FILE[] = "../src/main/op1f_train.cpp";
 static const u32 MODE_GUI = 0x84d21088u;
+// 19: the base's mode word (0 the synth, 1 the drum, 2 the tape, 3 the mixer): host 2, the master, in the mixer.
+static const u32 BASE_MODE = 0x8400f978u;
+enum { MASTER_HOST = 2, MODE_MIXER = 3 };
+static u32 mode_of_host(int host) { return host == MASTER_HOST ? (u32)MODE_MIXER : (u32)host; }
+static int host_now(u32 base_mode) {
+    if (base_mode == (u32)MODE_MIXER) return MASTER_HOST;
+    int mode = (int)RD32(MODE_GUI);
+    return (mode == 0 || mode == 1) ? mode : -1;
+}
+extern "C" int __attribute__((weak)) op1f_chain_train_open(int host) OP1F_NAMED("op1f_chain_train_open");
 
-enum { TRAIN_SCREEN_ID = 77, HOSTS = 2, WAGONS = OP1F_CHAIN_WAGONS, TYPES = 11, LFO_KINDS = 6, CARGOS = TYPES + LFO_KINDS, NONE_INDEX = CARGOS, LABEL_DARK0 = 4, LABEL_RED = 8, LABEL_VARIANTS = 9 };   // a label's variants: the four knob colours, their four dark steps (a parked wagon, H3b), red
+enum { TRAIN_SCREEN_ID = 77, HOSTS = 3, WAGONS = OP1F_CHAIN_WAGONS, TYPES = 11, LFO_KINDS = 6, CARGOS = TYPES + LFO_KINDS, NONE_INDEX = CARGOS, LABEL_DARK0 = 4, LABEL_RED = 8, LABEL_VARIANTS = 9 };   // a label's variants: the four knob colours, their four dark steps (a parked wagon, H3b), red
 // The names and the card's words are CARGOS things: the eleven effects (the firmware's enumeration), then the six LFO kinds (stock's numbering). I6 put the kinds on wagons; since I7 they ride under the UFOs' glass.
 enum { COPIES = 4 };                                                                // H4: each character four times, one per wagon that may carry its effect
 enum { NODE_DISPLAY = 0x5c, MATRIX_WORDS = 9, Q = 1024, FULL_TURN = 360 * Q };
@@ -294,10 +339,16 @@ static int lfo_mode;                              // this frame dresses the LFO 
 // R6b (M2): the names of the packs' effects as texts of the picture's placeholders, in the unit's own letters: for each
 // knob its colour and its dark step, one red (moved to the refused wagon), one on the card. The wagons' stand where a
 // wagon's own label stands, in the wagon's place (moved with it); the card's at the card's value.
-enum { NAME_LABELS = 2 * WAGONS + 2, NAME_DARK_AT = WAGONS, NAME_RED_AT = 2 * WAGONS, NAME_CARD_AT = 2 * WAGONS + 1, NAME_CHARS = 15,
-       NAME_WIDTH = WAGON_W - 4, CARD_WIDTH = 60 };
+// 19 [D]: one more, the card's name in smaller letters (fxname_cards), for a name the card's own size cannot hold whole, as the
+// unit's card names TERMINAL smaller than DELAY; a wagon's name as wide as the wagon's pitch leaves (18 had WAGON_W - 4,
+// 66 pixels, which cut "beignet"), the card's as wide as the card (CARD_WIDTH, measured by card_part; 18 cut it at 60).
+// 19 [B]: two more: the effect a turn stands on, in grey under its wagon; the words why, under the rails below it (WHY_X,
+// the centre of its placeholder, as the labels'; a wagon's translation moves it).
+// 19 [A]: one more, the host's word at the top right ("master" on the master's train), where it stands in the picture.
+enum { NAME_LABELS = 2 * WAGONS + 6, NAME_DARK_AT = WAGONS, NAME_RED_AT = 2 * WAGONS, NAME_CARD_AT = 2 * WAGONS + 1, NAME_CARDS_AT = 2 * WAGONS + 2,
+       NAME_DIM_AT = 2 * WAGONS + 3, NAME_WHY_AT = 2 * WAGONS + 4, NAME_HOST_AT = 2 * WAGONS + 5, NAME_CHARS = 23, NAME_WIDTH = PITCH - 2, CARD_WIDTH = 68, WHY_X = 35, SCREEN_W = 480 };
 static const char NAME_PART[NAME_LABELS][16] = { "fxname_1", "fxname_2", "fxname_3", "fxname_4", "fxname_d1", "fxname_d2", "fxname_d3", "fxname_d4",
-                                                 "fxname_red", "fxname_card" };
+                                                 "fxname_red", "fxname_card", "fxname_cards", "fxname_dim", "fxname_why", "fxname_host" };
 struct NameLabel {
     int want;                                     // this dressing names a wagon (or the card) in it
     i32 x_q, y_q;                                 // where: the wagon's translation, as its own label's (the card's: none)
@@ -390,8 +441,11 @@ static void show_part(const Part& p, int on) { for (int c = 0; c < COPIES; ++c) 
 static void apply(u8* n, const u32* m) { if (n) STOCK_APPLY_MATRIX(n, m); }
 
 static void place(u8* n, i32 tx_q, i32 ty_q) {                                     // a translation, Q10 pixels
-    u32 m[MATRIX_WORDS] = { Q, 0, 0, 0, Q, 0, (u32)tx_q, (u32)ty_q, Q };
-    apply(n, m);
+    // 19: the words one by one, volatile: inlined into the names' dressing, the aggregate's zeros became a call of
+    // memset, which a pack cannot link (the loader leaves the pack out: "nobody offers the name it needs, _memset")
+    volatile u32 m[MATRIX_WORDS];
+    m[0] = Q; m[1] = 0; m[2] = 0; m[3] = 0; m[4] = Q; m[5] = 0; m[6] = (u32)tx_q; m[7] = (u32)ty_q; m[8] = Q;
+    apply(n, (const u32*)m);
 }
 
 static void place_part(const Part& p, i32 tx_q, i32 ty_q) { for (int c = 0; c < COPIES; ++c) { place(p.n[c][0], tx_q, ty_q); place(p.n[c][1], tx_q, ty_q); } }
@@ -487,15 +541,15 @@ static void find_nodes() {
         n_cardknob[k] = find_fmt(s, "fxcardknob", 0, k + 1, 0);
         n_puff[k] = find_fmt(s, "fxpuff", 0, k + 1, 0);
     }
-    for (int t = 0; t <= CARGOS; ++t) n_cardval[t] = find_fmt(s, "fxcardval_", NAMES[t], -1, 0);
+    for (int t = 0; t <= CARGOS; ++t) n_cardval[t] = t >= TYPES && t != NONE_INDEX ? 0 : find_fmt(s, "fxcardval_", NAMES[t], -1, 0);   // 19: no LFO kind's value in the picture
     n_cardlabel = find(s, "fxcardlabel");
-    n_cardlabel_lfo = find(s, "fxcardlabel_lfo");
+    n_cardlabel_lfo = 0;                                                            // 19: not in the picture
     for (int t = 0; t < CARGOS; ++t) {
         for (int c = 0; t < TYPES && c < COPIES; ++c) {                              // H4: four copies of each character (the effects': the LFO kinds have names only)
             n_car[t][c] = find_copy(s, "fxcar_", NAMES[t], -1, 0, c);
             n_dim[t][c] = find_copy(s, "fxdim_", NAMES[t], -1, 0, c);
         }
-        for (int c = 0; c < LABEL_VARIANTS; ++c) n_label[t][c] = (c == LABEL_RED && t >= TYPES) ? 0 : find_fmt(s, "fxlabel_", NAMES[t], -1, SUFFIX[c]);   // no pick of an LFO kind is refused: no red name
+        for (int c = 0; c < LABEL_VARIANTS; ++c) n_label[t][c] = t >= TYPES ? 0 : find_fmt(s, "fxlabel_", NAMES[t], -1, SUFFIX[c]);   // 19: the LFO kinds' labels are not in the picture
     }
     for (int c = 0; c < COPIES; ++c) {
         n_car_none[c] = find_copy(s, "fxcar_none", 0, -1, 0, c);
@@ -760,6 +814,7 @@ static i32 ufo_puck;
 static void find_ufos(void* s) {
     static const char* const WORLD[UFO_WORLD] = { "fxsky", "fxclouds", "fxfar", "fxhills", "fxline", "fxloco" };
     for (int i = 0; i < UFO_WORLD; ++i) n_fxworld[i] = find(s, WORLD[i]);
+    return;                                             // 19: the picture holds no UFO: the train's world only (the rest stays 0)
     n_ufoscene = find(s, "ufoscene");
     n_ufoshoot = find(s, "ufoshoot");
     n_ufodish = find(s, "ufodish");
@@ -990,7 +1045,8 @@ static void names_apply() {
     for (int i = 0; i < NAME_LABELS; ++i) {
         NameLabel* l = &name_labels[i];
         if (l->want && !l->refused && !same_name(l->text, l->want_text)) {
-            if (op1f_text_set(document, NAME_PART[i], l->want_text, i == NAME_CARD_AT ? (int)CARD_WIDTH : (int)NAME_WIDTH, OP1F_CENTRE)) {
+            int wide = i == NAME_CARD_AT || i == NAME_CARDS_AT || i == NAME_WHY_AT;      // 19: the card's two, whole (card_part measured them); the words why, the screen's width
+            if (op1f_text_set(document, NAME_PART[i], l->want_text, wide ? 0 : (int)NAME_WIDTH, OP1F_CENTRE)) {
                 for (int c = 0; c <= NAME_CHARS; ++c) l->text[c] = l->want_text[c];
                 ++paints;
             } else {
@@ -1001,7 +1057,15 @@ static void names_apply() {
         if (l->want && !l->refused && l->node == 0) l->node = (u8*)op1f_text_node(document, NAME_PART[i]);
         if (l->node == 0) continue;
         if (l->want && !l->refused) {
-            if (i != NAME_CARD_AT) place(l->node, l->x_q, l->y_q);
+            i32 x_q = l->x_q;
+            if (i == NAME_WHY_AT) {                                                 // 19: under its wagon, but whole on the screen (8 pixels from either edge)
+                i32 half = (i32)op1f_text_width(document, NAME_PART[i]) * (Q / 2);
+                i32 centre = WHY_X * Q + x_q, lo = 8 * Q + half, hi = (SCREEN_W - 8) * Q - half;
+                if (centre > hi) centre = hi;
+                if (centre < lo) centre = lo;
+                x_q = centre - WHY_X * Q;
+            }
+            if (i != NAME_CARD_AT && i != NAME_CARDS_AT && i != NAME_HOST_AT) place(l->node, x_q, l->y_q);   // [A]: the host's word stands where the picture has it
             show(l->node, 1);
             any = 1;
         } else {
@@ -1009,6 +1073,30 @@ static void names_apply() {
         }
     }
     if (any) ++paint_frames;
+}
+
+// 19: which of the card's two placeholders names `name` whole (the card's size, else the smaller), or -1 for neither
+// (the turn then shows no card, and the wagon's own label names it). The texts are set here at once, so that the
+// dressing knows before it places anything; names_apply finds them set. A text op1f_text_set makes shows at once: its
+// node is kept, so that names_apply hides the one that is not the card's. From the frame function.
+static int card_part(const char* name) {
+    void* document = (void*)screen_object[1];
+    static const int parts[2] = { NAME_CARD_AT, NAME_CARDS_AT };
+    for (int i = 0; i < 2; ++i) {
+        NameLabel* l = &name_labels[parts[i]];
+        name_want(parts[i], name, 0, 0);
+        l->want = 0;
+        if (l->refused || l->want_text[0] == 0) continue;
+        if (!same_name(l->text, l->want_text)) {
+            if (!op1f_text_set(document, NAME_PART[parts[i]], l->want_text, 0, OP1F_CENTRE)) continue;   // names_apply says so, once
+            for (int c = 0; c <= NAME_CHARS; ++c) l->text[c] = l->want_text[c];
+            ++paints;
+        }
+        if (l->node == 0) l->node = (u8*)op1f_text_node(document, NAME_PART[parts[i]]);
+        int w = op1f_text_width(document, NAME_PART[parts[i]]);
+        if (w >= 0 && w <= (int)CARD_WIDTH) return parts[i];
+    }
+    return -1;
 }
 
 static void names_hide() {
@@ -1024,7 +1112,22 @@ static void dress(int host, const Op1fChainView& v, int running) {
     for (int k = 0; k < WAGONS; ++k) { racks.name[k] = 0; racks.away[k] = 0; }
     racks.refused = 0;
     if (&op1f_chain_racks != 0) op1f_chain_racks(host, &racks);
+    Op1fTrainStand stand;                                                          // 19: a turn that stands on an effect over the ceiling
+    stand.knob = -1;
+    stand.name = 0;
+    stand.why[0] = 0;
+    if (&op1f_train_stand != 0) op1f_train_stand(host, &stand);
+    if (stand.name == 0) stand.knob = -1;
     for (int i = 0; i < NAME_LABELS; ++i) name_labels[i].want = 0;
+    // 19: the card after a turn, over the last wagon's label; for a pack's effect, in the size of its letters that holds
+    // the name whole, or no card where neither does (the wagon's own label names it)
+    int card_up = v.turn_knob >= 0 && v.turn_knob < WAGONS && v.turn_age < CARD_FRAMES && v.turn_knob != stand.knob;   // [B]: none for a turn that stands
+    int card_name_at = -1;
+    if (card_up && racks.name[v.turn_knob] != 0) {
+        card_name_at = card_part(racks.name[v.turn_knob]);
+        if (card_name_at < 0) card_up = 0;
+    }
+    if (host == MASTER_HOST) name_want(NAME_HOST_AT, "master", 0, 0);         // 19: which train this is, top right in the sky
     paint_host = host;
     int shown_label[CARGOS][LABEL_VARIANTS];
     for (int t = 0; t < CARGOS; ++t) for (int c = 0; c < LABEL_VARIANTS; ++c) shown_label[t][c] = 0;
@@ -1087,7 +1190,11 @@ static void dress(int host, const Op1fChainView& v, int running) {
         // the label: the knob's colour, its dark step on the siding (H3b), the refused effect's name in red during the flash
         // (R5: a pack's effect's name in its place, the label of the effect it stands on not shown; R6b: in the unit's
         // own letters, a placeholder's text moved as the label is)
-        if (refused && racks.refused) {
+        if (p == WAGONS - 1 && card_up) {                                          // 19 [D]: the card covers the last wagon's label: hidden whole, never in part
+        } else if (k == stand.knob) {                                              // 19 [B]: the effect the turn stands on, in grey; why, under the rails
+            name_want(NAME_DIM_AT, stand.name, x, hop_q);
+            name_want(NAME_WHY_AT, stand.why, x, 0);
+        } else if (refused && racks.refused) {
             name_want(NAME_RED_AT, racks.refused, x, hop_q);
         } else if (refused) {
             place(n_label[v.refused_type][LABEL_RED], x, hop_q);
@@ -1134,9 +1241,13 @@ static void dress(int host, const Op1fChainView& v, int running) {
     show(n_needle, !v.full);
     show(n_needlered, v.full);
     show(n_full, v.full);
-    int card_rack = v.turn_knob >= 0 && v.turn_knob < WAGONS && racks.name[v.turn_knob] != 0;   // R5: the card names a pack's effect over its word
-    dress_card(v.turn_knob, v.turn_age, card_rack ? -1 : (v.turn_knob >= 0 && v.turn_knob < WAGONS && v.type[v.turn_knob] >= 0 && v.type[v.turn_knob] < TYPES ? v.type[v.turn_knob] : NONE_INDEX));
-    if (card_rack && v.turn_age < CARD_FRAMES) name_want(NAME_CARD_AT, racks.name[v.turn_knob], 0, 0);
+    if (!card_up) {
+        dress_card(-1, 0x7fffffff, -1);                                            // 19: no card (none up, or a name it cannot hold)
+    } else {
+        int card_rack = card_name_at >= 0;                                         // R5: the card names a pack's effect over its word (19: in the size that holds it)
+        dress_card(v.turn_knob, v.turn_age, card_rack ? -1 : (v.type[v.turn_knob] >= 0 && v.type[v.turn_knob] < TYPES ? v.type[v.turn_knob] : NONE_INDEX));
+        if (card_rack) name_want(card_name_at, racks.name[v.turn_knob], 0, 0);
+    }
     names_apply();                                                                 // R6b (M2)
     dress_world(running);
     dress_characters();
@@ -1167,9 +1278,168 @@ extern "C" void op1f_train_paint(const Op1fFrame* now) OP1F_NAMED("op1f_train_pa
 extern "C" void op1f_train_paint(const Op1fFrame* now) { (void)now; }
 #endif
 
+// ---------------------------------------------------------------- 19: the master's train page, over the mixer
+//
+// The page step of fx train 16 and 17 (R2, R4b, R6b), kept for the master alone: its train is the pack's page shown over
+// the mixer (op1f_page_show with OP1F_PAGE_STAYS). A sound's train page is R14's (op1f_train_frame and
+// op1f_train_page_frame below). What follows is fx train 17's step as it stood, with the master as its one host.
+//
+// R2: the document the page shows for the master now, 0 for none (the mixer's own screen): the presets' save screen or
+// list over the train, the train.
+static void* page_wanted(int host) {
+    if (host != MASTER_HOST) return 0;
+    if (&op1f_presets_available != 0 && op1f_presets_available() && &op1f_chain_screen_wanted != 0) { int id = op1f_chain_screen_wanted(MASTER_HOST); if (id) return PRESETS_DOCUMENT(id); }
+    if (screen_built && &op1f_chain_train_open != 0 && op1f_chain_train_open(MASTER_HOST)) return (void*)screen_object[1];
+    return 0;
+}
+
+// R2: 1 while the master's train is open, else 0. A change to it is a page opened by a key (T3), which comes over
+// another pack's page as it always did.
+static u32 page_view(int host) {
+    if (host == MASTER_HOST && &op1f_chain_train_open != 0 && op1f_chain_train_open(MASTER_HOST)) return 1u;
+    return 0u;
+}
+
+// R2: the page step's words, shared by the display thread and the key thread: single words, each written whole.
+static void* volatile page_asked;                  // the document last asked of the base, 0 for none (or closed)
+static volatile u32 page_view_was;                 // page_view at the last step
+static volatile u32 page_other;                    // the frame's word: another pack's page lies on top
+static volatile u32 page_steps, page_shows, page_closes, page_waits, page_refused;   // since the start, for the frame's line
+static void* volatile page_refused_doc;            // the document the base last refused, 0 once another was taken
+static volatile u32 page_flags = OP1F_PAGE_STAYS;  // R4b: the flag the page is asked with, 0 once a base answered 0 to it
+static volatile u32 page_unflagged, page_away;     // R4b: asks a base took only without the flag; frames the step waited out of its mode
+static u32 page_said[7], page_countdown;
+// The heals (the display thread's alone): what the frame's `page` says against what the step asked.
+static u32 heal_closes, heal_shows;                // since the start, for the frame's line
+static u32 heal_stale_shown, heal_stale_missing;   // frames in a row a heal's state was seen
+static u32 heal_round;                             // heals made for the page shown or the document wanted now
+static void* heal_for;                             // the document wanted when heal_round counted
+enum { HEAL_SHOWN_FRAMES = 2, HEAL_MISSING_FRAMES = 4, HEAL_MOST = 3 };
+
+// R4b: the page asked of the base with the flag OP1F_PAGE_STAYS, and asked again at once with none when a base
+// answers 0 to it (a base before 26 knows no flag); from then on with none. 1 when the base took the request.
+static int page_ask(void* want) {
+    u32 flags = page_flags;
+    if (op1f_page_show(&OWN_CARD, want, flags)) return 1;
+    if (flags == 0 || !op1f_page_show(&OWN_CARD, want, 0)) return 0;
+    page_flags = 0;
+    ++page_unflagged;
+    return 1;
+}
+
+// R2: the page asked of the base or closed, only when what is wanted changed. From the frame and from a key.
+static __attribute__((noinline)) void page_step(int host) {
+    ++page_steps;
+    void* want = page_wanted(host);
+    u32 view = page_view(host), was = page_view_was;
+    page_view_was = view;
+    void* asked = page_asked;
+    if (want == 0) {
+        if (asked == 0) return;
+        page_asked = 0;
+        ++page_closes;
+        op1f_page_close(&OWN_CARD);                                                // closed also from under another pack's page
+        return;
+    }
+    int over = view != 0 && view != was && page_other != 0;                        // the train opened: over the other pack's page
+    if (want == asked && !over) return;
+    if (page_other != 0 && !over) { ++page_waits; return; }                         // another pack's page on top: shown when it closes
+    page_asked = want;
+    if (page_ask(want)) { ++page_shows; page_refused_doc = 0; }                  // R4b: with the flag, or without
+    else { ++page_refused; page_refused_doc = want; }                              // not asked again for the same document
+}
+
+// R2: the frame's step after the page step (the display thread). The two threads' steps each write the word before
+// they call the base, so where one runs between the other's word and its call, the base can be left showing a page
+// nothing wants, or not showing one the word says was asked. The frame's `page` says what the GUI shows, so:
+//   shown, not wanted: nothing is wanted for the mode and the frame names this pack's page HEAL_SHOWN_FRAMES frames
+//     in a row: the page closed again;
+//   wanted, not shown: the word holds what is wanted, the frame names no page of any pack and the screen is not the
+//     base's HEAL_MISSING_FRAMES frames in a row: asked again, unless the base refused that document. Only while the
+//     disk mode is closed and the frame's mode is the mixer.
+// At most HEAL_MOST heals for one page shown or one document wanted, so a base that will not is not asked for ever.
+static void page_heal(const Op1fFrame* now, int host) {
+    void* want = page_wanted(host);
+    void* asked = page_asked;
+    if (want != heal_for) { heal_for = want; heal_round = 0; }
+    if (want == 0 && asked == 0 && now->page == &OWN_CARD && host == MASTER_HOST) {
+        if (++heal_stale_shown >= (u32)HEAL_SHOWN_FRAMES && heal_round < (u32)HEAL_MOST) {
+            heal_stale_shown = 0;
+            ++heal_round;
+            ++heal_closes;
+            op1f_page_close(&OWN_CARD);
+        }
+    } else {
+        heal_stale_shown = 0;
+    }
+    u32 disk = now->bytes >= 36u ? now->disk : 0u;                                // the disk mode open: the computer's screen, no page of ours asked
+    int same_mode = host >= 0 && now->mode == mode_of_host(host);                 // the base's mode word and the one the step works from agree
+    if (want != 0 && want == asked && now->page == 0 && now->screen != (u32)TRAIN_SCREEN_ID && page_other == 0 && want != page_refused_doc &&
+        disk == 0 && same_mode) {
+        if (++heal_stale_missing >= (u32)HEAL_MISSING_FRAMES && heal_round < (u32)HEAL_MOST) {
+            heal_stale_missing = 0;
+            ++heal_round;
+            ++heal_shows;
+            if (!page_ask(want)) page_refused_doc = want;                       // R4b: with the flag, or without
+        }
+    } else {
+        heal_stale_missing = 0;
+        if (now->page == &OWN_CARD && want != 0) heal_round = 0;                    // shown: a later stuck page has its heals again
+    }
+}
+
+// R6b (M5): what the last frame showed of this pack's pages on the mixer, for the chain unit's record of the master's
+// train: SEEN_TRAIN the train itself; SEEN_OURS another page of this pack there (the presets' list or save screen over
+// the train); SEEN_NONE no page of this pack there; SEEN_AWAY the unit in another mode. Single words, written by the
+// display thread, read by the key thread and the chain's frame.
+enum { SEEN_AWAY = -1, SEEN_NONE = 0, SEEN_OURS = 1, SEEN_TRAIN = 2 };
+static volatile int seen_host = -1, seen_state = SEEN_AWAY;
+static void seen_frame(const Op1fFrame* now, int host) {
+    int seen = SEEN_AWAY;
+    if (host >= 0 && now->mode == mode_of_host(host)) {
+        if (now->page != &OWN_CARD) seen = SEEN_NONE;
+        else seen = screen_built && page_asked == (void*)screen_object[1] && page_view(host) == 1u ? SEEN_TRAIN : SEEN_OURS;
+    }
+    seen_state = seen;
+    seen_host = host;
+}
+
+extern "C" int op1f_train_seen(int host) OP1F_NAMED("op1f_train_seen");
+extern "C" int op1f_train_seen(int host) { return seen_host == host ? (int)seen_state : (int)SEEN_AWAY; }
+
+// R2: the page step after a key, from the master's input (build_r16_master.cpp, the firmware's key thread). Writes no
+// line.
+extern "C" void op1f_train_page_now(int host) OP1F_NAMED("op1f_train_page_now");
+extern "C" void op1f_train_page_now(int host) { page_step(host == MASTER_HOST ? host : -1); }
+
+// R2: once a frame from op1f_train_page_frame: whether another pack's page is on top, the master's page step in the
+// mixer (outside it a page it asked is closed: the step's host is -1 there), and a line when its counts moved (at
+// most every PRINT_FRAMES frames).
+static void master_page_frame(const Op1fFrame* now) {
+    page_other = now->page != 0 && now->page != &OWN_CARD ? 1u : 0u;
+    int host = host_now(now->mode) == MASTER_HOST ? MASTER_HOST : -1;
+    seen_frame(now, host);                                                         // R6b (M5): before the step, what this frame showed
+    if (host >= 0 && now->mode != mode_of_host(host)) {                            // R4c: another mode: the step waits for the mixer's
+        if (page_flags == 0) page_asked = 0;                                       // R4b: a base that refused the flag closed the page: asked again at the first frame back
+        ++page_away;
+    } else {
+        page_step(host);
+    }
+    page_heal(now, host);
+    if (++page_countdown < (u32)PRINT_FRAMES) return;
+    page_countdown = 0;
+    u32 now_counts[7] = { page_steps, page_shows, page_closes, page_waits, page_refused, heal_shows, heal_closes };
+    int moved = 0;
+    for (int i = 1; i < 7; ++i) if (now_counts[i] != page_said[i]) moved = 1;
+    if (!moved) return;
+    for (int i = 0; i < 7; ++i) page_said[i] = now_counts[i];
+    STOCK_LOG(3, LOG_FILE, 11, "train page: the master's: %u shown, %u closed, %u waited under another pack's page, %u refused by the base, %u asked again and %u closed again out of step; %u steps since the start",
+              now_counts[1], now_counts[2], now_counts[3], now_counts[4], now_counts[5], now_counts[6], now_counts[0]);
+}
+
 // ---------------------------------------------------------------- R14: fx train 18, the train page as the layer's page
 
-enum { ASK_TRAIN = 2, PLACES = 16, PLACE_DRUM = 8, STAND_LINES = 4 };
+enum { ASK_TRAIN = 2, PLACES = 16, PLACE_DRUM = 8, MASTER_PLACE = 16, STAND_LINES = 4 };
 extern "C" int op1f_train14_place(const Op1fFrame* now) OP1F_NAMED("op1f_train14_place");   // build_r14_train_input.cpp: the place to dress, or -1
 extern "C" int op1f_train14_up() OP1F_NAMED("op1f_train14_up");                             // build_r14_train_input.cpp: the place whose train page is up, or -1
 
@@ -1205,6 +1475,7 @@ extern "C" void op1f_train_frame(const Op1fFrame* now) {
     if (place >= PLACES) place = -1;
     int mode = (int)RD32(MODE_GUI);
     int host = place >= 0 ? (place >= PLACE_DRUM ? 1 : 0) : (mode == 0 || mode == 1 ? mode : -1);
+    if (place < 0 && host_now(RD32(BASE_MODE)) == MASTER_HOST) host = MASTER_HOST;   // 19: the master in the mixer, dressed while its train is open
     Op1fChainView view;
     view.known = 0; view.open = 0; view.bypassed = 0; view.peak = 0; view.cost_percent = 0;   // what is read of it below when no host is read
     int have_view = 0;
@@ -1218,12 +1489,13 @@ extern "C" void op1f_train_frame(const Op1fFrame* now) {
         --run_hold;
     }
     int running = run_hold > 0;
-    if (place >= 0 && have_view) {
-        if (place != dressed_place) {                                              // another place: its wagons where they stand
+    int dressing = place >= 0 ? place : (host == MASTER_HOST && view.open ? (int)MASTER_PLACE : -1);   // 19: the master's train dressed while it is open
+    if (dressing >= 0 && have_view) {
+        if (dressing != dressed_place) {                                           // another place: its wagons where they stand
             positions_seeded = 0;
             for (int k = 0; k < WAGONS; ++k) hop[k] = 0;
         }
-        dressed_place = place;
+        dressed_place = dressing;
         advance_phases(running);
         dress(host, view, running);
         if (!matrices_logged) {                                                    // H3b: the needle's matrix as applied, once, for the read-out (its tip from the words: x2 = 4 pixels)
@@ -1237,7 +1509,7 @@ extern "C" void op1f_train_frame(const Op1fFrame* now) {
         ++frames_period;
         if (running) ++frames_running;
         if (view.bypassed) ++bypass_frames;
-        last_shown_host = place;
+        last_shown_host = dressing;
     } else {
         dressed_place = -1;
         paint_host = -1;                                                           // R5: no train dressed: nothing to paint
@@ -1264,6 +1536,7 @@ extern "C" void op1f_train_frame(const Op1fFrame* now) {
 // not asked again until another is wanted. A line when the counts moved.
 extern "C" void op1f_train_page_frame(const Op1fFrame* now) OP1F_NAMED("op1f_train_page_frame");
 extern "C" void op1f_train_page_frame(const Op1fFrame* now) {
+    master_page_frame(now);                                                        // 19: the master's train page over the mixer
     int up = op1f_train14_up();
     int host = up < 0 || up >= PLACES ? -1 : (up >= PLACE_DRUM ? 1 : 0);
     int id = host >= 0 && &op1f_chain_screen_wanted != 0 ? op1f_chain_screen_wanted(host) : 0;
@@ -1272,8 +1545,10 @@ extern "C" void op1f_train_page_frame(const Op1fFrame* now) {
         presets_refused_doc = 0;
         if (presets_asked != 0) {
             presets_asked = 0;
-            ++presets_closes;
-            op1f_page_close(&OWN_CARD);
+            if (host_now(now->mode) != MASTER_HOST || page_asked == 0) {           // 19: never over the master's page on the mixer (the base closed a sound's list when the mode changed)
+                ++presets_closes;
+                op1f_page_close(&OWN_CARD);
+            }
         }
     } else if (want != presets_asked && want != presets_refused_doc) {
         if (op1f_page_show(&OWN_CARD, want, 0)) { presets_asked = want; presets_refused_doc = 0; ++presets_shows; }
