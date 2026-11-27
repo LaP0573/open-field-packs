@@ -39,7 +39,7 @@ op1f_card_fx_train:
     .long op1f_card_fx_train_folders
     .long 2
     .long op1f_card_fx_train_asks
-    .long 3
+    .long 4
 .size op1f_card_fx_train, .-op1f_card_fx_train
 .global op1f_card_fx_train_folders
 .type op1f_card_fx_train_folders, STT_OBJECT
@@ -61,6 +61,7 @@ op1f_card_fx_train_asks:
     .long 5, 36, op1f_card_fx_train_ask_0
     .long 6, 324, op1f_card_fx_train_ask_1
     .long 7, 180, op1f_card_fx_train_ask_2
+    .long 3, 44, op1f_card_fx_train_ask_3
 .size op1f_card_fx_train_asks, .-op1f_card_fx_train_asks
 .global op1f_card_fx_train_ask_0
 .type op1f_card_fx_train_ask_0, STT_OBJECT
@@ -111,11 +112,24 @@ op1f_card_fx_train_ask_2:
     .long 4
     .long fx_train_shown
     .fill 16, 1, 0
-    .long 0
+    .long 84000
     .long 0
     .long 4
-    .long 0
+    .long fx_train_master_after
     .long 0
     .long 0
     .fill 112, 1, 0
 .size op1f_card_fx_train_ask_2, .-op1f_card_fx_train_ask_2
+.global op1f_card_fx_train_ask_3
+.type op1f_card_fx_train_ask_3, STT_OBJECT
+op1f_card_fx_train_ask_3:
+    .long 44
+    .ascii "train-before"
+    .fill 4, 1, 0
+    .long 0
+    .long 0
+    .long 2
+    .long 84000
+    .long 0
+    .long fx_train_master_before
+.size op1f_card_fx_train_ask_3, .-op1f_card_fx_train_ask_3

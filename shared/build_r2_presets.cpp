@@ -11,6 +11,9 @@
 // 2026-11-27: fx train 19 [D]: the save screen's number gets 40 pixels in fx train's copy (NUMBER_WIDTH), where 24 cut
 // "02" to "0" with a mark; lfo's copy keeps 24, so lfo 12 builds to the same file.
 //
+// 2026-11-27: fx train 19 [A] (fx train's copy alone, not lfo's): in the mixer the presets are the master's train's (host
+// 2), and a save of the master's train shows the clock and "saved!" without the synth's box or the drum's.
+//
 // This one text is compiled into fx train and, through lfo/build_r2_presets_lfo.cpp with OP1F_R2_LFO_COPY
 // defined, into lfo. R15 (lfo 12): lfo's copy makes and dresses its own two documents whether fx train runs or not,
 // from lfo's view alone (op1f_lfo12_presets_view, a name fx train does not know), and its op1f_presets_available
@@ -94,6 +97,9 @@ extern "C" void __attribute__((weak)) op1f_presets_view(int host, Op1fPresetsVie
 
 static const char LOG_FILE[] = "../src/main/op1f_presets.cpp";
 static const u32 MODE_GUI = 0x84d21088u;
+#ifndef OP1F_R2_LFO_COPY
+static const u32 BASE_MODE = 0x8400f978u;                               // 19: the base's mode word, 3 in the mixer
+#endif
 
 enum { LIST_ID = OP1F_PRESETS_SCREEN_ID, SAVE_ID = OP1F_SAVE_SCREEN_ID, HOSTS = 2, WAGONS = OP1F_CHAIN_WAGONS, ROWS = OP1F_PRESET_ROWS, CELLS = OP1F_PRESET_NAME, SPOKES = OP1F_SAVE_SPOKES };
 enum { NODE_DISPLAY = 0x5c, MATRIX_WORDS = 9, Q = 1024, LABEL_KIND = 0, PRINT_FRAMES = 232, TEXT_MAX = 24 };
@@ -353,7 +359,11 @@ static void dress_list(const Op1fPresetsView& v) {
 }
 
 static void dress_save(const Op1fPresetsView& v) {
+#ifdef OP1F_R2_LFO_COPY
     int host = v.save_host ? 1 : 0;
+#else
+    int host = v.save_host == 1 ? 1 : v.save_host == 0 ? 0 : -1;          // 19: the master's save shows neither box
+#endif
     char number[4];
     int n = v.save_number < 1 ? 1 : (v.save_number > 99 ? 99 : v.save_number);
     number[0] = (char)('0' + udiv((u32)n, 10u));
@@ -407,6 +417,9 @@ extern "C" void op1f_presets_frame() {
     if (!list_built || !save_built) return;
     int mode = (int)RD32(MODE_GUI);
     int host = (mode == 0 || mode == 1) ? mode : -1;
+#ifndef OP1F_R2_LFO_COPY
+    if (RD32(BASE_MODE) == 3u) host = 2;                                  // 19: the master's presets, in the mixer
+#endif
     if (host >= 0) {
         Op1fPresetsView v;
 #ifdef OP1F_R2_LFO_COPY

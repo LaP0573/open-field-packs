@@ -17,7 +17,7 @@ typedef int (*FileSizeFn)(const char* path);
 
 **The threads.** *The main thread* runs the start-up. *The display thread* draws a frame some sixty times a second; the shared part calls our frame functions from it. *The key thread* hands key presses and knob turns to the mode that is shown. *The audio thread* makes the sound, a block of 64 samples at a time, and must never wait: no log line, no file, no memory asked for there. Where the last column says "ours", it names the threads our code calls the function on today; that it is safe on another thread has not been shown.
 
-There are 128 functions bound in the sources. 48 are described below, by subject. The other 80 are listed at the end with their type and the files that bind them: their words are still to be written.
+There are 129 functions bound in the sources. 49 are described below, by subject. The other 80 are listed at the end with their type and the files that bind them: their words are still to be written.
 
 ## The log
 
@@ -109,6 +109,7 @@ The unit has eight synth sounds and eight drum sounds, in slots 0 to 7 each. Eac
 | `0x8d4f3b9c` | `void set_params(void* record, const u32* words)` | Writes an effect's eight knob words into a slot's document, as the member `fx_params`: each word is a value shifted left by sixteen, and the value is what goes in. Then the record is marked to be written. `record` is the slot's record. | Ours: the display thread. |
 | `0x8d4f3c24` | `void set_active(void* record, int value)` | Writes whether a slot's effect is on into the slot's document, as the member `fx_active`, and marks the record to be written. `record` is the slot's record. | Ours: the key thread, the display thread. |
 | `0x8d505390` | `void build(int index, int type)` | Makes the effect object of `index` anew for a type and puts it in the index's word. A type `factory` refuses stops the unit. | Ours: the display thread. |
+| `0x8d5042c0` | `void on_master(u32 on)` | Switches the master's effect on (`on` 1) or off (0), as the mixer's own switch does; the master's on byte follows it. Nothing comes back. | Ours: the display thread. |
 
 ## The tape's document and its save
 

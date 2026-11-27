@@ -315,6 +315,12 @@
    "what": "Makes the effect object of `index` anew for a type and puts it in the index's word. A type `factory` refuses stops the unit.",
    "thread": "Ours: the display thread."
   },
+  "0x8d5042c0": {
+   "name": "on_master",
+   "group": "sounds",
+   "what": "Switches the master's effect on (`on` 1) or off (0), as the mixer's own switch does; the master's on byte follows it. Nothing comes back.",
+   "thread": "Ours: the display thread."
+  },
   "0x8fc273f0": {
    "name": "screen_of",
    "group": "screens",
