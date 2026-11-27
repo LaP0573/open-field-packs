@@ -58,6 +58,10 @@
 //     firmware's own click, which mutes track 1-4 there, does not run; on any other page the click goes on to the
 //     firmware as before. Until 12 the filter took no click, so a click on the page of tracks 5-8 muted track 1-4,
 //     out of sight.
+//   * 8 tracks 13, edited in place: likewise shift + a knob's click, which reaches the shifted handler. On the levels
+//     page the firmware's own puts track 1-4's pan word (0x11b01ec0 + 4k) back to the centre and answers 1. While the
+//     page is held the shifted filter takes that click on the levels page and puts track 5-8's pan to the centre
+//     through op1f_ext_mix_center_pan instead; until 13 it reset track 1-4's pan, out of sight.
 // Freestanding like the other units: no library, no float types (the ROM and stock conversions are called by
 // address with their bit patterns). Everything here runs on the GUI thread.
 
@@ -134,6 +138,7 @@ extern "C" volatile unsigned char op1f_mixer_page asm("op1f_mixer_page");    // 
 extern "C" int op1f_ext_mix_adjust(int track, int knob, int delta) asm("op1f_ext_mix_adjust");
 extern "C" int op1f_ext_mix_toggle_mute(int track) asm("op1f_ext_mix_toggle_mute");
 extern "C" int op1f_ext_mix_click_mute(int track) asm("op1f_ext_mix_click_mute");      // 12: the same, with no track number shown
+extern "C" int op1f_ext_mix_center_pan(int track) asm("op1f_ext_mix_center_pan");      // 13: the pan of track 5-8 to the centre
 extern "C" void op1f_ext_mix_set_defaults() asm("op1f_ext_mix_set_defaults");
 extern "C" int op1f_track_unmuted(int track) asm("op1f_track_unmuted");
 extern "C" u32 op1f_cache_tracks asm("op1f_cache_tracks");                  // build_b_cache.cpp: 6 with the heap-1 cache
@@ -209,6 +214,10 @@ extern "C" int op1f_mixer_shift_key_filter(void* self, const int* event) asm("op
 extern "C" int op1f_mixer_shift_key_filter(void* self, const int* event) {
     if (!op1f_mixer_page) return 0;
     int key = event[0];
+    if (key >= KEY_KNOB_1 && key <= KEY_KNOB_4 && MIXER_PAGE == LEVELS_PAGE) {
+        op1f_ext_mix_center_pan(STOCK_TRACKS + key - KEY_KNOB_1);   // 13: track 5-8, as stock's shift + click centres 1-4
+        return 1;                                               // stock's would centre track 1-4's pan
+    }
     if (key < KEY_TRACK_1 || key > KEY_TRACK_4) return 0;
     int track = STOCK_TRACKS + key - KEY_TRACK_1;
     if (track < EIGHT_TRACKS) op1f_ext_mix_toggle_mute(track);
