@@ -23,7 +23,7 @@ The master isn't there yet. **train** shows in the master effect's list on the m
 
 The knobs:
 
-- **Turn**: choose the wagon's effect. The sound follows a moment after you stop turning.
+- **Turn**: choose the wagon's effect. The sound follows a moment after you stop turning. A name in grey is an effect that doesn't fit the budget (below).
 - **Tap**: open that wagon's effect page, with all its knobs. The lamp moves to that wagon, and T3 brings you back. On an empty wagon, or one carrying another pack's effect, nothing happens.
 - **Hold**: uncouple the wagon (it goes quiet and costs nothing) or couple it back.
 - **Shift + turn**: move the wagon one step along the train.
@@ -34,7 +34,13 @@ The knobs:
 
 All the unit's own effects except the vocoder (fazer only if you've unlocked it), plus the effects other packs add. The same effect can sit on two wagons. On the wagon under the lamp, other packs' effects are skipped: they can sit on the other three.
 
-The train has a processing budget. Turning onto an effect that won't fit skips it and lands on the next one that does. If nothing fits, the screen shows FULL in red for a second.
+The train has a processing budget. When you turn onto an effect that won't fit, the knob stops on it anyway:
+
+- its name shows in grey under the wagon, FULL and the red needle show on the engine, and a line under the rails says what it needs and what the rest of the train leaves free, as a share of the budget: for example "needs 42%, 37% free";
+- the wagon keeps the effect it had, and keeps playing it;
+- turn on to reach one that fits: it's picked as usual. Another that won't fit stops the knob again.
+
+A press of any knob, a turn of another knob, moving a wagon, the saved trains' list or leaving the page ends it. Coupling a wagon with a hold is held to the budget too: if it won't fit, the wagon stays uncoupled and FULL shows for a second.
 
 If a wagon carries another pack's effect and you remove that pack, the wagon stays, silent and drawn empty, with its settings kept. Put the pack back and it plays again.
 
@@ -74,6 +80,7 @@ Version 19 has been tried in the emulator only, not yet on a unit. What it adds 
 
 - **[E] A lighter picture.** The train page's picture still carried the UFO page of fx train 17, which this page no longer shows (lfo 12 shows its own UFOs, from its own picture). Version 19 leaves those parts out: the unit puts the picture together faster at the start and keeps about half a megabyte less of its own memory for it, for the whole session. The page looks and works as in version 18.
 - **[D] Names whole, and the train page kept under fast turns.** On a wagon a name of another pack's effect may now be as wide as the wagon's place on the rails, where 18 cut beignet short. On the card after a turn, a name the card's letters can't hold is written in smaller ones, as the unit's own card writes terminal; a name too long for both shows no card, and the wagon's label names it. While the card is up it hides the last wagon's label whole. The number on the save screen shows both its digits. And the train's page no longer goes away under fast turns: turning several knobs fast could leave the sound's own effect page on the screen in place of the train, for good, with T3 there switching the effect off; version 19 notices it within a few frames and brings the train back, and T3 in that state brings it back too.
+- **[B] The budget shown.** A turn onto an effect that won't fit stops on it, in grey, with FULL and what it needs, instead of skipping it. Versions 17 and 18 went past such an effect to the next one that fits, so effects seemed to be missing from the list.
 
 ## Version 18
 

@@ -1,4 +1,22 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27: fx train 19 [B]: a turn that comes to an effect over the ceiling stops on it, where 17 and
+// 18 went past it to the next that fits. What changes in this unit, and nothing else:
+//
+//   * The stand. pick() stops on the first effect that would put the train over CEILING_CYCLES: the wagon keeps the
+//     effect it carries, and plays it; browse_knob says which knob stands, and on what (browse_item, browse_type),
+//     what it needs and what the rest of the train leaves it (browse_need, browse_left). The refusal of 17 shows for
+//     as long as the stand lasts (FULL, the red needle, the sag): op1f_chain_view's full, refused_knob and
+//     refused_type follow it. The knob's next turn goes on from the effect it stands on: the next that fits is
+//     picked as before, another that does not fit is stood on. So every effect of the list is reached and named, and
+//     none seems to be missing.
+//   * The end of a stand: a press of any knob, a turn of another knob, a move (shift + turn), the presets' list, another
+//     slot, or the train page closing (frame_host). One knob a host.
+//   * op1f_train_stand tells the page the knob, the effect's name and the words why ("needs 42%, 37% free": what it
+//     needs rounded up, what the rest of the train leaves rounded down, in percent of the ceiling). A line in the log
+//     says each stand once, with what every other wagon counts (wagon_cost, which chain_cost now adds up).
+//   * A hold that would go over the ceiling is refused as in 17. At either end of the list a turn goes no further, and
+//     a stand there stays.
+//
 // 2026-11-24: the pack `fx train` version 18: the train is the effect layer "train"
 // of base 37 (the card's ask 2), no longer a page that takes T3 over. What changes in this unit, and nothing else:
 //
@@ -1680,22 +1698,27 @@ static u32 mirror_runs(int host, u32 slot) {
     return riding && rack_rides(riding) == type ? riding->effect->cycles : COST_MAX[type];
 }
 
+// 17: at a turn or a hold (`at_turn`) the first wagon counts no less than what runs there; the needle says what the
+// wagons show. 19: a wagon's share alone, for the line of a turn that stands.
+static u32 wagon_cost(int host, u32 slot, int k, int at_turn) {
+    const Wagon* w = &wagons[host][slot][k];
+    u32 cost = cargo_cost(w->type, cargo_name(host, slot, k), w->coupled);
+    if (at_turn && k == mirror[host][slot]) {                                // 17
+        u32 runs = mirror_runs(host, slot);
+        if (runs > cost) cost = runs;
+    }
+    return cost;
+}
+
 static u32 chain_cost(int host, u32 slot, int except_knob, int with_type, int with_cycles) {
-    // 17: at a turn or a hold (a knob left out) the first wagon counts no less than what runs there; the needle (none
-    // left out) says what the wagons show
+    // 17: at a turn or a hold a knob is left out (`except_knob`), the needle leaves none out
     u32 sum = 0;
     for (int k = 0; k < WAGONS; ++k) {
-        const Wagon* w = &wagons[host][slot][k];
         if (k == except_knob) {
             if (with_type >= 0 && with_type < TYPES) sum += with_cycles >= 0 ? (u32)with_cycles : COST_MAX[with_type];
             continue;
         }
-        u32 cost = cargo_cost(w->type, cargo_name(host, slot, k), w->coupled);
-        if (except_knob >= 0 && k == mirror[host][slot]) {                   // 17
-            u32 runs = mirror_runs(host, slot);
-            if (runs > cost) cost = runs;
-        }
-        sum += cost;
+        sum += wagon_cost(host, slot, k, except_knob >= 0);
     }
     return sum;
 }
@@ -1798,6 +1821,15 @@ static const Op1fRackEntry* mirror_riding(int host, u32 slot) {
 
 static u8 turn_passed[HOSTS][WAGONS];                          // 17: the knob's turn has passed an effect since its last rest
 
+// 19: a turn that stands on an effect over the ceiling (pick, below; the header). Written by the key thread (the turns
+// and the presses), each a whole word, the knob last; read by the frame, which also ends a stand whose page is gone.
+static volatile int browse_knob[HOSTS] = { -1, -1 };          // the knob whose turn stands on such an effect, or -1
+static volatile int browse_item[HOSTS], browse_type[HOSTS];   // the effect, an item of the picker's order; the type it stands on
+static volatile u32 browse_slot[HOSTS], browse_need[HOSTS], browse_left[HOSTS];   // the slot; its cost, and what the ceiling leaves it (cycles a block)
+static volatile u32 browse_stands;                            // stands since the start, for the log
+
+static void browse_end(int host) { browse_knob[host] = -1; }
+
 // A refused pick or coupling: the page names the effect in red for a second, with FULL and the red needle (H3).
 static void refuse(int host, int knob, int type, const char* name) {
     ++st.refusals;
@@ -1807,8 +1839,8 @@ static void refuse(int host, int knob, int type, const char* name) {
     name_put(rk.refused_name[host], name);
 }
 
-// A turn of the wagon's knob: the next or previous effect in the browser's order, going on past the picks over the
-// ceiling to the next that fits, the refusal only where none does up to the list's end (fx train 17), and past, without
+// A turn of the wagon's knob: the next or previous effect in the browser's order (19: one over the ceiling is stood on,
+// not picked; 17 went on past it to the next that fits), and past, without
 // the regions of H4, the types another wagon carries; the label changes at once, the instance after
 // the knob's rest. R5: past the unit's own eleven, every registered effect, in the list's order: the wagon takes the
 // effect it stands on as its type and the pack's start values as its four words (a stock effect's remembered words are
@@ -1820,9 +1852,9 @@ static void pick(int host, int knob, int delta) {
     const signed char* items = order_items[now];
     int end = order_count[now];
     int index = cargo_index(host, slot, knob, items, end);
+    if (browse_knob[host] == knob && browse_slot[host] == slot)              // 19: on from the effect the turn stands on
+        for (int p = 0; p < end; ++p) if (items[p] == browse_item[host]) { index = p; break; }
     int step = delta > 0 ? 1 : -1;
-    int passed = NONE;                                                       // 17: the first pick passed for the ceiling, its type
-    const Op1fRackEntry* passed_entry = 0;                                   // and its pack's effect, if it is one
     const Op1fRackEntry* riding = knob == mirror[host][slot] ? mirror_riding(host, slot) : 0;
     if ((int)st.frames - st.pending_since[host][knob] >= REST_FRAMES) turn_passed[host][knob] = 0;
     for (int tries = 0; tries < end + 1; ++tries) {
@@ -1846,12 +1878,23 @@ static void pick(int host, int knob, int delta) {
             over_as = riding;
         }
         if (over) {
-            if (passed == NONE) { passed = type; passed_entry = over_as; }
+            // 19: the turn stands on it (17 went on to the next that fits): the wagon as it was, the page told what it
+            // needs and what the rest of the train leaves it, FULL as 17 showed it
             turn_passed[host][knob] = 1;
-            continue;                                                        // 17: on to the next that fits
+            u32 others = chain_cost(host, slot, knob, NONE, -1);
+            browse_item[host] = items[index];
+            browse_type[host] = type;
+            browse_slot[host] = slot;
+            browse_need[host] = over_as ? over_as->effect->cycles : COST_MAX[type];
+            browse_left[host] = others >= (u32)CEILING_CYCLES ? 0u : (u32)CEILING_CYCLES - others;
+            browse_knob[host] = knob;
+            ++browse_stands;
+            refuse(host, knob, type, rack_name_of(over_as));
+            return;
         }
         if (back && turn_passed[host][knob]) continue;                       // 17: no pick of it ends the ride, and the turn would stop there
         if (st.refused_knob[host] == knob) st.flash_until[host] = (int)st.frames;     // 17: this wagon's refusal is over
+        browse_end(host);                                                    // 19: and its stand
         remember(host, slot, knob, w);
         w->type = type;
         if (e) {
@@ -1871,7 +1914,6 @@ static void pick(int host, int knob, int delta) {
         mark_dirty(host);
         return;
     }
-    if (passed != NONE) refuse(host, knob, passed, rack_name_of(passed_entry));   // 17: none that fits up to the list's end
 }
 
 static void move_wagon(int host, int knob, int delta) {
@@ -2035,6 +2077,7 @@ static void list_frame(int host);
 // click is the tap unless a hold fired just before it.
 static void knob_press(int host, int knob, int shifted) {
     int gap = (int)st.ms - st.last_turn_ms[host][knob];
+    browse_end(host);                                                        // 19: a press ends a turn's stand
     st.pressed[host][knob] = 1;
     st.press_ms[host][knob] = (int)st.ms;
     st.press_shift[host][knob] = shifted;
@@ -2129,6 +2172,7 @@ extern "C" int op1f_train_turn(int place, int knob, int steps, int shifted) {
     if (ls.open[host]) { list_turn(host, knob, steps); return 1; }            // H5
     if (st.pressed[host][knob]) st.acted[host][knob] = 1;                   // a turn while pressed: no hold (stock sends no click either)
     st.last_turn_ms[host][knob] = (int)st.ms;                               // H3b: a press in the next 120 ms arms no hold (H4b)
+    if (shifted || browse_knob[host] != knob) browse_end(host);              // 19: a move, or a turn of another knob, ends a stand
     if (shifted) move_wagon(host, knob, steps);
     else pick(host, knob, steps);
     st.turn_knob[host] = knob;                                              // the page's card (H2)
@@ -3835,9 +3879,11 @@ extern "C" void op1f_chain_view(int host, Op1fChainView* out) {
         out->coupled[k] = w->coupled;
     }
     out->mirror = mirror[host][slot];
-    out->full = (int)st.frames < st.flash_until[host];
-    out->refused_knob = out->full ? st.refused_knob[host] : -1;
-    out->refused_type = out->full ? st.refused_type[host] : -1;
+    int stand = browse_knob[host];                                              // 19: a turn's stand shows as the refusal, as long as it lasts
+    if (stand >= 0 && browse_slot[host] != slot) stand = -1;
+    out->full = (int)st.frames < st.flash_until[host] || stand >= 0;
+    out->refused_knob = stand >= 0 ? stand : out->full ? st.refused_knob[host] : -1;
+    out->refused_type = stand >= 0 ? browse_type[host] : out->full ? st.refused_type[host] : -1;
     out->cost_percent = (int)udiv(chain_cost(host, slot, -1, NONE, -1) * 100u, (u32)CEILING_CYCLES);
     out->turn_knob = st.turn_frame[host] ? st.turn_knob[host] : -1;
     out->turn_age = st.turn_frame[host] ? (int)st.frames - st.turn_frame[host] : 0x7fffffff;
@@ -3845,6 +3891,29 @@ extern "C" void op1f_chain_view(int host, Op1fChainView* out) {
     out->bypassed = bypass_mask[host][slot] != 0;
     out->peak = bus_peak[host];                                                // the audio thread's maximum since the last frame
     bus_peak[host] = 0;
+}
+
+// 19: what the page shows of a turn's stand (browse_knob, above): the knob, or -1; the effect's name; the words that say
+// why, in percent of the ceiling (what it needs rounded up, what the rest of the train leaves it rounded down, so the
+// first is always the larger). From the frame function.
+struct Op1fTrainStand { int knob; const char* name; char why[32]; };
+extern "C" void op1f_train_stand(int host, Op1fTrainStand* out) asm("op1f_train_stand");
+extern "C" void op1f_train_stand(int host, Op1fTrainStand* out) {
+    out->knob = -1;
+    out->name = 0;
+    out->why[0] = 0;
+    if (host != 0 && host != 1) return;
+    int knob = browse_knob[host];
+    if (knob < 0 || knob >= WAGONS || browse_slot[host] != gui_slot(host)) return;
+    u32 ceiling = (u32)CEILING_CYCLES;
+    char* p = put_text(out->why, "needs ");
+    p = put_u32(p, udiv(browse_need[host] * 100u + ceiling - 1u, ceiling));
+    p = put_text(p, "%, ");
+    p = put_u32(p, udiv(browse_left[host] * 100u, ceiling));
+    p = put_text(p, "% free");
+    *p = 0;
+    out->name = order_name(browse_item[host]);
+    out->knob = knob;
 }
 
 extern "C" int op1f_chain_train_open(int host) {
@@ -3933,12 +4002,31 @@ static void make_live(int host, u32 slot, int drop_push) {
     chain_ready[host] = 1;
 }
 
+// 19: a turn's stand on an effect over the ceiling, said once in the log: what it needs, and what each other wagon
+// counts against the ceiling (the first wagon no less than what runs there), so that a unit's log shows the sum.
+static void stand_log(int host, u32 slot) {
+    static u32 said, lines;
+    int knob = browse_knob[host];
+    if (knob < 0 || browse_stands == said) return;
+    said = browse_stands;
+    if (lines >= 32u) return;
+    ++lines;
+    u32 c[WAGONS];
+    for (int k = 0; k < WAGONS; ++k) c[k] = k == knob ? 0u : wagon_cost(host, slot, k, 1);
+    STOCK_LOG(3, LOG_FILE, 48, "chain stand: %s s%u knob %d stands on '%s' (%u cycles a block), not put on: the other wagons count %u, %u, %u, %u (%s, %s, %s, %s; the first wagon knob %d) and leave it %u of %u",
+              host ? "drum" : "synth", slot, knob, order_name(browse_item[host]), browse_need[host], c[0], c[1], c[2], c[3],
+              knob == 0 ? "-" : wagon_word(host, slot, 0), knob == 1 ? "-" : wagon_word(host, slot, 1), knob == 2 ? "-" : wagon_word(host, slot, 2), knob == 3 ? "-" : wagon_word(host, slot, 3),
+              mirror[host][slot], browse_left[host], (u32)CEILING_CYCLES);
+}
+
 static void frame_host(int host) {
     u32 slot = gui_slot(host);
     u32 began = ride_began[host];                                           // R14: the slots whose ride of "train" began at this frame (rides_frame)
     ride_began[host] = 0;
     if (!initialised[host][slot]) init_slot(host, slot);
     if (!initialised[host][slot]) return;                                   // the record not loaded yet: stock's producer runs as stock's (chain_ready stays 0)
+    if (browse_knob[host] >= 0 && (!st.train_open[host] || browse_slot[host] != slot || ls.open[host])) browse_end(host);   // 19: the stand's page is gone
+    stand_log(host, slot);
     // a new current slot: its chain goes live
     if (st.current_slot[host] != (int)slot) {
         if (st.current_slot[host] >= 0) switch_leave(host, (u32)st.current_slot[host]);   // 17

@@ -9,7 +9,7 @@
 .global op1f_art_fx_train
 .type op1f_art_fx_train, STT_OBJECT
 op1f_art_fx_train:
-    .long 0x31545241, 8, 244869, 19
+    .long 0x31545241, 8, 245103, 19
     .ascii "fx train"
     .fill 8, 1, 0
 .global op1f_art_fx_train_path
@@ -18,26 +18,26 @@ op1f_art_fx_train_path:
     .fill 48, 1, 0
     .ascii "fxtrain.svg"
     .fill 13, 1, 0
-    .long 0, 211530, 0x62efd00d    /* fx train/pictures/fxtrain-names.svg.make */
+    .long 0, 211764, 0x83dfa46c    /* fx train/pictures/fxtrain-names.svg.make */
     .ascii "fxpresets.svg"
     .fill 11, 1, 0
-    .long 211530, 13403, 0x886c4296    /* shared/pictures/fxpresets.svg.make */
+    .long 211764, 13403, 0x886c4296    /* shared/pictures/fxpresets.svg.make */
     .ascii "fxsave.svg"
     .fill 14, 1, 0
-    .long 224933, 1848, 0x88ad9aec    /* shared/pictures/fxsave.svg.make */
+    .long 225167, 1848, 0x88ad9aec    /* shared/pictures/fxsave.svg.make */
     .ascii "singlelfo.svg"
     .fill 11, 1, 0
-    .long 226781, 2522, 0x5968b38e    /* fx train/pictures/singlelfo.svg.make */
+    .long 227015, 2522, 0x5968b38e    /* fx train/pictures/singlelfo.svg.make */
     .ascii "rndlfo.svg"
     .fill 14, 1, 0
-    .long 229303, 2499, 0xde86c7bb    /* fx train/pictures/rndlfo.svg.make */
+    .long 229537, 2499, 0xde86c7bb    /* fx train/pictures/rndlfo.svg.make */
     .ascii "reroutelfo.svg"
     .fill 10, 1, 0
-    .long 231802, 2563, 0x637e0887    /* fx train/pictures/reroutelfo.svg.make */
+    .long 232036, 2563, 0x637e0887    /* fx train/pictures/reroutelfo.svg.make */
     .ascii "velocitylfo.svg"
     .fill 9, 1, 0
-    .long 234365, 2528, 0xc0f15437    /* fx train/pictures/velocitylfo.svg.make */
+    .long 234599, 2528, 0xc0f15437    /* fx train/pictures/velocitylfo.svg.make */
     .ascii "midilfo.svg"
     .fill 13, 1, 0
-    .long 236893, 7976, 0x03a30c3a    /* fx train/pictures/midilfo.svg.make */
+    .long 237127, 7976, 0x03a30c3a    /* fx train/pictures/midilfo.svg.make */
 .size op1f_art_fx_train, .-op1f_art_fx_train

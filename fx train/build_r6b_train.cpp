@@ -13,6 +13,13 @@
 // wagon's label (18 cut it at 60 pixels). While the card is up it covers the last wagon's label, which is then hidden
 // whole, never left half under the card. What follows holds.
 //
+// 2026-11-27: fx train 19 [B]: a turn that stands on an effect over the ceiling (the chain unit's
+// op1f_train_stand) is shown. The effect's name in grey under its wagon, where the wagon's own
+// label stands (the placeholder fxname_dim, in the palette's dark grey); under the rails below it, the words why
+// (fxname_why, in the grey knob's colour: "needs 42%, 37% free"), centred on the wagon but whole on the screen, eight
+// pixels from either edge. FULL, the red needle and the sagging wagon are the refusal's, which lasts as long as the
+// stand. No card for the turn that stands: the grey name and the words why say it. NAME_CHARS holds the words why.
+//
 // Step R14, fx train 18: the train page is the page of the pack's effect
 // layer "train" (ask 2 of the card), shown by the base on T3 for a place that rides it, edited in place. At the end of
 // this file:
@@ -209,6 +216,10 @@ extern "C" void __attribute__((weak)) op1f_chain_view(int host, Op1fChainView* o
 // structure): per knob the effect's name or 0, whether its pack is away; the pack's effect a refused pick named, or 0.
 struct Op1fChainRacks { const char* name[4]; int away[4]; const char* refused; };
 extern "C" void __attribute__((weak)) op1f_chain_racks(int host, Op1fChainRacks* out) OP1F_NAMED("op1f_chain_racks");
+// 19: a turn that stands on an effect over the ceiling (the chain unit's op1f_train_stand): the knob or -1, the effect's
+// name, what it needs beside what the rest of the train leaves it
+struct Op1fTrainStand { int knob; const char* name; char why[32]; };
+extern "C" void __attribute__((weak)) op1f_train_stand(int host, Op1fTrainStand* out) OP1F_NAMED("op1f_train_stand");
 extern "C" int __attribute__((weak)) op1f_chain_screen_wanted(int host) OP1F_NAMED("op1f_chain_screen_wanted");
 // R2: what the presets unit of the same pack has made: the list's document for its id, the save screen's for its,
 // 0 for anything else and while they are not made (build_r2_presets.cpp). Named by copy.
@@ -308,13 +319,15 @@ static int lfo_mode;                              // this frame dresses the LFO 
 // R6b (M2): the names of the packs' effects as texts of the picture's placeholders, in the unit's own letters: for each
 // knob its colour and its dark step, one red (moved to the refused wagon), one on the card. The wagons' stand where a
 // wagon's own label stands, in the wagon's place (moved with it); the card's at the card's value.
-// 19: one more, the card's name in smaller letters (fxname_cards), for a name the card's own size cannot hold whole, as the
+// 19 [D]: one more, the card's name in smaller letters (fxname_cards), for a name the card's own size cannot hold whole, as the
 // unit's card names TERMINAL smaller than DELAY; a wagon's name as wide as the wagon's pitch leaves (18 had WAGON_W - 4,
 // 66 pixels, which cut "beignet"), the card's as wide as the card (CARD_WIDTH, measured by card_part; 18 cut it at 60).
-enum { NAME_LABELS = 2 * WAGONS + 3, NAME_DARK_AT = WAGONS, NAME_RED_AT = 2 * WAGONS, NAME_CARD_AT = 2 * WAGONS + 1, NAME_CARDS_AT = 2 * WAGONS + 2, NAME_CHARS = 15,
-       NAME_WIDTH = PITCH - 2, CARD_WIDTH = 68 };
+// 19 [B]: two more: the effect a turn stands on, in grey under its wagon; the words why, under the rails below it (WHY_X,
+// the centre of its placeholder, as the labels'; a wagon's translation moves it).
+enum { NAME_LABELS = 2 * WAGONS + 5, NAME_DARK_AT = WAGONS, NAME_RED_AT = 2 * WAGONS, NAME_CARD_AT = 2 * WAGONS + 1, NAME_CARDS_AT = 2 * WAGONS + 2,
+       NAME_DIM_AT = 2 * WAGONS + 3, NAME_WHY_AT = 2 * WAGONS + 4, NAME_CHARS = 23, NAME_WIDTH = PITCH - 2, CARD_WIDTH = 68, WHY_X = 35, SCREEN_W = 480 };
 static const char NAME_PART[NAME_LABELS][16] = { "fxname_1", "fxname_2", "fxname_3", "fxname_4", "fxname_d1", "fxname_d2", "fxname_d3", "fxname_d4",
-                                                 "fxname_red", "fxname_card", "fxname_cards" };
+                                                 "fxname_red", "fxname_card", "fxname_cards", "fxname_dim", "fxname_why" };
 struct NameLabel {
     int want;                                     // this dressing names a wagon (or the card) in it
     i32 x_q, y_q;                                 // where: the wagon's translation, as its own label's (the card's: none)
@@ -1011,8 +1024,8 @@ static void names_apply() {
     for (int i = 0; i < NAME_LABELS; ++i) {
         NameLabel* l = &name_labels[i];
         if (l->want && !l->refused && !same_name(l->text, l->want_text)) {
-            int card = i == NAME_CARD_AT || i == NAME_CARDS_AT;                    // 19: the card's two, whole (card_part measured them)
-            if (op1f_text_set(document, NAME_PART[i], l->want_text, card ? 0 : (int)NAME_WIDTH, OP1F_CENTRE)) {
+            int wide = i == NAME_CARD_AT || i == NAME_CARDS_AT || i == NAME_WHY_AT;      // 19: the card's two, whole (card_part measured them); the words why, the screen's width
+            if (op1f_text_set(document, NAME_PART[i], l->want_text, wide ? 0 : (int)NAME_WIDTH, OP1F_CENTRE)) {
                 for (int c = 0; c <= NAME_CHARS; ++c) l->text[c] = l->want_text[c];
                 ++paints;
             } else {
@@ -1023,7 +1036,15 @@ static void names_apply() {
         if (l->want && !l->refused && l->node == 0) l->node = (u8*)op1f_text_node(document, NAME_PART[i]);
         if (l->node == 0) continue;
         if (l->want && !l->refused) {
-            if (i != NAME_CARD_AT && i != NAME_CARDS_AT) place(l->node, l->x_q, l->y_q);
+            i32 x_q = l->x_q;
+            if (i == NAME_WHY_AT) {                                                 // 19: under its wagon, but whole on the screen (8 pixels from either edge)
+                i32 half = (i32)op1f_text_width(document, NAME_PART[i]) * (Q / 2);
+                i32 centre = WHY_X * Q + x_q, lo = 8 * Q + half, hi = (SCREEN_W - 8) * Q - half;
+                if (centre > hi) centre = hi;
+                if (centre < lo) centre = lo;
+                x_q = centre - WHY_X * Q;
+            }
+            if (i != NAME_CARD_AT && i != NAME_CARDS_AT) place(l->node, x_q, l->y_q);
             show(l->node, 1);
             any = 1;
         } else {
@@ -1070,10 +1091,16 @@ static void dress(int host, const Op1fChainView& v, int running) {
     for (int k = 0; k < WAGONS; ++k) { racks.name[k] = 0; racks.away[k] = 0; }
     racks.refused = 0;
     if (&op1f_chain_racks != 0) op1f_chain_racks(host, &racks);
+    Op1fTrainStand stand;                                                          // 19: a turn that stands on an effect over the ceiling
+    stand.knob = -1;
+    stand.name = 0;
+    stand.why[0] = 0;
+    if (&op1f_train_stand != 0) op1f_train_stand(host, &stand);
+    if (stand.name == 0) stand.knob = -1;
     for (int i = 0; i < NAME_LABELS; ++i) name_labels[i].want = 0;
     // 19: the card after a turn, over the last wagon's label; for a pack's effect, in the size of its letters that holds
     // the name whole, or no card where neither does (the wagon's own label names it)
-    int card_up = v.turn_knob >= 0 && v.turn_knob < WAGONS && v.turn_age < CARD_FRAMES;
+    int card_up = v.turn_knob >= 0 && v.turn_knob < WAGONS && v.turn_age < CARD_FRAMES && v.turn_knob != stand.knob;   // [B]: none for a turn that stands
     int card_name_at = -1;
     if (card_up && racks.name[v.turn_knob] != 0) {
         card_name_at = card_part(racks.name[v.turn_knob]);
@@ -1141,7 +1168,10 @@ static void dress(int host, const Op1fChainView& v, int running) {
         // the label: the knob's colour, its dark step on the siding (H3b), the refused effect's name in red during the flash
         // (R5: a pack's effect's name in its place, the label of the effect it stands on not shown; R6b: in the unit's
         // own letters, a placeholder's text moved as the label is)
-        if (p == WAGONS - 1 && card_up) {                                          // 19: the card covers the last wagon's label: hidden whole, never in part
+        if (p == WAGONS - 1 && card_up) {                                          // 19 [D]: the card covers the last wagon's label: hidden whole, never in part
+        } else if (k == stand.knob) {                                              // 19 [B]: the effect the turn stands on, in grey; why, under the rails
+            name_want(NAME_DIM_AT, stand.name, x, hop_q);
+            name_want(NAME_WHY_AT, stand.why, x, 0);
         } else if (refused && racks.refused) {
             name_want(NAME_RED_AT, racks.refused, x, hop_q);
         } else if (refused) {
