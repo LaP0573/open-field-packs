@@ -1,4 +1,33 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27: the pack `fx train` version 19: a pack's effect on
+// a wagon opens its own page, through base 44's hosted pages (module/build_r6e_card.h of open-field's main, "Base 44:
+// hosted pages"), and keeps its own settings with the wagon (part 2). What changes in this unit, and nothing else:
+//
+//   * The click. A knob's click (not shifted) on a wagon other than the first one that carries a pack's effect whose
+//     pack is here wishes that wagon's page: take_page TAKE_HOSTED + the knob. The lamp (the first wagon) does not
+//     move. An empty wagon, a wagon whose pack is away: nothing, as before; a wagon of the unit's own: as fx train 18.
+//   * The page. While the input unit's frame wants it, op1f_train_hosted once a frame: op1f_rack_page for the wagon's
+//     `which` (host * WAGONS + knob) with its four words as the train keeps them (not the LFOs' turn), the words the
+//     page changed put on the wagon as apply_params puts a turn's (the run's and the LFOs' copy, the file's save);
+//     OP1F_NOT_HERE where the place is not the one on the screen, does not ride "train", or the wagon no longer
+//     carries a pack's effect whose pack is here. The page's end and T3 are the input unit's.
+//   * The places. rack_frame tells the base the place each wagon's pack's effect plays for (op1f_rack_place, before
+//     op1f_rack_ready: the slot on the screen, 0 to 7 the synth's, 8 + slot the drum's) whenever the wagon at that
+//     `which` changes, and OP1F_PLACE_NONE once it no longer carries one.
+//   * Part 2, the kept texts (they change the form of files a user keeps). Each wagon carrying a pack's effect keeps that
+//     effect's own settings, a JSON object of at most OP1F_HOSTED_KEPT_MOST bytes its pack writes through the base:
+//     op1f_rack_kept once a frame for each `which` told a place (kept_frame), a changed text kept on the wagon of the
+//     place it plays for and the file written; handed back by op1f_rack_place whenever the wagon at the `which`
+//     changes, the text included. A pick of another effect, an emptied wagon, a document's effect on the first wagon
+//     drop it; a shift + turn moves it with the wagon (the wagons are the knobs'). In user/op1f.json's slot arrays and
+//     the sound's own member behind the names' tail: the tag 100, then for each knob the text's length and its
+//     characters four an integer, the first in the low byte; only where a wagon has a text, so a file without one is
+//     as part 1 writes it. A preset's wagon: the member `kept`, the same integers from the length on. The room: the
+//     sound's own integers stay within OP1F_PATCH_INTS (kept_room); a text that would pass it is not kept (a line).
+//     fx train 16, 17 and 18 read past the tag 100 (they read up to the names' tail) and past `kept`.
+//
+// What fx train 18's unit said follows and holds, but where these words say otherwise.
+//
 // 2026-11-24: the pack `fx train` version 18: the train is the effect layer "train"
 // of base 37 (the card's ask 2), no longer a page that takes T3 over. What changes in this unit, and nothing else:
 //
@@ -426,6 +455,7 @@ enum { SAVE_NONE = OP1F_SAVE_NONE, SAVE_SAVING = OP1F_SAVE_SAVING, SAVE_SAVED = 
 enum { PRESET_FORMAT = 1, JSON_OBJECT_KIND = 7, JSON_STRING_KIND = 4, JSON_BOOL_KIND = 5 };
 static const char KEY_FORMAT[] = "op1f_fx_preset", KEY_NAME[] = "name", KEY_ORDER[] = "order", KEY_WAGONS[] = "wagons", KEY_FX[] = "fx", KEY_ON[] = "on", KEY_PARAMS[] = "params";
 static const char KEY_RIDES[] = "rides";                                          // R5: a pack's effect's wagon: the unit's effect it stands on, behind the three
+static const char KEY_KEPT[] = "kept";                                            // 19: a pack's effect's wagon: its kept text as integers, the length first
 typedef int (*FileSizeFn)(const char* path);                                      // 0x8c051f9c: the file's size, -1 when it is not there
 typedef u32 (*FileMtimeFn)(const char* path);                                     // 0x8fcbc350: the file's modification time, 0 when it is not there
 typedef void (*JsonFromCstrFn)(void* json, const char* text);                     // 0x8c084430: the value becomes a string copied from the text (the kind 4)
@@ -452,7 +482,16 @@ enum { PRESETS_FOLDER = 0, PATH_ROOM = 40, SHUT_LINES = 16, REMOVE_LINES = 16, N
 // frame on OP1F_NOT_NOW up to RIDE_TRY_FRAMES frames after it was first due (lfo 12's rule). The flag "kept, not riding"
 // rides on the 48th integer. The page a key wishes (op1f_train_take_page). The keys whose down this unit took.
 enum { TRAIN_ASK = 2, PLACES = HOSTS * SLOTS, RIDE_DELAY_FRAMES = 5, RIDE_TRY_FRAMES = 120, RIDE_LINES = 40, FLAG_NOT_RIDING = 256 };
-enum { TAKE_NONE = 0, TAKE_OWN = 1, TAKE_UNIT = 2, KEYS_KEPT = 96 };
+enum { TAKE_NONE = 0, TAKE_OWN = 1, TAKE_UNIT = 2, TAKE_HOSTED = 4, KEYS_KEPT = 96 };   // 19: TAKE_HOSTED + knob (4 to 7): the page of the pack's effect on that wagon
+enum { PLACE_RETRY_FRAMES = 32 };                                                    // 19: a place the base refused is told again this many frames on
+static struct {                                                                      // 19: the hosted pages (the display thread's)
+    u32 told[HOSTS][WAGONS];                                                         // the place op1f_rack_place was last told for the `which`, + 1; 0 none (OP1F_PLACE_NONE)
+    char told_name[HOSTS][WAGONS][16];                                               // the effect it was told for
+    int refused[HOSTS][WAGONS];                                                      // op1f_rack_place's answer when it refused the last told (the base holds none of it), else 0
+    u32 refused_at[HOSTS][WAGONS];                                                   // the frame of that refusal: tried again PLACE_RETRY_FRAMES on
+    u32 clicks, pages, changes, place_calls, place_lines, page_lines, place_refusals;
+    int said_page;                                                                   // the last refusal of op1f_rack_page said (a line at each new one)
+} hp;
 extern "C" volatile unsigned op1f_train_rides asm("op1f_train_rides");
 volatile unsigned op1f_train_rides;                                                  // the frame's op1f_riding(card, TRAIN_ASK): bit n for place n (16 the master)
 static int place_rides(int host, u32 slot) { return (int)((op1f_train_rides >> ((u32)host * (u32)SLOTS + (slot & 7u))) & 1u); }
@@ -550,6 +589,25 @@ struct Json { u32 words[4]; };                                 // a stock json v
 enum { RACK_NAME = 16, RACK_TYPE = 32, RACK_TAG = 99, RACK_WORDS = 4, RACK_INTS = 1 + WAGONS * RACK_WORDS, RACK_SILENT = 1, RACK_LINES = 40,
        RESTORE_FRAMES = 2, HOLD_LINES = 8 };
 static char rack_name[HOSTS][SLOTS][WAGONS][RACK_NAME];
+// 19: a wagon's kept text, the settings its pack's effect wrote for it through the base (op1f_rack_kept): a JSON object
+// of at most OP1F_HOSTED_KEPT_MOST bytes, "" for none; kept_name the effect it was kept for (a text counts only while
+// the wagon carries that effect: kept_of). In the files behind the names' tail: the tag 100, then for each knob the
+// text's length and its characters, four an integer, the first in the low byte (KEPT_TAG). A preset's wagon: the
+// member `kept`, the same integers from the length on.
+enum { KEPT_TAG = 100, KEPT_BYTES = OP1F_HOSTED_KEPT_MOST, KEPT_ROOM = KEPT_BYTES + 1, KEPT_WORDS = (KEPT_BYTES + 3) >> 2,
+       KEPT_INTS_MOST = 1 + WAGONS * (1 + KEPT_WORDS), KEPT_LINES = 8 };
+static char kept_text[HOSTS][SLOTS][WAGONS][KEPT_ROOM];
+static char kept_name[HOSTS][SLOTS][WAGONS][RACK_NAME];
+static char told_kept[HOSTS][WAGONS][KEPT_ROOM];               // the text the base holds for the `which` (handed by op1f_rack_place, or answered by op1f_rack_kept)
+static struct {
+    u32 answers, stored, refused, odd, skipped, stored_lines, refused_lines, odd_lines, load_lines;
+    volatile u32 load_refused;                                 // texts of a train or a sound loaded that passed the room (any thread; said by the frame)
+    u32 load_said;
+} kp;
+static void kept_drop(int host, u32 slot, int k) {             // the wagon's effect changed: its text goes
+    kept_text[host][slot][k][0] = 0;
+    kept_name[host][slot][k][0] = 0;
+}
 static u32 rack_token[HOSTS][WAGONS];                          // the words of zeros the pack's wagons' Lives point at
 static const Op1fRackEntry* volatile rack_entries;             // the base's list, taken at each frame (the same from the first frame to the end)
 static volatile u32 rack_entry_count;
@@ -588,6 +646,7 @@ static struct {                                                // H6: the preset
     int count;                                                 // used slots
     int scanned;                                               // the folder was scanned once (the first file load)
     char rack[PRESETS][4][16];                                 // R5: per slot and knob, the pack's effect's name of a wagon whose type in `values` is 32 + the effect it stands on
+    char kept[PRESETS][WAGONS][KEPT_ROOM];                     // 19: per slot and knob, the kept text of that pack's effect, "" for none
 } presets;
 static struct {                                                // H5: the list's state
     int open[HOSTS], cursor[HOSTS], first[HOSTS], editing[HOSTS], caret[HOSTS];
@@ -1579,6 +1638,7 @@ static void mirror_ride(int host, u32 slot, int keep) {
     for (int i = 0; i < PARAMS; ++i) saved[i] = w->params[i];
     int coupled = w->coupled;
     rack_name[host][slot][knob][0] = 0;
+    kept_drop(host, slot, knob);                               // 19: the ride's values are the sound's own, kept by the base
     wish_from_pick[host][slot] = 0;
     switch_owed[host][slot] = 0;                               // 17: the ride brings the wagon's own switch
     document_owed[host][slot] = 0;
@@ -1863,6 +1923,7 @@ static void pick(int host, int knob, int delta) {
             for (int i = 0; i < PARAMS; ++i) w->params[i] = 0;
         }
         name_put(rack_name[host][slot][knob], rack_name_of(e));
+        kept_drop(host, slot, knob);                                         // 19: another effect: the wagon's kept text goes
         if (knob == mirror[host][slot]) wish_from_pick[host][slot] = e ? 1 : 0;
         st.pending_type[host][knob] = type;
         st.pending_since[host][knob] = (int)st.frames;
@@ -1997,6 +2058,7 @@ static void open_wagon_page(int host, int knob) {
         const Wagon* nw = &wagons[host][slot][knob];
         if (riding && !(rack_name[host][slot][knob][0] == 0 && nw->type == rack_rides(riding))) {
             name_put(rack_name[host][slot][old], rack_name_of(riding));
+            kept_drop(host, slot, old);                                          // 19: a new pack's effect on that wagon: no text yet
             ++rk.converts;
         }
         mirror[host][slot] = (u8)knob;
@@ -2052,8 +2114,9 @@ static void knob_release(int host, int knob) {
 }
 
 // The click: shift + click randomises the wagon's values; a click moves the mirror to the wagon and wishes its stock
-// page. R14: an empty wagon, or one that carries a pack's effect (its page would be the base's page of a ride, and the
-// place rides "train"), does nothing.
+// page. R14: an empty wagon does nothing. 19: a wagon other than the first that carries a pack's effect whose pack is
+// here wishes that effect's own page for the wagon (TAKE_HOSTED + knob), the mirror where it is; its pack away, or the
+// first wagon's wish of one: nothing.
 static int knob_click(int host, int knob, int shifted) {
     if ((int)st.frames < st.swallow_until[host][knob]) {                   // the click after a hold
         st.swallow_until[host][knob] = 0;
@@ -2062,7 +2125,10 @@ static int knob_click(int host, int knob, int shifted) {
     }
     u32 slot = gui_slot(host);
     if (shifted) randomize(host, knob);
-    else if (wagons[host][slot][knob].type >= 0 && !cargo_name(host, slot, knob)) { ++st.taps; open_wagon_page(host, knob); }
+    else if (wagons[host][slot][knob].type >= 0) {
+        if (!cargo_name(host, slot, knob)) { ++st.taps; open_wagon_page(host, knob); }
+        else if (knob != mirror[host][slot] && rack_find(rack_name[host][slot][knob])) { ++hp.clicks; take_page = TAKE_HOSTED + knob; }
+    }
     return 1;
 }
 
@@ -2137,8 +2203,9 @@ extern "C" int op1f_train_turn(int place, int knob, int steps, int shifted) {
     return 1;
 }
 
-// The page a key wished since the last read: TAKE_NONE, TAKE_OWN (the train page) or TAKE_UNIT (the stock page of the
-// first wagon's effect). Cleared by the read; the display thread (the input unit's frame).
+// The page a key wished since the last read: TAKE_NONE, TAKE_OWN (the train page), TAKE_UNIT (the stock page of the
+// first wagon's effect) or, 19, TAKE_HOSTED + knob (the own page of the pack's effect on that wagon). Cleared by the
+// read; the display thread (the input unit's frame).
 extern "C" int op1f_train_take_page() asm("op1f_train_take_page");
 extern "C" int op1f_train_take_page() {
     unsigned was = op1f_mask();                                // the key thread writes the wish: read and cleared as one
@@ -2146,6 +2213,43 @@ extern "C" int op1f_train_take_page() {
     take_page = TAKE_NONE;
     op1f_unmask(was);
     return w;
+}
+
+// 19: once a frame while the input unit's frame wants the own page of the pack's effect on the wagon of `knob` at
+// `place` (the display thread): op1f_rack_page for that wagon's `which` with its four words as the train keeps them,
+// and each word the page changed put on the wagon as a turn's is (apply_params: the run's words and the LFOs' copy,
+// the file's save). Answers the base's answer (bits 0 to 3 the words changed, OP1F_HOSTED_PAGE_UP while the page is
+// on the screen, or less than 0), or OP1F_NOT_HERE where the place is not the one on the screen or does not ride
+// "train", or the wagon no longer carries a pack's effect whose pack is here (the page then ends).
+extern "C" int op1f_train_hosted(int place, int knob) asm("op1f_train_hosted");
+extern "C" int op1f_train_hosted(int place, int knob) {
+    if (!valid_place(place) || knob < 0 || knob >= WAGONS) return OP1F_NOT_HERE;
+    int host = host_of_place(place);
+    u32 slot = (u32)place & 7u;
+    if (gui_slot(host) != slot || !place_rides(host, slot)) return OP1F_NOT_HERE;
+    Wagon* w = &wagons[host][slot][knob];
+    const Op1fRackEntry* e = knob == mirror[host][slot] || w->type < 0 ? 0 : rack_find(rack_name[host][slot][knob]);
+    if (e == 0) return OP1F_NOT_HERE;
+    int words[RACK_WORDS];
+    for (int i = 0; i < RACK_WORDS; ++i) words[i] = (int)w->params[i];
+    int answer = op1f_rack_page(&op1f_card_fx_train, (u32)TRAIN_ASK, (u32)(host * WAGONS + knob), words);
+    ++hp.pages;
+    if (answer < 0) {
+        if (hp.page_lines < (u32)RACK_LINES && answer != hp.said_page) {
+            ++hp.page_lines;
+            hp.said_page = answer;
+            STOCK_LOG(2, LOG_FILE, 48, "chain hosted: %s s%u knob %d: the base did not show the page of '%s' (answer %d)", host ? "drum" : "synth", slot, knob, rack_name_of(e), answer);
+        }
+        return answer;
+    }
+    hp.said_page = 0;
+    u32 changed = (u32)answer & 15u;
+    if (changed) {
+        for (int i = 0; i < RACK_WORDS; ++i) if ((changed >> i) & 1u) w->params[i] = (u32)words[i];
+        ++hp.changes;
+        apply_params(host, knob);                                           // the Live's words (the run's, the LFOs' copy) and the save
+    }
+    return answer;
 }
 
 // The train page left the screen for a host: the presets' list and its hold go, and the knobs held on it let go.
@@ -2550,7 +2654,7 @@ static void names_from_tail(const int* in, char (*names)[RACK_NAME]) {
 
 // R5: the most integers a slot holds (the chain's, the two pairs, the LFO unit's block, the names' tail), and a place to
 // read them into, the file's reader's alone (one thread at a time: the start's, or the display thread).
-enum { SLOT_INTS_MOST = CHAIN_INTS_V2 + 4 + 1 + LFO4_INTS + RACK_INTS };
+enum { SLOT_INTS_MOST = CHAIN_INTS_V2 + 4 + 1 + LFO4_INTS + RACK_INTS + KEPT_INTS_MOST };   // 19: the kept texts' tail too
 static int slot_ints[SLOT_INTS_MOST];
 
 // R5: where the names' tail stands in a slot's integers, behind every block an older reader reads (the LFOs' wagons'
@@ -2561,6 +2665,97 @@ static int names_at(const int* v, int n, int host) {
     if (n >= at + 2 && v[at] == LFOMIDI_TAG) at += 2; else return -1;
     if (host == 0 && n >= at + 1 + LFO4_MIN && v[at] == LFO4_TAG) at += 1 + LFO4_INTS;
     return (n >= at + RACK_INTS && v[at] == RACK_TAG) ? at : -1;
+}
+
+// 19: the kept texts. The room: a sound's own member is the slot's integers, at most OP1F_PATCH_INTS (the patch unit
+// takes no more, and 160 numbers of eleven characters stay under OP1F_VALUE_MOST and the slot's 4 KiB); what the
+// chain's 48, the two pairs, the LFO unit's block (the synth's, counted whether the sound has it or not) and the names'
+// tail leave is the texts' tail's: 40 integers for a synth sound, 91 for a drum sound. A text that would pass it is
+// not kept. The same integers go into user/op1f.json, so the file and the member agree.
+static int kept_room(int host) { return (int)OP1F_PATCH_INTS - (CHAIN_INTS_V2 + 4 + (host == 0 ? 1 + LFO4_INTS : 0) + RACK_INTS); }
+static int text_len(const char* t) { int n = 0; while (n < KEPT_BYTES && t[n]) ++n; return n; }
+static int kept_words(const char* t) { return (text_len(t) + 3) >> 2; }
+static void text_put(char* to, const char* from) {                           // at most KEPT_BYTES characters
+    int n = 0;
+    for (; n < KEPT_BYTES && from[n]; ++n) to[n] = from[n];
+    to[n] = 0;
+}
+
+// The wagon's kept text: "" for none, or when it was kept for another effect than the one the wagon carries now.
+static const char* kept_of(int host, u32 slot, int k) {
+    const char* t = kept_text[host][slot][k];
+    if (!t[0] || wagons[host][slot][k].type < 0 || !rack_name[host][slot][k][0] || !name_same(kept_name[host][slot][k], rack_name[host][slot][k])) return "";
+    return t;
+}
+
+// A text as it is kept: an object, of plain characters (the space to '~', as names_from_tail takes a name's: no control
+// character, no byte from 127 up: its integers, large negative ones, were never seen to come back through the unit's own JSON
+// reader), else none.
+static int kept_fine(const char* t, int n) {
+    if (n < 2 || t[0] != '{' || t[n - 1] != '}') return 0;
+    for (int i = 0; i < n; ++i) if ((u8)t[i] < 32u || (u8)t[i] > 126u) return 0;
+    return 1;
+}
+
+// One text as integers: its length, then its characters, four an integer, the first in the low byte. The count.
+static int kept_ints_one(const char* t, int* out) {
+    int len = text_len(t), words = (len + 3) >> 2;
+    out[0] = len;
+    for (int w = 0; w < words; ++w) {
+        u32 v = 0;
+        for (int b = 0; b < 4; ++b) { int c = 4 * w + b; v |= (u32)(u8)(c < len ? t[c] : 0) << (8 * b); }
+        out[1 + w] = (int)v;
+    }
+    return 1 + words;
+}
+
+// One text read back (`in` its length, `n` the integers there): the integers it took, or -1 when they are not a text's.
+// A text that is not an object of plain characters is read as none.
+static int kept_read_one(const int* in, int n, char* text) {
+    text[0] = 0;
+    if (n < 1 || in[0] < 0 || in[0] > KEPT_BYTES) return -1;
+    int len = in[0], words = (len + 3) >> 2;
+    if (1 + words > n) return -1;
+    for (int c = 0; c < len; ++c) text[c] = (char)(((u32)in[1 + (c >> 2)] >> (8 * (c & 3))) & 0xffu);
+    text[len] = 0;
+    if (len && (text_len(text) != len || !kept_fine(text, len))) text[0] = 0;
+    return 1 + words;
+}
+
+// The slot's texts' tail (the tag, then each knob's text), in `out` (KEPT_INTS_MOST at most); 0 when no wagon has one.
+// A text past the room is left out (its length 0), which kept_frame and chain_from_values never let happen.
+static int kept_tail(int host, u32 slot, int* out) {
+    const char* texts[WAGONS];
+    int any = 0;
+    for (int k = 0; k < WAGONS; ++k) { texts[k] = kept_of(host, slot, k); if (texts[k][0]) any = 1; }
+    if (!any) return 0;
+    int n = 0, used = 1 + WAGONS, room = kept_room(host);
+    out[n++] = KEPT_TAG;
+    for (int k = 0; k < WAGONS; ++k) {
+        int words = kept_words(texts[k]);
+        if (used + words > room) { texts[k] = ""; words = 0; ++kp.skipped; }
+        used += words;
+        n += kept_ints_one(texts[k], out + n);
+    }
+    return n;
+}
+
+// Where the texts' tail stands: right behind the names' tail; the index of its tag, or -1.
+static int kept_at(const int* v, int n, int host) {
+    int at = names_at(v, n, host);
+    if (at < 0) return -1;
+    at += RACK_INTS;
+    return (n >= at + 1 + WAGONS && v[at] == KEPT_TAG) ? at : -1;
+}
+
+// The four texts read from a tail (`at` its tag); what cannot be read is none, and so is every text behind it.
+static void kept_from_tail(const int* v, int n, int at, char (*texts)[KEPT_ROOM]) {
+    int p = at + 1, broken = 0;
+    for (int k = 0; k < WAGONS; ++k) {
+        int took = broken ? -1 : kept_read_one(v + p, n - p, texts[k]);
+        if (took < 0) { texts[k][0] = 0; broken = 1; continue; }
+        p += took;
+    }
 }
 
 static void chain_values(int host, u32 slot, int* values, int riding) {     // CHAIN_INTS_V2 integers (R5: a pack's wagon as RACK_TYPE + the effect it stands on)
@@ -2609,7 +2804,7 @@ static int clamp_param(int host, u32 slot, int knob, int type, int i, int value)
     return held;
 }
 
-static void chain_from_values(int host, u32 slot, const int* values, char (*names)[RACK_NAME]) {   // CHAIN_INTS_V2 integers (a tag-91 chain padded with 0); R5: the names, or 0
+static void chain_from_values(int host, u32 slot, const int* values, char (*names)[RACK_NAME], char (*texts)[KEPT_ROOM] = 0) {   // CHAIN_INTS_V2 integers (a tag-91 chain padded with 0); R5: the names, or 0; 19: the kept texts, or 0
     int n = 1;
     mirror[host][slot] = (u8)(values[n++] & 3);
     doc_type[host][slot] = values[n++];
@@ -2642,6 +2837,16 @@ static void chain_from_values(int host, u32 slot, const int* values, char (*name
         w->type = type;
         w->coupled = (u8)coupled;
         for (int i = 0; i < PARAMS; ++i) w->params[i] = type >= 0 ? word_of(clamp_param(host, slot, k, type, i, stored[i])) : 0;
+    }
+    int used = 1 + WAGONS, room = kept_room(host);                         // 19: each pack's effect's text, in the knobs' order, while the room holds
+    for (int k = 0; k < WAGONS; ++k) {
+        kept_drop(host, slot, k);
+        if (!texts || !texts[k][0] || !rack_name[host][slot][k][0] || wagons[host][slot][k].type < 0) continue;
+        int words = kept_words(texts[k]);
+        if (used + words > room) { kp.load_refused = kp.load_refused + 1u; continue; }   // said by the frame
+        used += words;
+        text_put(kept_text[host][slot][k], texts[k]);
+        name_put(kept_name[host][slot][k], rack_name[host][slot][k]);
     }
     int seen = 0;
     for (int p = 0; p < WAGONS; ++p) seen |= 1 << knobs[p];
@@ -2691,7 +2896,8 @@ static void load_file() {
                 int values[CHAIN_INTS_V2];
                 for (int i = 0; i < CHAIN_INTS_V2; ++i) values[i] = i < count ? int_at(e, i) : 0;
                 char names[WAGONS][RACK_NAME];                                // R5: the names' tail, behind every other block
-                int with_names = 0;
+                static char texts[WAGONS][KEPT_ROOM];                         // 19: the kept texts' tail, behind the names' (the reader's alone, as slot_ints)
+                int with_names = 0, with_texts = 0;
                 if (count == CHAIN_INTS_V2) {
                     int size = STOCK_JSON_SIZE(e);
                     int seen = size < (int)SLOT_INTS_MOST ? size : (int)SLOT_INTS_MOST;
@@ -2700,9 +2906,11 @@ static void load_file() {
                     if (at >= 0) {
                         names_from_tail(slot_ints + at + 1, names);
                         with_names = 1;
+                        int kat = kept_at(slot_ints, seen, h);
+                        if (kat >= 0) { kept_from_tail(slot_ints, seen, kat, texts); with_texts = 1; }
                     }
                 }
-                chain_from_values(h, sl, values, with_names ? names : 0);
+                chain_from_values(h, sl, values, with_names ? names : 0, with_texts ? texts : 0);
                 if (count == CHAIN_INTS_V2 && STOCK_JSON_SIZE(e) >= CHAIN_INTS_V2 + 2 && int_at(e, CHAIN_INTS_V2) == LFOFX_TAG) {   // I2: the LFO's effect wagon
                     int pick = int_at(e, CHAIN_INTS_V2 + 1);
                     lfo_fx_pick[h][sl] = (u8)(pick >= 0 && pick <= WAGONS ? pick : 0);
@@ -2746,6 +2954,7 @@ static void load_file() {
                 name_trim(presets.name[s]);
                 if (!presets.name[s][0]) default_name(presets.name[s], s);
                 for (int v = 0; v < CHAIN_INTS_V2; ++v) presets.values[s][v] = int_at(e, NAME_CHARS + v);
+                for (int k = 0; k < WAGONS; ++k) presets.kept[s][k][0] = 0;          // 19: an H5 preset keeps no text
                 presets.used[s] = 1;
                 if (fx_write_slot(s)) ++migrated;                                   // H6b: counted only when the file landed
                 else { presets.used[s] = 0; ++failed; }
@@ -2798,6 +3007,13 @@ static void save_file() {
                     names_tail(names, ints);
                     for (int i = 0; i < RACK_INTS; ++i) {
                         STOCK_JSON_FROM_INT(&item, ints[i]);
+                        STOCK_JSON_PUSH(&chain, &item);
+                        STOCK_JSON_DTOR(&item);
+                    }
+                    static int kept_ints[KEPT_INTS_MOST];                      // 19: the tag 100 and the kept texts, behind the names (none: nothing)
+                    int kn = kept_tail(h, sl, kept_ints);
+                    for (int i = 0; i < kn; ++i) {
+                        STOCK_JSON_FROM_INT(&item, kept_ints[i]);
                         STOCK_JSON_PUSH(&chain, &item);
                         STOCK_JSON_DTOR(&item);
                     }
@@ -3034,6 +3250,10 @@ static int fx_write_slot(int slot) {
             set_bool(&w, KEY_ON, wv[1]);
             set_ints(&w, KEY_PARAMS, wv + 2, PARAMS);
             if (pack[0]) set_text(&w, KEY_RIDES, fx_name(wv[0] - RACK_TYPE));
+            if (pack[0] && presets.kept[slot][k][0]) {                            // 19: its kept text, the integers from the length on (an older train reads past it)
+                int ints[1 + KEPT_WORDS];
+                set_ints(&w, KEY_KEPT, ints, kept_ints_one(presets.kept[slot][k], ints));
+            }
             STOCK_JSON_PUSH(&wagons, &w);
             STOCK_JSON_DTOR(&w);
         }
@@ -3089,10 +3309,21 @@ static void fx_read_slot(int slot) {
                 void* w = STOCK_JSON_AT(wagons, k);
                 int type = NONE, on = 1;
                 presets.rack[slot][k][0] = 0;
+                presets.kept[slot][k][0] = 0;
                 if (w && *((u8*)w + 4) == JSON_OBJECT_KIND) {
                     if (STOCK_JSON_HAS(w, KEY_FX)) type = json_fx_type(STOCK_JSON_GET(w, KEY_FX));
                     if (type == NONE && STOCK_JSON_HAS(w, KEY_FX)) type = json_fx_rack(w, presets.rack[slot][k]);   // R5: a pack's effect
                     if (STOCK_JSON_HAS(w, KEY_ON)) on = json_truth(STOCK_JSON_GET(w, KEY_ON));
+                    if (presets.rack[slot][k][0] && STOCK_JSON_HAS(w, KEY_KEPT)) {              // 19: its kept text
+                        void* a = STOCK_JSON_GET(w, KEY_KEPT);
+                        if (is_array(a)) {
+                            int ints[1 + KEPT_WORDS];
+                            int n = STOCK_JSON_SIZE(a);
+                            if (n > 1 + KEPT_WORDS) n = 1 + KEPT_WORDS;
+                            for (int i = 0; i < n; ++i) ints[i] = int_at(a, i);
+                            kept_read_one(ints, n, presets.kept[slot][k]);
+                        }
+                    }
                 }
                 wv[0] = presets.rack[slot][k][0] ? RACK_TYPE + type : type;
                 wv[1] = type >= 0 ? (on ? 1 : 0) : 1;                          // H6j: an empty wagon is coupled, as a fresh chain's: a later pick sounds at once
@@ -3294,6 +3525,7 @@ static void preset_save(int host) {
     default_name(presets.name[s], s);
     chain_values(host, slot, presets.values[s], 1);                          // R5: the first wagon's ride kept by its name
     chain_names(host, slot, presets.rack[s], 1);
+    for (int k = 0; k < WAGONS; ++k) text_put(presets.kept[s][k], kept_of(host, slot, k));   // 19: each pack's effect's kept text
     presets.used[s] = 1;
     fx_write_slot(s);
     rebuild_order();
@@ -3321,7 +3553,7 @@ static void preset_load(int host, int row) {
     for (int n = 0; n < CHAIN_INTS_V2; ++n) values[n] = presets.values[s][n];
     values[1] = mirror[host][slot];                                            // the mirror stays on its knob
     values[2] = doc_type[host][slot];                                          // the document has not changed: the next reconcile finds the chain standing
-    chain_from_values(host, slot, values, presets.rack[s]);                   // R5: a pack's effect by its name
+    chain_from_values(host, slot, values, presets.rack[s], presets.kept[s]);  // R5: a pack's effect by its name; 19: with its kept text
     int moved_from = -1;
     int riding = place_rides(host, slot), m = mirror[host][slot];
     char* first = rack_name[host][slot][m];
@@ -3338,6 +3570,7 @@ static void preset_load(int host, int row) {
             wagons[host][slot][m].type = NONE;
             for (int i = 0; i < PARAMS; ++i) wagons[host][slot][m].params[i] = 0;
             first[0] = 0;
+            kept_drop(host, slot, m);                                              // 19: and its text
         }
         if (to >= 0 && to != m) { moved_from = m; mirror[host][slot] = (u8)to; ++ls.mirror_moves; }
     }
@@ -3606,6 +3839,7 @@ static int doc_fx_active(void* doc) {
 static void chain_defaults(int host, u32 slot, void* doc, int dt) {
     for (int k = 0; k < WAGONS; ++k) {
         rack_name[host][slot][k][0] = 0;                                // R5: no pack's effect
+        kept_drop(host, slot, k);                                       // 19: nor its text
         Wagon* w = &wagons[host][slot][k];
         w->type = NONE;
         w->coupled = 1;
@@ -3644,7 +3878,10 @@ static void instrument_event(int host, u32 slot) {
         char names[WAGONS][RACK_NAME];                                  // R5: the names' tail, behind every other block
         int at = names_at(v, n, host);
         if (at >= 0) names_from_tail(v + at + 1, names);
-        chain_from_values(host, slot, v, at >= 0 ? names : 0);
+        static char texts[WAGONS][KEPT_ROOM];                           // 19: the kept texts' tail, behind the names' (the GUI thread only)
+        int kat = at >= 0 ? kept_at(v, n, host) : -1;
+        if (kat >= 0) kept_from_tail(v, n, kat, texts);
+        chain_from_values(host, slot, v, at >= 0 ? names : 0, kat >= 0 ? texts : 0);
         if (n >= CHAIN_INTS_V2 + 2 && v[CHAIN_INTS_V2] == LFOFX_TAG) {
             int pick = v[CHAIN_INTS_V2 + 1];
             lfo_fx_pick[host][slot] = (u8)(pick >= 0 && pick <= WAGONS ? pick : 0);
@@ -3721,6 +3958,7 @@ static void reconcile(int host, u32 slot, const char* why, int told = 0) {
         Wagon* mw = &wagons[host][slot][m];
         remember(host, slot, m, mw);
         rack_name[host][slot][m][0] = 0;                             // R5: the document brought an effect: a pack's wished on the first wagon is let go
+        kept_drop(host, slot, m);                                    // 19: and its text
         mw->type = dt;
         mw->coupled = doc_fx_active(doc);
         document_owed[host][slot] = (switch_owed[host][slot] || document_owed[host][slot]) && !mw->coupled ? (u8)(m + 1) : 0;   // 17: the empty wagon's "off" still stands in it, from pick to pick
@@ -3810,6 +4048,7 @@ extern "C" int op1f_chain_slot_values(int host, int slot, int* out) {
     if (named) {                                                        // R5: the tag 99 and the names, behind every other block
         names_tail(names, out + n);
         n += RACK_INTS;
+        n += kept_tail(host, (u32)slot, out + n);                       // 19: the tag 100 and the kept texts (the room keeps n within OP1F_PATCH_INTS)
     }
     return n;
 }
@@ -3889,20 +4128,109 @@ extern "C" const char* op1f_chain_rack_value(int host, int knob, int index) {
 // kept for the key thread), and each other wagon's pack's effect made ready at its place (op1f_rack_ready, a few
 // comparisons when nothing changed): its id for the audio thread, or silence while its pack is away, while its memory
 // is made ready, or where the base refuses it; each said once, at its change.
+// 19: before the ready, the place each wagon's pack's effect plays for told to the base (op1f_rack_place) whenever the
+// wagon at that `which` changes (its place, or the effect it carries: a start, another sound on the screen, a train or
+// a wagon loaded), and OP1F_PLACE_NONE once that `which` carries none (the first wagon, an empty one, the unit's own);
+// part 2: with the wagon's kept text, a change of which is a change of the wagon too (told again). A refusal (the
+// base's places full, a name it does not take, not now) counts as not told (hp.refused): the same is told again
+// PLACE_RETRY_FRAMES frames on until the base takes it, at once when it changes. Said on the log at the first calls,
+// at a refusal (once while the answer stays the same) and when one refused is taken.
+static void place_told(int host, int k, u32 place, const char* name, const char* text) {
+    u32 told = place == (u32)OP1F_PLACE_NONE ? 0u : place + 1u;
+    if (!told) text = "";
+    int same = hp.told[host][k] == told && (told == 0 || (name_same(hp.told_name[host][k], name) && text_equal(told_kept[host][k], text)));
+    int was = hp.refused[host][k];
+    if (same && (!was || st.frames - hp.refused_at[host][k] < (u32)PLACE_RETRY_FRAMES)) return;
+    int answer = op1f_rack_place(&op1f_card_fx_train, (u32)(host * WAGONS + k), place, text[0] ? text : 0);
+    hp.told[host][k] = told;                                            // what was asked; told only while hp.refused is 0
+    name_put(hp.told_name[host][k], told ? name : "");
+    text_put(told_kept[host][k], text);
+    hp.refused[host][k] = answer;
+    hp.refused_at[host][k] = st.frames;
+    ++hp.place_calls;
+    if (answer != 0) ++hp.place_refusals;
+    int say = answer != 0 ? (!same || answer != was) : (hp.place_lines < 8u || was != 0);
+    if (hp.place_lines < (u32)RACK_LINES && say) {
+        ++hp.place_lines;
+        STOCK_LOG(3, LOG_FILE, 49, "chain hosted: %s knob %d (which %d) plays '%s' for place %d (0-7 synth, 8-15 drum, -1 none), its kept text %d bytes, answer %d", host ? "drum" : "synth",
+                  k, host * WAGONS + k, told ? name : "", told ? (int)place : -1, text_len(text), answer);
+    }
+}
+
+// 19: the wagon's kept text as the base has it now (op1f_rack_kept, once a frame for each `which` told a place): a
+// changed text is kept on the wagon of the place it plays for, while the wagon still carries the effect the instance
+// was made ready for, and the file is written; "{}" (no member left) is none. OP1F_NOT_HERE (an effect that does not
+// declare wagons, or no instance yet) and 0 (unchanged) are nothing. A text that would pass the room is not kept: said
+// once (the base answers a text once, at its change), and the wagon keeps the text it had.
+static char kept_in[KEPT_ROOM];
+static void kept_frame(int host, u32 slot, int k, const Live* l) {
+    int got = op1f_rack_kept(&op1f_card_fx_train, (u32)(host * WAGONS + k), kept_in, (u32)sizeof kept_in);
+    if (got == 0 || got == OP1F_NOT_HERE) return;
+    ++kp.answers;
+    if (got > 0 && got <= KEPT_BYTES) kept_in[got] = 0;
+    if (got < 0 || got > KEPT_BYTES || text_len(kept_in) != got || !kept_fine(kept_in, got)) {
+        ++kp.odd;
+        if (kp.odd_lines < (u32)KEPT_LINES) {
+            ++kp.odd_lines;
+            STOCK_LOG(2, LOG_FILE, 50, "chain kept: %s s%u knob %d '%s': the base's kept text is not one this train keeps (answer %d): not kept", host ? "drum" : "synth", slot, k, l->rack_name, got);
+        }
+        return;
+    }
+    if (wagons[host][slot][k].type < 0 || !name_same(rack_name[host][slot][k], l->rack_name)) return;   // the wagon carries another effect now: its text went with the pick
+    const char* text = (got == 2) ? "" : kept_in;                       // "{}": none
+    text_put(told_kept[host][k], text);                                 // the base holds it: not handed back
+    if (text_equal(kept_of(host, slot, k), text)) return;
+    int used = 1 + WAGONS;
+    for (int j = 0; j < WAGONS; ++j) used += kept_words(j == k ? text : kept_of(host, slot, j));
+    if (used > kept_room(host)) {
+        ++kp.refused;
+        if (kp.refused_lines < (u32)KEPT_LINES) {
+            ++kp.refused_lines;
+            STOCK_LOG(2, LOG_FILE, 51, "chain kept: %s s%u knob %d '%s': its kept text of %d bytes would pass the room of the sound's own integers (%d of %d for the texts): not kept, the wagon keeps its %d bytes",
+                      host ? "drum" : "synth", slot, k, l->rack_name, got, used, kept_room(host), text_len(kept_of(host, slot, k)));
+        }
+        return;
+    }
+    text_put(kept_text[host][slot][k], text);
+    name_put(kept_name[host][slot][k], text[0] ? l->rack_name : "");     // the name as checked (the Live's, the frame's own): a pick on the key thread since leaves it another effect's
+    ++kp.stored;
+    if (kp.stored_lines < (u32)KEPT_LINES) {
+        ++kp.stored_lines;
+        STOCK_LOG(3, LOG_FILE, 52, "chain kept: %s s%u knob %d '%s': its kept text of %d bytes kept with the wagon", host ? "drum" : "synth", slot, k, l->rack_name, text_len(text));
+    }
+    mark_dirty(host);
+}
+
+// 19: the texts of a train or a sound loaded that passed the room (chain_from_values, on any thread), said here.
+static void kept_lines() {
+    u32 now = kp.load_refused;
+    if (now == kp.load_said) return;
+    kp.load_said = now;
+    if (kp.load_lines >= (u32)KEPT_LINES) return;
+    ++kp.load_lines;
+    STOCK_LOG(2, LOG_FILE, 53, "chain kept: %u kept text(s) of a train or a sound loaded would pass the room of the sound's own integers: not kept", now);
+}
+
 static void rack_frame(int host, u32 slot) {
     u32 id = op1f_rack_at(&op1f_card_fx_train, host ? (u32)OP1F_PLACE_DRUM + slot : slot);
     mirror_ride_id[host] = place_rides(host, slot) ? 0u : id;              // R14: the base answers the train's own layer while the place rides it: no pack's effect
     mirror_ride_slot[host] = slot;
     for (int k = 0; k < WAGONS; ++k) {
         Live* l = &live[host][k];
-        if (k == mirror[host][slot] || !l->rack_name[0]) continue;
+        if (k == mirror[host][slot] || !l->rack_name[0]) { place_told(host, k, (u32)OP1F_PLACE_NONE, "", ""); continue; }
         const Op1fRackEntry* e = rack_find(l->rack_name);
         u32 want = RACK_SILENT;
         int how = 1;                                                        // 1 its pack away, 0 ready, else the base's answer
+        // 19: the wagon's kept text, for the effect the Live is made for; while a pick waits for the knob's rest (the
+        // wagon carries another effect, the Live still runs the one of before) the text the base holds, so the instance
+        // that still plays is told no change (the base drops its text at the ready of the next effect)
+        const char* text = name_same(rack_name[host][slot][k], l->rack_name) ? kept_of(host, slot, k) : told_kept[host][k];
+        place_told(host, k, e ? (host ? (u32)OP1F_PLACE_DRUM + slot : slot) : (u32)OP1F_PLACE_NONE, l->rack_name, text);   // 19: before the ready (none while its pack is away)
         if (e) {
             how = op1f_rack_ready(&op1f_card_fx_train, (u32)(host * WAGONS + k), e->id);
             if (how == 0) want = e->id;
             l->tails = (e->effect->head.flags & (u32)OP1F_EFFECT_TAILS) ? 1u : 0u;
+            if (hp.told[host][k] && !hp.refused[host][k]) kept_frame(host, slot, k, l);   // 19: what the effect's pack wrote for the wagon (none while the base refuses its place)
         }
         if (l->rack != want) l->rack = want;
         if (how == OP1F_NOT_NOW) continue;                                  // its memory is being made ready: said by the base
@@ -3915,6 +4243,7 @@ static void rack_frame(int host, u32 slot) {
         else if (how == 1) STOCK_LOG(2, LOG_FILE, 44, "chain rack: %s s%u knob %d: the pack of '%s' is not here: the wagon is silent, kept as it is", host ? "drum" : "synth", slot, k, l->rack_name);
         else STOCK_LOG(2, LOG_FILE, 45, "chain rack: %s s%u knob %d: the base did not make '%s' ready (answer %d): the wagon is silent", host ? "drum" : "synth", slot, k, l->rack_name, how);
     }
+    kept_lines();                                                           // 19: from the frame only
 }
 
 // The slot's wagons' instances made anew, at a change of slot (a push that waits dropped) and, R14, when a ride of
