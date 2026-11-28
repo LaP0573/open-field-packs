@@ -6,8 +6,8 @@
    "sha256": "b4048ba43aeff15a0a283a3fe845c0e731774cee66177644ef5875c6b9f866be"
   },
   "fx train.pack": {
-   "bytes": 502048,
-   "sha256": "c34d4d29776a602e6cae8d0d03a8f80339c48f1f8a87792ac46d7accc56bb2ea"
+   "bytes": 511600,
+   "sha256": "69869f1f6dd5cac150a30ac6548e9f28c0c87182acdcdfb07b15c54cab3d86ab"
   },
   "lfo.pack": {
    "bytes": 429278,

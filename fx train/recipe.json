@@ -1,9 +1,9 @@
 {
-  "about": "Up to four effects on an instrument, shown as a train of four wagons. The train is one more effect in a synth or drum sound's own list of effects (shift + T3), named train; on a sound that has it, T3 shows the train. Presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. Needs the base (base.pack) and nothing else; works together with the LFOs when that pack is there. exports names the eight names its file offers other packs, in the order the file holds them, so the file comes out the same whatever packs are built beside it.",
+  "about": "Up to four effects on an instrument, shown as a train of four wagons. The train is one more effect in a synth or drum sound's own list of effects (shift + T3), named train; on a sound that has it, T3 shows the train. Presets of whole trains as files; an instrument that keeps its train; the sound's own LFO on any wagon. A tap on a wagon carrying another pack's effect opens that effect's own page for the wagon; with an effect made for it, the wagon keeps that effect's own settings. Needs the base (base.pack 44 or later) and nothing else; works together with the LFOs when that pack is there. exports names the eight names its file offers other packs, in the order the file holds them, so the file comes out the same whatever packs are built beside it.",
   "name": "fx train",
-  "version": 18,
+  "version": 19,
   "interface": 3,
-  "build": "build_r14_fx_train",
+  "build": "build_r22_fx_train",
   "sources": [
     "fx train/build_h_fx.s",
     "fx train/build_h_fx.cpp",
@@ -17,8 +17,8 @@
     "shared/build_r2_presets.cpp",
     "shared/build_r2_move.cpp",
     "fx train/build_r5_fx_train_frame.cpp",
-    "fx train/build_r14_fx_train_card.s",
-    "fx train/build_r14_fx_train_pictures.s",
+    "fx train/build_r22_fx_train_card.s",
+    "fx train/build_r22_fx_train_pictures.s",
     "fx train/build_r2_fx_train_needs.s",
     "fx train/build_r14_train_input.cpp"
   ],

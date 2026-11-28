@@ -24,7 +24,7 @@ The master isn't there yet. **train** shows in the master effect's list on the m
 The knobs:
 
 - **Turn**: choose the wagon's effect. The sound follows a moment after you stop turning.
-- **Tap**: open that wagon's effect page, with all its knobs. The lamp moves to that wagon, and T3 brings you back. On an empty wagon, or one carrying another pack's effect, nothing happens.
+- **Tap**: open that wagon's effect page, with all its knobs, and T3 brings you back. On one of the unit's own effects, the lamp moves to that wagon. On another pack's effect you get that pack's own page for it instead: its knobs set that wagon only, and the lamp stays put. On an empty wagon nothing happens.
 - **Hold**: uncouple the wagon (it goes quiet and costs nothing) or couple it back.
 - **Shift + turn**: move the wagon one step along the train.
 - **Shift + tap**: random settings for that effect.
@@ -35,6 +35,8 @@ The knobs:
 All the unit's own effects except the vocoder (fazer only if you've unlocked it), plus the effects other packs add. The same effect can sit on two wagons. On the wagon under the lamp, other packs' effects are skipped: they can sit on the other three.
 
 The train has a processing budget. Turning onto an effect that won't fit skips it and lands on the next one that does. If nothing fits, the screen shows FULL in red for a second.
+
+Some packs' effects have extra settings beyond their four knobs (often on shift). If the pack is made to keep them per wagon, which open-field 0.26 made possible, each wagon keeps its own, in the sound and in your saved trains. Otherwise they belong to the sound: two wagons with the same effect on one sound share them, and a saved train doesn't carry them.
 
 If a wagon carries another pack's effect and you remove that pack, the wagon stays, silent and drawn empty, with its settings kept. Put the pack back and it plays again.
 
@@ -66,15 +68,17 @@ Saved trains are files, 64 slots, in the `fx` folder in disk mode. Copy them to 
 
 A sound that was on train plays the effect that was under the lamp, as it was saved. Your saved trains stay on the disk.
 
-fx train 18 needs open-field 0.17 or later. Older releases leave it out (the start screen counts it as left out), and nothing of it runs. The install page puts on 0.19, and the start screen then shows `1.7.3 - open-field 0.19`.
+fx train 19 needs open-field 0.26 (base 44) or later. Older releases leave it out (the start screen counts it as left out), and nothing of it runs. The install page puts on 0.26, and the start screen then shows `1.7.3 - open-field 0.26`.
 
-## Version 18
+## Version 19
 
-Version 18 has run on a unit, beside lfo 12, and I've played it: old trains on a synth sound and a drum sound coming back on train by themselves, most of the keys above, saving a train, the list of effects, another effect and back, a restart, and train picked on the master.
+New in 19: a tap on a wagon carrying another pack's effect opens that effect's own page (galfaroth noticed it did nothing in 18), and a wagon can keep its own extra settings for a pack's effect.
 
-Not tried on a unit yet: a sound saved and loaded again, on train and off it; loading a saved train from the list; moving a wagon (shift + turn); holding a knob to couple or uncouple it, shift + hold and shift + tap; renaming and deleting on the list of saved trains; a wagon carrying another pack's effect; MIDI changing the effect of a sound that's on train; the LFO page's FX destination on a sound that's on train; and turning onto an effect that won't fit (the budget skip, new in version 17).
+Version 19 has run on a unit, on open-field 0.26 and the test build of it just before: crush on a wagon, a tap opening crush's own page with that wagon's values, a turn moving the wagon's value, and T3 back to the train; galfaroth's veffbode 13 from the listing on a wagon, with its animated page, its knobs and its shift settings; and a test effect made to keep a setting per wagon, which kept it across a restart. No faults in the unit's log. I haven't played 19 by ear.
 
-To go back, copy fx train 16 over it, the last version before 18 that has run on a unit (17 never has): [its file is at commit `2bcfe6a`](https://github.com/LaP0573/open-field-packs/raw/2bcfe6a7c946357002db0bbee3d2714466b458c3/fx%20train.pack). Version 16 reads 18's sounds and saved trains as its own, and a sound you took off the train plays all its coupled wagons again there. T3 is then the train's on every sound, as it was.
+Not tried on a unit yet: a saved sound or a saved train bringing back a wagon's own settings; two wagons with the same pack's effect on one sound; a sound saved and loaded again, on train and off it; loading a saved train from the list; moving a wagon (shift + turn); holding a knob to couple or uncouple it, shift + hold and shift + tap; renaming and deleting on the list of saved trains; MIDI changing the effect of a sound that's on train; the LFO page's FX destination on a sound that's on train; and turning onto an effect that won't fit (the budget skip, new in version 17).
+
+To go back, copy fx train 18 over it: [its file is at commit `270e04f`](https://github.com/LaP0573/open-field-packs/raw/270e04fd6d401bb93b3cb780f189f1cfea592fb4/fx%20train.pack). Version 18 reads 19's sounds and saved trains as its own and leaves out the settings 19 keeps for a pack's effect on a wagon. A tap on such a wagon then opens nothing again.
 
 One known case, rare but real. On the wagon under the lamp:
 

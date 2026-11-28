@@ -1,4 +1,14 @@
 // Made for OS 1.7.3 from this source's OS 1.7.0 form; every address the code uses is 1.7.3's; an address in a comment that the code does not use may still be 1.7.0's.
+// 2026-11-27, the pack `fx train` 19, part 1: a third page choice
+// beside the train's and the unit's, the own page of the pack's effect on a wagon (base 44's op1f_rack_page, through the
+// chain's op1f_train_hosted), wanted by a knob's click there (op1f_train_take_page TAKE_HOSTED + knob) for the place on
+// the screen. op1f_train14_rides asks it once a frame while it is wanted; it ends (back to the train, op1f_layer_page
+// OWN, which ends the base's hosted page) on T3, on another page choice or a ride begun, when the place on the screen is
+// another or no longer rides, when the chain or the base refuses it (the wagon lost its effect among them), when the
+// page has not been up for OFF_FRAMES frames after it was, or never came up in SOON_FRAMES. While it is up the input
+// takes T3's down (not shifted) and its up, and no turn (the base moves the wagon's words); every other key as on the
+// unit's page. What fx train 18's words below say holds, but where these say otherwise.
+//
 // Step R14, the pack `fx train` 18: its input function, its layer's `shown`, the page choice and the rides' start.
 // The train is the effect layer "train", ask 2 of the
 // card (module/build_r6e_card.h, "Base 35: layers"); the store, the rides' bits and the grammar of the page are the
@@ -44,6 +54,7 @@ enum {
     KEY_T1 = 6, KEY_T3 = 8, KEY_T4 = 9, KEY_PLAY_FIRST = 13, KEY_PLAY_LAST = 53, KEY_CLICK0 = 54, KEY_PRESS0 = 61, KNOBS = 4, KEYS = 72,
     CONTROLLER_PAGE = 0x28, PAGE_EFFECT = 2,
     OFF_FRAMES = 3, SOON_FRAMES = 8, RIDE_LINES = 64, PAGE_LINES = 64, MASTER_LINES = 16,
+    PAGE_HOSTED = 2, TAKE_HOSTED = 4,                  // 19: the third page choice (never handed to op1f_layer_page); the chain's wish of it, + knob
 };
 
 static const u32 SYNTH_CONTROLLER = 0x08018804u;               // the synth's controller, a static object (its page word at +0x28)
@@ -59,6 +70,7 @@ extern "C" int op1f_train_place() OP1F_NAMED("op1f_train_place");
 extern "C" int op1f_train_key(int place, int key, int what) OP1F_NAMED("op1f_train_key");
 extern "C" int op1f_train_turn(int place, int knob, int steps, int shifted) OP1F_NAMED("op1f_train_turn");
 extern "C" int op1f_train_take_page() OP1F_NAMED("op1f_train_take_page");
+extern "C" int op1f_train_hosted(int place, int knob) OP1F_NAMED("op1f_train_hosted");   // 19
 extern "C" void op1f_train_up(int place) OP1F_NAMED("op1f_train_up");
 extern "C" int op1f_train_ride_due() OP1F_NAMED("op1f_train_ride_due");
 extern "C" void op1f_train_ride_answer(int place, int answer) OP1F_NAMED("op1f_train_ride_answer");
@@ -69,10 +81,12 @@ extern "C" int op1f_chain_screen_wanted(int host) OP1F_NAMED("op1f_chain_screen_
 static volatile u8 taken_at[KEYS];                  // the place + 1 of each key whose down was taken, 0 for none
 static volatile u32 back_t3;                        // T3's down taken on the stock effect page: its up is taken too
 static volatile u32 soon;                           // T3 went down for a riding place: its train page may come up
-// Both threads': the page choice wanted (OP1F_LAYER_PAGE_OWN or _UNIT), each write whole.
+// Both threads': the page choice wanted (OP1F_LAYER_PAGE_OWN or _UNIT, 19: PAGE_HOSTED), each write whole.
 static volatile u32 page_want = OP1F_LAYER_PAGE_OWN;
 // The display thread's words.
-static volatile int page_now = -1;                  // the choice the base took last, -1 before the first
+static volatile int page_now = -1;                  // the choice the base took last, -1 before the first (PAGE_HOSTED: op1f_rack_page took it)
+static int hosted_place = -1, hosted_knob;          // 19: the wagon whose effect's page is wanted, at the place on the screen
+static u32 hosted_was_up, hosted_frames;            // its page has been on the screen; frames since it was (or since it was wanted)
 static volatile u32 shown_where, shown_up;          // the layer's `shown`: the place whose train page is up
 static volatile int up_place = -1;                  // the place whose train page, or the presets over it, is up (op1f_train14_see)
 static u32 rides_was, off_frames, soon_frames, ride_lines, page_lines, page_refused, master_lines;
@@ -85,6 +99,7 @@ static u32 page_word(int host) { return *(volatile const u32*)((host ? DRUM_CONT
 static int presets_up(int host) { return op1f_chain_screen_wanted(host) != 0; }
 
 static int turn(const Op1fInput* e) {
+    if (page_now == (int)PAGE_HOSTED) return 0;                         // 19: the effect's own page: the base moves the wagon's words
     if (!e->mine || !instrument(e->mode) || e->key >= (u32)KNOBS) return 0;
     int place = op1f_train_place();
     if (!riding(place)) return 0;
@@ -125,8 +140,13 @@ extern "C" int fx_train_input(const Op1fInput* e) {
         soon = 1;                                                       // a pick of "train" there brings its page
         return 0;
     }
-    if (!e->mine) {
+    if (!e->mine || page_now == (int)PAGE_HOSTED) {
         if (key != (u32)KEY_T3 || what != (u32)OP1F_DOWN) return 0;
+        if (page_now == (int)PAGE_HOSTED) {                             // 19: T3 on the effect's own page: back to the train
+            page_want = OP1F_LAYER_PAGE_OWN;
+            back_t3 = 1;
+            return 1;
+        }
         if (page_now == (int)OP1F_LAYER_PAGE_UNIT && page_word(host) == (u32)PAGE_EFFECT) {   // the stock page after a tap: back to the train
             page_want = OP1F_LAYER_PAGE_OWN;
             back_t3 = 1;
@@ -188,6 +208,35 @@ static void choose(u32 which, const char* why, const Op1fFrame* now) {
     }
 }
 
+// 19: the frame's ask of the effect's own page while it is wanted (the chain's op1f_train_hosted: op1f_rack_page and
+// the words it changed). The base took it: page_now PAGE_HOSTED, so that its end is op1f_layer_page's. Ended (the train
+// wanted) where the place on the screen is another or does not ride, where the chain or the base refuses it, when the
+// page has not been up for OFF_FRAMES frames after it was, or did not come up in SOON_FRAMES.
+static void hosted(const Op1fFrame* now, const char** why) {
+    int place = op1f_train_place();
+    int answer = instrument(now->mode) && place == hosted_place && riding(place) ? op1f_train_hosted(place, hosted_knob) : (int)OP1F_NOT_HERE;
+    const char* end = 0;
+    if (answer < 0) end = place == hosted_place && riding(place) ? "the effect's page refused" : "the place left";
+    else {
+        if (page_now != (int)PAGE_HOSTED && page_lines < (u32)PAGE_LINES) {
+            ++page_lines;
+            op1f_log(3, LOG_FILE, 4, "train layer: page on T3: the own page of the effect on knob %d (a click), answer %d, screen %u at %u ms", hosted_knob, answer, now->screen, now->ms);
+        }
+        page_now = (int)PAGE_HOSTED;
+        if (answer & (int)OP1F_HOSTED_PAGE_UP) { hosted_was_up = 1; hosted_frames = 0; }
+        else if (++hosted_frames >= (hosted_was_up ? (u32)OFF_FRAMES : (u32)SOON_FRAMES)) end = "the effect's page not up";
+    }
+    if (end) {
+        page_want = OP1F_LAYER_PAGE_OWN;
+        hosted_place = -1;
+        *why = end;
+        if (page_lines < (u32)PAGE_LINES && page_now != (int)PAGE_HOSTED) {
+            ++page_lines;
+            op1f_log(3, LOG_FILE, 5, "train layer: the own page of the effect on knob %d not taken (%s), answer %d at %u ms", hosted_knob, end, answer, now->ms);
+        }
+    }
+}
+
 extern "C" void op1f_train14_rides(const Op1fFrame* now) OP1F_NAMED("op1f_train14_rides");
 extern "C" void op1f_train14_rides(const Op1fFrame* now) {
     int due = op1f_train_ride_due();
@@ -219,6 +268,14 @@ extern "C" void op1f_train14_rides(const Op1fFrame* now) {
     int asked = op1f_train_take_page();
     if (asked == 1) { page_want = OP1F_LAYER_PAGE_OWN; why = "the train's"; }
     else if (asked == 2) { page_want = OP1F_LAYER_PAGE_UNIT; why = "a tap"; }
+    else if (asked >= (int)TAKE_HOSTED && asked < (int)TAKE_HOSTED + KNOBS) {   // 19: a click on a wagon with a pack's effect
+        page_want = PAGE_HOSTED;
+        hosted_place = op1f_train_place();
+        hosted_knob = asked - (int)TAKE_HOSTED;
+        hosted_was_up = 0;
+        hosted_frames = 0;
+    }
+    if (page_want == (u32)PAGE_HOSTED) hosted(now, &why);
     int host = now->mode == (u32)MODE_DRUM ? 1 : 0;
     int on = instrument(now->mode) && (up_place >= 0 || page_word(host) == (u32)PAGE_EFFECT);
     if (page_now == (int)OP1F_LAYER_PAGE_UNIT && page_want == (u32)OP1F_LAYER_PAGE_UNIT && !on) {
@@ -227,5 +284,5 @@ extern "C" void op1f_train14_rides(const Op1fFrame* now) {
         off_frames = 0;
     }
     u32 want = page_want;
-    if ((int)want != page_now) choose(want, why ? why : "T3 on the unit's page", now);
+    if (want != (u32)PAGE_HOSTED && (int)want != page_now) choose(want, why ? why : page_now == (int)PAGE_HOSTED ? "T3 on the effect's page" : "T3 on the unit's page", now);
 }
