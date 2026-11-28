@@ -231,6 +231,24 @@ extern "C" int op1f_ext_mix_click_mute(int track) {
     return ext_mix_toggle(track);
 }
 
+// 8 tracks 13: shift + a knob's click on the mixer's page of tracks 5-8 (build_r4b_mixer.cpp) puts the track's pan back to
+// the centre, as stock's shift + click on the levels page puts track 1-4's: the word alone, no notify of the tape model
+// (stock's leaves its own to the tape's next write; this pack's frame keeps the strip with the tape as for every change).
+extern "C" int op1f_ext_mix_center_pan(int track) asm("op1f_ext_mix_center_pan");
+extern "C" int op1f_ext_mix_center_pan(int track) {
+    int j = ext_index(track);
+    if (j < 0) return 0;
+    op1f_ext_params[EXT_TRACKS + j] = 0;
+    ++op1f_ext_mix_changes;
+    u32 now = cycles();
+    if (knob_log_budget && now - knob_log_cycles >= CYCLES_PER_SECOND) {
+        --knob_log_budget;
+        knob_log_cycles = now;
+        STOCK_LOG(3, LOG_FILE, 1, "track %d pan C0/100 (shift + click)", track + 1);
+    }
+    return 1;
+}
+
 // Build D: stock's MIDI mixer handler (0x8f00de30; the channel in the status byte's low nibble, type 7 volume,
 // 10 pan, 9 mute, the value 0..127) returns at 0x8f00f96c for a channel of 4 or more; the trampoline
 // op1f_midi_bound (build_d_clip.s) sends channels 4-5 here. Stock's law through the same ROM routines:

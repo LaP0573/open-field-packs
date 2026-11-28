@@ -22,7 +22,7 @@ op1f_card_8_tracks_level:
 .global op1f_card_8_tracks
 .type op1f_card_8_tracks, STT_OBJECT
 op1f_card_8_tracks:
-    .long 0x44524143, 64, 7, 12
+    .long 0x44524143, 64, 7, 14
     .ascii "8 tracks"
     .fill 8, 1, 0
     .long eight_tracks_frame
