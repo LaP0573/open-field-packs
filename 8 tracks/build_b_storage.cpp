@@ -736,3 +736,62 @@ extern "C" int op1f_load_block_map(int tape) {
                   load.ext_version, load.id, load.json_id, load.bound);
     return 1;
 }
+
+// ---------------------------------------------------------------------------------------------------------
+// The tracks 5 to 8 for another pack (8 tracks 14, for speedlock: a pack that rewrites a tape in place and wants
+// tracks 5 to 8 to go with tracks 1 to 4). Additive: nothing of 8 tracks calls these four names, and with no pack
+// that asks for them 8 tracks does what 8 tracks 11 did. The recipe offers them to every pack ("exports").
+//
+// The contract, for a pack that rewrites a chunk of tracks 5 to 8 the way stock's own edits rewrite tracks 1 to 4:
+//
+//   1. On the main loop (where the tape service and stock's edits run) and only while op1f_ext_quiet() answers 1,
+//      read the live record's maps with op1f_ext_map(record, track).
+//   2. Take free chunks on the reference bytes (the live record's bit, as stock's allocator does; this pack takes
+//      its own from the top of the tape, so a pack that takes from the bottom meets it only on a full tape) and
+//      write the new audio there with the tape partition's own write. No chunk an undo record holds is written.
+//   3. In one pass of the main loop: stock's take_snapshot_ex (this pack's hook copies the maps of tracks 5 to 8
+//      into the new record, so stock's undo takes them back), then op1f_ext_put for every entry that changes, then
+//      stock's map flush: this pack's save writes the file of tracks 5 to 8 first, then stock's.
+//
+// A chunk put here has no sum until its next whole read gives it one (K5's rule for a chunk with none).
+
+extern "C" const u32 op1f_ext_api asm("op1f_ext_api");
+const u32 op1f_ext_api = 1;                     // what these names mean; a new meaning takes a new number
+
+// The map of track 5 + track (track 0..3) in undo record `record` (0..7): 969 physical chunk numbers, 0xFFFF for
+// none. The live record is stock's 0x848cff90. The pointer is good until the next snapshot or tape load moves the
+// records; read it in the same pass of the main loop. 0 for a record or track out of range.
+extern "C" const u16* op1f_ext_map(i32 record, i32 track) asm("op1f_ext_map");
+extern "C" const u16* op1f_ext_map(i32 record, i32 track) {
+    if (record < 0 || record >= MAX_SNAPSHOTS || track < 0 || track >= EXT_TRACKS) return 0;
+    return op1f_ext_records[record][track];
+}
+
+// 1 when a change of the maps of tracks 5 to 8 crosses nothing of this pack's: a tape is open, no take is being
+// recorded (the command thread writes ranges then, and allocates), and the cache holds tracks 5 to 8.
+extern "C" int op1f_ext_quiet() asm("op1f_ext_quiet");
+extern "C" int op1f_ext_quiet() {
+    return STOCK_TAPE_HANDLE() != -1 && !RECORDING && op1f_cache_tracks >= EIGHT_TRACKS ? 1 : 0;
+}
+
+// The live record's entry of track 5 + track at chunk `logical` made `physical` (0xFFFF: none), as stock's map
+// setter 0x8fc22650 does for tracks 1 to 4: the chunk that was there loses the live record's bit (unless it is
+// none or the same chunk), the new one gains it (unless none), the new one's sum is not known (K5), and the map is
+// marked for saving. Answers 0, or -1 (nothing changed) for an argument out of range or when not quiet.
+extern "C" int op1f_ext_put(i32 track, i32 logical, u32 physical) asm("op1f_ext_put");
+extern "C" int op1f_ext_put(i32 track, i32 logical, u32 physical) {
+    if (track < 0 || track >= EXT_TRACKS || logical < 0 || logical >= CHUNKS_PER_TRACK) return -1;
+    if (physical != UNALLOCATED && physical >= CHUNKS_PER_PARTITION) return -1;
+    if (!op1f_ext_quiet()) return -1;
+    u16* entry = &EXT_MAP(track)[logical];
+    u32 old = *entry;
+    u32 live = 1u << CURRENT_SNAPSHOT;
+    if (old != physical && old != UNALLOCATED && old < CHUNKS_PER_PARTITION) REFERENCES[old] &= (unsigned char)~live;
+    if (physical != UNALLOCATED) {
+        REFERENCES[physical] |= (unsigned char)live;
+        if (old != physical) op1f_sums_part(physical);
+    }
+    *entry = (u16)physical;
+    STOCK_MARK_MAP_DIRTY();
+    return 0;
+}

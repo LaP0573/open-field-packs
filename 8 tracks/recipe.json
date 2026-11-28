@@ -1,7 +1,7 @@
 {
   "about": "Tape tracks 5 to 8: recording, playback, mixing, editing, undo, the disk mode's track files, the screens for eight tracks, a held track key's solo over all eight; and tapes whose files the original firmware still reads. Needs the base (base.pack) and nothing else; works together with the sidechain when that pack is there.",
   "name": "8 tracks",
-  "version": 13,
+  "version": 14,
   "interface": 2,
   "build": "build_r6i_8_tracks",
   "sources": [
@@ -50,7 +50,12 @@
   "serves": [
     "sidechain"
   ],
-  "exports": [],
+  "exports": [
+    "op1f_ext_api",
+    "op1f_ext_map",
+    "op1f_ext_put",
+    "op1f_ext_quiet"
+  ],
   "pictures": [
     {
       "name": "tape.svg",
